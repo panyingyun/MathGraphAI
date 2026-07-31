@@ -1,0 +1,143 @@
+{
+  "version": 1,
+  "description": "前后端共用表达式样本：Python AST 与 math.js 应对相同输入产生一致的归一化与采样结果",
+  "valid": [
+    {
+      "id": "identity",
+      "input": "y = x",
+      "normalized": "x",
+      "samples": [
+        { "x": -2, "y": -2 },
+        { "x": 0, "y": 0 },
+        { "x": 3, "y": 3 }
+      ]
+    },
+    {
+      "id": "quadratic",
+      "input": "y = x^2",
+      "normalized": "x^2",
+      "samples": [
+        { "x": -3, "y": 9 },
+        { "x": 0, "y": 0 },
+        { "x": 2, "y": 4 }
+      ]
+    },
+    {
+      "id": "cubic_poly",
+      "input": "y = x^3 - 2*x + 1",
+      "normalized": "x^3 - 2*x + 1",
+      "samples": [
+        { "x": 0, "y": 1 },
+        { "x": 1, "y": 0 },
+        { "x": 2, "y": 5 }
+      ]
+    },
+    {
+      "id": "sine",
+      "input": "y = sin(x)",
+      "normalized": "sin(x)",
+      "samples": [
+        { "x": 0, "y": 0 },
+        { "x": 1.5707963267948966, "y": 1 }
+      ]
+    },
+    {
+      "id": "cosine",
+      "input": "y = cos(x)",
+      "normalized": "cos(x)",
+      "samples": [
+        { "x": 0, "y": 1 },
+        { "x": 3.141592653589793, "y": -1 }
+      ]
+    },
+    {
+      "id": "exp",
+      "input": "y = exp(x)",
+      "normalized": "exp(x)",
+      "samples": [
+        { "x": 0, "y": 1 },
+        { "x": 1, "y": 2.718281828459045 }
+      ]
+    },
+    {
+      "id": "log10",
+      "input": "y = log(x)",
+      "normalized": "log(x)",
+      "samples": [
+        { "x": 1, "y": 0 },
+        { "x": 10, "y": 1 },
+        { "x": 100, "y": 2 }
+      ],
+      "notes": "log 约定为 lg（以 10 为底），与后端 equation_validator 一致"
+    },
+    {
+      "id": "sqrt_abs",
+      "input": "y = sqrt(abs(x))",
+      "normalized": "sqrt(abs(x))",
+      "samples": [
+        { "x": -4, "y": 2 },
+        { "x": 9, "y": 3 }
+      ]
+    },
+    {
+      "id": "pow_fn",
+      "input": "y = pow(x, 3)",
+      "normalized": "pow(x, 3)",
+      "samples": [
+        { "x": 2, "y": 8 },
+        { "x": -2, "y": -8 }
+      ]
+    },
+    {
+      "id": "pi_const",
+      "input": "y = x + pi",
+      "normalized": "x + pi",
+      "samples": [
+        { "x": 0, "y": 3.141592653589793 }
+      ]
+    },
+    {
+      "id": "unicode_power",
+      "input": "y = x²",
+      "normalized": "x^2",
+      "samples": [
+        { "x": 5, "y": 25 }
+      ]
+    },
+    {
+      "id": "with_equals_prefix",
+      "input": "x^2 + 1",
+      "normalized": "x^2 + 1",
+      "samples": [
+        { "x": 1, "y": 2 }
+      ]
+    }
+  ],
+  "invalid": [
+    {
+      "id": "unknown_variable",
+      "input": "y = a*x",
+      "reason": "unsupported_symbol"
+    },
+    {
+      "id": "incomplete_paren",
+      "input": "y = sin(x",
+      "reason": "syntax"
+    },
+    {
+      "id": "empty_rhs",
+      "input": "y =",
+      "reason": "empty"
+    },
+    {
+      "id": "disallowed_function",
+      "input": "y = floor(x)",
+      "reason": "unsupported_function"
+    },
+    {
+      "id": "assignment_like",
+      "input": "y = __import__('os')",
+      "reason": "unsupported_expression"
+    }
+  ]
+}

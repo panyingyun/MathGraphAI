@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "description": "阶段 0 基线用例目录：覆盖成功、解析失败、DeepSeek 失败回退与会话隔离",
+  "categories": {
+    "success": [
+      {
+        "id": "plot_quadratic",
+        "message": "帮我画 y = x^2",
+        "expectedIntent": "plot",
+        "expectedExpressions": ["x^2"]
+      },
+      {
+        "id": "plot_and_analyze",
+        "message": "帮我画 y = x^2，并解释它的图像特征",
+        "expectedIntent": "plot",
+        "expectedExpressions": ["x^2"],
+        "expectAnalysis": true
+      },
+      {
+        "id": "add_sine",
+        "setup": ["画 y = x^2"],
+        "message": "再加一条 y = sin(x)",
+        "expectedIntent": "add_equation",
+        "expectedExpressions": ["x^2", "sin(x)"]
+      },
+      {
+        "id": "update_color_first",
+        "setup": ["比较 y = x^2 和 y = x"],
+        "message": "把第一条曲线改成红色",
+        "expectedIntent": "update_equation",
+        "expectedColor": "#da3437"
+      },
+      {
+        "id": "update_viewport",
+        "message": "把坐标范围改成 -5 到 5",
+        "expectedIntent": "update_viewport",
+        "expectedViewport": { "xMin": -5, "xMax": 5, "yMin": -5, "yMax": 5 }
+      },
+      {
+        "id": "remove_equation",
+        "setup": ["画 y = x"],
+        "message": "删除这条曲线",
+        "expectedIntent": "remove_equation",
+        "expectedExpressions": []
+      },
+      {
+        "id": "analyze_existing",
+        "setup": ["画 y = x^2"],
+        "message": "分析一下顶点",
+        "expectedIntent": "analyze"
+      }
+    ],
+    "parse_failure": [
+      {
+        "id": "incomplete_equation",
+        "setup": ["画 y = x"],
+        "message": "画 y = abc(",
+        "expectedIntent": "unknown",
+        "graphUnchanged": true
+      },
+      {
+        "id": "unrecognized_request",
+        "message": "今天天气怎么样",
+        "expectedIntent": "unknown",
+        "graphUnchanged": true
+      },
+      {
+        "id": "unsupported_symbol",
+        "message": "画 y = a*x + b",
+        "expectedIntent": "unknown",
+        "graphUnchanged": true
+      }
+    ],
+    "deepseek_failure": [
+      {
+        "id": "auth_or_network_fallback",
+        "message": "画 y = cos(x)",
+        "simulate": "deepseek_exception",
+        "expectedFallback": "local",
+        "expectedIntent": "plot",
+        "expectedExpressions": ["cos(x)"]
+      }
+    ],
+    "session_isolation": [
+      {
+        "id": "switch_keeps_separate_state",
+        "steps": [
+          { "session": "A", "message": "画 y = x^2" },
+          { "session": "B", "message": "画 y = sin(x)" },
+          { "session": "A", "assertExpressions": ["x^2"] },
+          { "session": "B", "assertExpressions": ["sin(x)"] }
+        ]
+      }
+    ]
+  }
+}

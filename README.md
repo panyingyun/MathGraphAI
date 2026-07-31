@@ -30,9 +30,13 @@ npm run dev
 
 ```powershell
 npm run build
+npm test
 cd backend
-pytest
+python -m pytest
+python -m scripts.measure_baseline
 ```
+
+阶段 0 基线说明见 `docs/baseline/README.md`。
 
 ## 安全边界
 

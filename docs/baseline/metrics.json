@@ -1,0 +1,128 @@
+{
+  "capturedAt": "2026-07-31T15:49:05.257635+00:00",
+  "stage": "plan01-stage0",
+  "decisionProvider": "local",
+  "notes": [
+    "本基线在无 DeepSeek 调用的本地解析路径上采集。",
+    "DeepSeek 真实耗时/失败率/降级次数需在联调环境另行记录；自动化中通过模拟异常覆盖降级行为。",
+    "failureRate 在本地成功/失败用例上按用例定义统计，不代表线上模型失败率。"
+  ],
+  "summary": {
+    "caseCount": 10,
+    "meanLatencyMs": 0.038,
+    "localFallbackCount": "n/a (provider forced local)",
+    "deepseekFailureSimulatedInTests": true
+  },
+  "cases": [
+    {
+      "id": "plot_quadratic",
+      "category": "success",
+      "rounds": 20,
+      "latencyMs": {
+        "mean": 0.105,
+        "p50": 0.067,
+        "p95": 0.108,
+        "max": 0.766
+      }
+    },
+    {
+      "id": "plot_and_analyze",
+      "category": "success",
+      "rounds": 20,
+      "latencyMs": {
+        "mean": 0.071,
+        "p50": 0.069,
+        "p95": 0.079,
+        "max": 0.09
+      }
+    },
+    {
+      "id": "add_sine",
+      "category": "success",
+      "rounds": 20,
+      "latencyMs": {
+        "mean": 0.075,
+        "p50": 0.072,
+        "p95": 0.093,
+        "max": 0.112
+      }
+    },
+    {
+      "id": "update_color_first",
+      "category": "success",
+      "rounds": 20,
+      "latencyMs": {
+        "mean": 0.014,
+        "p50": 0.011,
+        "p95": 0.025,
+        "max": 0.025
+      }
+    },
+    {
+      "id": "update_viewport",
+      "category": "success",
+      "rounds": 20,
+      "latencyMs": {
+        "mean": 0.011,
+        "p50": 0.005,
+        "p95": 0.019,
+        "max": 0.113
+      }
+    },
+    {
+      "id": "remove_equation",
+      "category": "success",
+      "rounds": 20,
+      "latencyMs": {
+        "mean": 0.02,
+        "p50": 0.019,
+        "p95": 0.026,
+        "max": 0.028
+      }
+    },
+    {
+      "id": "analyze_existing",
+      "category": "success",
+      "rounds": 20,
+      "latencyMs": {
+        "mean": 0.019,
+        "p50": 0.015,
+        "p95": 0.035,
+        "max": 0.043
+      }
+    },
+    {
+      "id": "incomplete_equation",
+      "category": "parse_failure",
+      "rounds": 20,
+      "latencyMs": {
+        "mean": 0.029,
+        "p50": 0.025,
+        "p95": 0.048,
+        "max": 0.053
+      }
+    },
+    {
+      "id": "unrecognized_request",
+      "category": "parse_failure",
+      "rounds": 20,
+      "latencyMs": {
+        "mean": 0.009,
+        "p50": 0.007,
+        "p95": 0.019,
+        "max": 0.021
+      }
+    },
+    {
+      "id": "unsupported_symbol",
+      "category": "parse_failure",
+      "rounds": 20,
+      "latencyMs": {
+        "mean": 0.032,
+        "p50": 0.027,
+        "p95": 0.05,
+        "max": 0.053
+      }
+    }
+  ]
+}

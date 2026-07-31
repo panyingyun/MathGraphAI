@@ -63,7 +63,20 @@ export function compileExpression(source: string): (x: number) => number {
   validateNode(node);
   const compiled = node.compile();
   return (x: number) => {
-    const value = compiled.evaluate({ x, e: Math.E, pi: Math.PI });
+    // log 约定为 lg（以 10 为底），与后端 equation_validator 保持一致。
+    const value = compiled.evaluate({
+      x,
+      e: Math.E,
+      pi: Math.PI,
+      log: Math.log10,
+      sin: Math.sin,
+      cos: Math.cos,
+      tan: Math.tan,
+      sqrt: Math.sqrt,
+      abs: Math.abs,
+      exp: Math.exp,
+      pow: Math.pow,
+    });
     if (typeof value !== "number") return Number.NaN;
     return value;
   };
