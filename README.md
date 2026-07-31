@@ -1,0 +1,41 @@
+# MathGraph AI
+
+一个根据自然语言或数学公式绘制函数图像的三栏式 AI 工作台。前端采用 React、Vite、TypeScript、Tailwind CSS、Zustand、Plotly.js 与 KaTeX；后端采用 FastAPI、Pydantic、SQLAlchemy 与 SQLite，并支持 DeepSeek API。
+
+## 启动
+
+### 后端
+
+```powershell
+cd backend
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+Copy-Item .env.example .env
+uvicorn app.main:app --reload
+```
+
+`DEEPSEEK_API_KEY` 可以留空。留空时系统使用安全白名单本地解析器，常用绘图、追加方程、改色、删除、坐标范围和基础分析仍可使用。
+
+### 前端
+
+```powershell
+npm install
+npm run dev
+```
+
+访问 `http://127.0.0.1:5173`。Vite 会把 `/api` 代理到 `http://127.0.0.1:8000`。
+
+## 测试
+
+```powershell
+npm run build
+cd backend
+pytest
+```
+
+## 安全边界
+
+- 前端通过 math.js AST 白名单解析表达式，不使用 `eval` 或 `new Function`。
+- 仅允许变量 `x` 以及 `sin`、`cos`、`tan`、`log`、`sqrt`、`abs`、`exp`、`pow`。
+- 后端会再次校验 DeepSeek 返回的结构化方程，再写入会话状态。
