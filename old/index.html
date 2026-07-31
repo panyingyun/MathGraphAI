@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="输入一个关于 x 的方程，立即绘制函数曲线。">
+  <title>Curve AI · 方程绘图智能体</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="hero">
+      <div class="brand" aria-label="Curve AI">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" role="img">
+            <path d="M4 22c4-1 5-13 10-13 4 0 4 14 8 14 3 0 4-5 6-9"/>
+          </svg>
+        </span>
+        <span>Curve AI</span>
+      </div>
+      <div class="eyebrow"><span></span> 数学绘图智能体</div>
+      <h1>把方程，变成一条<br><em>看得见的曲线。</em></h1>
+      <p class="subtitle">输入一个关于 <strong>x</strong> 的方程，剩下的交给我。</p>
+    </header>
+
+    <section class="workspace" aria-label="函数绘图工作区">
+      <form id="equation-form" class="equation-panel">
+        <label for="equation-input">输入方程</label>
+        <div class="input-row">
+          <div class="equation-input-wrap">
+            <span class="prompt-icon" aria-hidden="true">ƒ</span>
+            <input
+              id="equation-input"
+              type="text"
+              value="y = x"
+              autocomplete="off"
+              spellcheck="false"
+              aria-describedby="input-hint equation-status"
+            >
+          </div>
+          <button type="submit">
+            <span>绘制曲线</span>
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h12M11 5l5 5-5 5"/></svg>
+          </button>
+        </div>
+        <div class="panel-meta">
+          <p id="input-hint">支持 + − × ÷、幂 ^、括号和 sin / cos / tan / sqrt / abs</p>
+          <p id="equation-status" class="status" role="status" aria-live="polite">已绘制：y = x</p>
+        </div>
+      </form>
+
+      <div class="graph-card">
+        <div class="graph-toolbar">
+          <div class="function-label">
+            <span class="curve-dot"></span>
+            <span id="active-equation">y = x</span>
+          </div>
+          <div class="range-label">x ∈ [−10, 10]</div>
+        </div>
+        <div class="canvas-wrap">
+          <canvas id="graph-canvas" aria-label="方程 y 等于 x 的函数曲线图"></canvas>
+        </div>
+      </div>
+
+      <div class="examples" aria-label="示例方程">
+        <span>试试这些</span>
+        <button type="button" data-equation="y = x²">y = x²</button>
+        <button type="button" data-equation="y = sin(x)">y = sin(x)</button>
+        <button type="button" data-equation="y = 1 / x">y = 1 / x</button>
+        <button type="button" data-equation="y = sqrt(x)">y = √x</button>
+      </div>
+    </section>
+
+    <footer>Made for curious minds <span>✦</span></footer>
+  </main>
+  <script src="script.js"></script>
+</body>
+</html>
