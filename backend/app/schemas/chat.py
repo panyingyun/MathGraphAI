@@ -11,6 +11,14 @@ Intent = Literal["plot", "add_equation", "update_equation", "remove_equation", "
 DecisionProvider = Literal["deepseek", "local"]
 
 
+class StepSummary(APIModel):
+    step_index: int
+    tool_name: Optional[str] = None
+    status: Literal["success", "error", "final"] = "success"
+    summary: str
+    duration_ms: float = 0
+
+
 class StructuredResult(APIModel):
     intent: Intent
     equations: Optional[List[EquationItem]] = None
@@ -45,7 +53,7 @@ class ChatResponse(APIModel):
     message: Message
     graph_state: GraphState
     request_id: str
-    execution_mode: str = "single"
+    execution_mode: str = "react"
     decision_provider: DecisionProvider = "local"
     fallback_used: bool = False
     fallback_reason: Optional[str] = None
@@ -53,3 +61,4 @@ class ChatResponse(APIModel):
     graph_revision: int = 0
     step_count: int = 0
     duration_ms: float = 0
+    steps: List[StepSummary] = Field(default_factory=list)

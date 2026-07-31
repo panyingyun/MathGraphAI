@@ -28,7 +28,15 @@ class Settings:
     deepseek_model: str = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
     deepseek_timeout_seconds: float = _env_float("DEEPSEEK_TIMEOUT_SECONDS", 30.0)
     deepseek_max_retries: int = _env_int("DEEPSEEK_MAX_RETRIES", 2)
-    agent_mode: str = os.getenv("AGENT_MODE", "off")
+    agent_mode: str = os.getenv("AGENT_MODE", "react")
+    agent_max_steps: int = _env_int("AGENT_MAX_STEPS", 4)
+    agent_timeout_seconds: float = _env_float("AGENT_TIMEOUT_SECONDS", 45.0)
+    agent_tool_timeout_seconds: float = _env_float("AGENT_TOOL_TIMEOUT_SECONDS", 10.0)
+    agent_max_repeated_actions: int = _env_int("AGENT_MAX_REPEATED_ACTIONS", 1)
+    agent_max_model_calls: int = _env_int("AGENT_MAX_MODEL_CALLS", 6)
+    agent_max_observation_chars: int = _env_int("AGENT_MAX_OBSERVATION_CHARS", 2000)
+    agent_trace_enabled: bool = os.getenv("AGENT_TRACE_ENABLED", "true").lower() in {"1", "true", "yes"}
+    agent_prefer_tool_calls: bool = os.getenv("AGENT_PREFER_TOOL_CALLS", "false").lower() in {"1", "true", "yes"}
     max_equations: int = _env_int("MAX_EQUATIONS", 20)
     max_expression_length: int = _env_int("MAX_EXPRESSION_LENGTH", 256)
     max_ast_nodes: int = _env_int("MAX_AST_NODES", 128)

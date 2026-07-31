@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Callable, List, Sequence, Tuple
+from typing import Callable, List, Optional, Sequence, Set, Tuple
 
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
@@ -13,7 +13,7 @@ logger = logging.getLogger("mathgraph.migrations")
 Migration = Tuple[int, str, Callable]
 
 
-def _column_names(conn, table: str) -> set[str]:
+def _column_names(conn, table: str) -> Set[str]:
     rows = conn.execute(text(f"PRAGMA table_info({table})")).fetchall()
     return {row[1] for row in rows}
 
@@ -104,12 +104,12 @@ def ensure_migrations_table(conn) -> None:
     )
 
 
-def applied_versions(conn) -> set[int]:
+def applied_versions(conn) -> Set[int]:
     rows = conn.execute(text("SELECT version FROM schema_migrations")).fetchall()
     return {int(row[0]) for row in rows}
 
 
-def run_migrations(engine: Engine, migrations: Sequence[Migration] | None = None) -> None:
+def run_migrations(engine: Engine, migrations: Optional[Sequence[Migration]] = None) -> None:
     from datetime import datetime, timezone
 
     items = list(migrations or MIGRATIONS)

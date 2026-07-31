@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { FunctionSquare, MoreHorizontal } from "lucide-react";
 import { useAppStore } from "../../stores/appStore";
+import { AgentProgress } from "./AgentProgress";
 import { ChatInput } from "./ChatInput";
 import { MessageItem } from "./MessageItem";
 import { PromptSuggestions } from "./PromptSuggestions";
@@ -9,6 +10,7 @@ export function ChatPanel() {
   const session = useAppStore((state) => state.currentSession);
   const loading = useAppStore((state) => state.isLLMLoading);
   const error = useAppStore((state) => state.error);
+  const agentSteps = useAppStore((state) => state.agentSteps);
   const clearError = useAppStore((state) => state.clearError);
   const showToast = useAppStore((state) => state.showToast);
   const [preset, setPreset] = useState("");
@@ -36,10 +38,11 @@ export function ChatPanel() {
           <>
             <div className="day-chip">今天</div>
             {session.messages.map((message) => <MessageItem message={message} key={message.id} />)}
+            {!loading && agentSteps.length > 0 && <AgentProgress steps={agentSteps} />}
             {loading && (
               <div className="message assistant-message">
                 <div className="assistant-avatar"><FunctionSquare size={16} /></div>
-                <div className="message-content"><div className="message-author">MathGraph AI</div><div className="typing"><i /><i /><i /><span>正在解析方程</span></div></div>
+                <div className="message-content"><div className="message-author">MathGraph AI</div><div className="typing"><i /><i /><i /><span>正在执行 Agent 步骤</span></div></div>
               </div>
             )}
           </>

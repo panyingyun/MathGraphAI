@@ -27,7 +27,8 @@ export function GraphViewer() {
           name: equation.label,
           visible: equation.visible,
           hovertemplate: "x = %{x:.3f}<br>y = %{y:.3f}<extra>%{fullData.name}</extra>",
-          line: { color: equation.color, width: equation.lineWidth, shape: "spline", smoothing: 0.25 },
+          // 使用折线而非 spline，避免离群采样点把指数/高次曲线拉弯。
+          line: { color: equation.color, width: equation.lineWidth, shape: "linear" },
           connectgaps: false,
         });
       } catch (error) {

@@ -1,7 +1,5 @@
 """/api/chat 集成——失败可区分 persistence / expression / fallback / state。"""
 
-from unittest.mock import AsyncMock
-
 import pytest
 
 
@@ -88,7 +86,7 @@ def test_deepseek_failure_falls_back_to_local(client_with_deepseek, monkeypatch)
     async def boom(*_args, **_kwargs):
         raise RuntimeError("simulated deepseek outage")
 
-    monkeypatch.setattr("app.routers.chat.call_deepseek", boom)
+    monkeypatch.setattr("app.agent.providers.call_deepseek_decision", boom)
     response = _chat(client_with_deepseek, session["id"], "画 y = cos(x)")
     assert response.status_code == 200
     body = response.json()
@@ -102,28 +100,24 @@ def test_deepseek_failure_falls_back_to_local(client_with_deepseek, monkeypatch)
 @pytest.mark.fallback
 def test_deepseek_success_path_uses_model_result(client_with_deepseek, monkeypatch):
     session = _create_session(client_with_deepseek)
+    calls = {"n": 0}
 
-    async def fake_deepseek(*_args, **_kwargs):
-        return {
-            "intent": "plot",
-            "equations": [
-                {
-                    "expression": "y = tan(x)",
-                    "normalizedExpression": "tan(x)",
-                    "label": "y = tan(x)",
-                    "color": "#007d55",
-                    "visible": True,
-                    "lineWidth": 2,
-                    "type": "function",
-                }
-            ],
-            "explanation": "已绘制 y = tan(x)。",
-        }
+    async def fake_decision(*_args, **_kwargs):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return {
+                "content": (
+                    '{"type":"action","tool":"plot_equations","arguments":{"equations":'
+                    '[{"expression":"y = tan(x)","normalizedExpression":"tan(x)","color":"#007d55"}]}}'
+                ),
+                "tool_calls": None,
+            }
+        return {"content": '{"type":"final","message":"已绘制 y = tan(x)。"}', "tool_calls": None}
 
-    monkeypatch.setattr("app.routers.chat.call_deepseek", AsyncMock(side_effect=fake_deepseek))
+    monkeypatch.setattr("app.agent.providers.call_deepseek_decision", fake_decision)
     body = _chat(client_with_deepseek, session["id"], "画正切函数").json()
     assert body["graphState"]["equations"][0]["normalizedExpression"] == "tan(x)"
-    assert body["message"]["content"] == "已绘制 y = tan(x)。"
+    assert "tan(x)" in body["message"]["content"]
 
 
 @pytest.mark.persistence

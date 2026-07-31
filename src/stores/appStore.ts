@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { api } from "../services/api";
 import { ApiError } from "../types/chat";
+import type { StepSummary } from "../types/chat";
 import type { Session, SessionSummary } from "../types/session";
 import type { GraphState, EquationItem, Viewport } from "../types/graph";
 
@@ -15,6 +16,7 @@ interface AppState {
   isLLMLoading: boolean;
   error: string | null;
   toast: string | null;
+  agentSteps: StepSummary[];
   loadSessions: () => Promise<void>;
   createSession: () => Promise<void>;
   switchSession: (id: string) => Promise<void>;
@@ -52,6 +54,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   isLLMLoading: false,
   error: null,
   toast: null,
+  agentSteps: [],
 
   loadSessions: async () => {
     set({ isBooting: true, error: null });
@@ -160,6 +163,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         currentSession: { ...refreshed, graphState: result.graphState },
         sessions: replaceSummary(state.sessions, refreshed),
         isLLMLoading: false,
+        agentSteps: result.steps ?? [],
         error: result.message.status === "error" ? result.message.content : null,
         toast,
         mobileTab: window.innerWidth < 768 && result.message.status !== "error" ? "graph" : state.mobileTab,

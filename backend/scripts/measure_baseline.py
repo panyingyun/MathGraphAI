@@ -7,6 +7,7 @@ import statistics
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import List, Optional
 
 from app.schemas.graph import GraphState
 from app.services.graph_service import apply_result
@@ -19,7 +20,7 @@ OUT_PATH = REPO_ROOT / "docs" / "baseline" / "metrics.json"
 ROUNDS = 20
 
 
-def run_case(message: str, setup: list[str] | None = None) -> float:
+def run_case(message: str, setup: Optional[List[str]] = None) -> float:
     state = GraphState()
     for item in setup or []:
         state = apply_result(state, parse_locally(item, state))

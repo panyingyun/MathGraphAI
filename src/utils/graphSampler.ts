@@ -136,6 +136,10 @@ export function sampleFunction(
   const x: number[] = [];
   const y: Array<number | null> = [];
   const ySpan = Math.max(1, viewport.yMax - viewport.yMin);
+  // 仅保留视口附近的点：离群极大值（如 2^10）会扭曲 spline/折线在可见区内的形状。
+  const yPad = ySpan * 0.25;
+  const yMinAllow = viewport.yMin - yPad;
+  const yMaxAllow = viewport.yMax + yPad;
   let validCount = 0;
 
   for (let index = 0; index <= count; index += 1) {
@@ -143,7 +147,7 @@ export function sampleFunction(
     let currentY: number | null = null;
     try {
       const calculated = fn(currentX);
-      if (Number.isFinite(calculated) && Math.abs(calculated) < ySpan * 1000) {
+      if (Number.isFinite(calculated) && calculated >= yMinAllow && calculated <= yMaxAllow) {
         currentY = calculated;
         validCount += 1;
       }
@@ -156,10 +160,12 @@ export function sampleFunction(
 
   if (validCount === 0) throw new EquationError("该方程在当前坐标范围内没有可绘制的有限值");
 
+  // 断开 tan(x) 等跨越渐近线的跳跃；阈值按视口高度，避免误伤指数函数陡升段。
+  const jumpThreshold = ySpan * 1.5;
   for (let index = 1; index < y.length; index += 1) {
     const previous = y[index - 1];
     const current = y[index];
-    if (previous !== null && current !== null && Math.abs(current - previous) > ySpan * 3) {
+    if (previous !== null && current !== null && Math.abs(current - previous) > jumpThreshold) {
       y[index] = null;
     }
   }

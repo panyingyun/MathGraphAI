@@ -46,3 +46,4 @@ python -m scripts.measure_baseline
 - 表达式有长度 / AST 节点数 / 嵌套深度 / 指数与常量上限；GraphState 有方程数量与 viewport 范围限制。
 - `/api/chat` 支持 `requestId` 幂等与 `expectedRevision` 乐观锁；DeepSeek 失败会明确标记 `fallbackUsed` 与错误码，不再静默降级。
 - 模型只负责决策；状态变更统一经 Command + 确定性 Executor，在 `WorkingGraphState` 上执行，失败不落库。UI 通过 `/api/sessions/{id}/commands` 复用同一执行边界。
+- 自然语言请求统一进入有界 ReAct `AgentRunner`（`AGENT_MODE=react|shadow|off`）；复合指令可多步执行，仅在 `final` 后一次性提交。

@@ -33,6 +33,14 @@ export interface Message {
   decisionProvider?: "deepseek" | "local";
 }
 
+export interface StepSummary {
+  stepIndex: number;
+  toolName?: string | null;
+  status: "success" | "error" | "final";
+  summary: string;
+  durationMs?: number;
+}
+
 export interface ChatResponse {
   message: Message;
   graphState: GraphState;
@@ -45,6 +53,7 @@ export interface ChatResponse {
   graphRevision: number;
   stepCount: number;
   durationMs: number;
+  steps?: StepSummary[];
 }
 
 export class ApiError extends Error {

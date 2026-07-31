@@ -269,21 +269,23 @@ Agent 完成全部必要动作后返回：
 
 ### 阶段 3：统一有界 ReAct
 
+> 状态：**已完成**（见 `backend/app/agent/runner.py` 与 `backend/tests/test_agent_runner.py`）
+
 目标：所有自然语言请求统一通过一个 AgentRunner 执行，简单和复杂请求只在步骤数量上不同。
 
 任务：
 
-- 新增唯一的 `AgentRunner`，实现 Decision → Action → Tool → Observation → Decision 循环。
-- `/api/chat` 无条件进入 AgentRunner，不再包含 Local、Plan、ReAct 路由判断。
-- 建立 `DeepSeekDecisionProvider`，输出严格的 `AgentAction` 或 `AgentFinal`。
-- 将本地解析器改造成 `LocalDecisionProvider`，输出相同协议，模型不可用时由 Runner 切换 Provider。
-- 简单请求允许执行一个工具后立即 `final`；复合请求连续调用多个工具。
-- 首期最大步骤数设为 4，稳定后最多扩展到 6。
-- 设置整体超时、单工具超时、最大 Observation 大小和最大模型调用次数。
-- 检测同一工具和相同参数的重复调用，连续重复时终止循环。
-- 支持原生 `tool_calls` 和 JSON Action 两种模型适配方式，AgentRunner 不依赖具体模型协议。
-- 每一步均在 WorkingGraphState 上执行，只有收到合法 `final` 后才允许进入最终提交。
-- 增加公开的执行摘要，前端可展示工具动作和结果，但不展示内部思维过程。
+- [x] 新增唯一的 `AgentRunner`，实现 Decision → Action → Tool → Observation → Decision 循环。
+- [x] `/api/chat` 无条件进入 AgentRunner，不再包含 Local、Plan、ReAct 路由判断。
+- [x] 建立 `DeepSeekDecisionProvider`，输出严格的 `AgentAction` 或 `AgentFinal`。
+- [x] 将本地解析器改造成 `LocalDecisionProvider`，输出相同协议，模型不可用时由 Runner 切换 Provider。
+- [x] 简单请求允许执行一个工具后立即 `final`；复合请求连续调用多个工具。
+- [x] 首期最大步骤数设为 4，稳定后最多扩展到 6。
+- [x] 设置整体超时、单工具超时、最大 Observation 大小和最大模型调用次数。
+- [x] 检测同一工具和相同参数的重复调用，连续重复时终止循环。
+- [x] 支持原生 `tool_calls` 和 JSON Action 两种模型适配方式，AgentRunner 不依赖具体模型协议。
+- [x] 每一步均在 WorkingGraphState 上执行，只有收到合法 `final` 后才允许进入最终提交。
+- [x] 增加公开的执行摘要，前端可展示工具动作和结果，但不展示内部思维过程。
 
 验收用例：
 

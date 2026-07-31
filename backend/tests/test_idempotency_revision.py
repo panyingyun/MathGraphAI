@@ -86,7 +86,7 @@ def test_fallback_metadata_exposed(client_with_deepseek, monkeypatch):
 
         raise ModelServiceError(ModelErrorCode.AUTH, "bad key", retryable=False)
 
-    monkeypatch.setattr("app.routers.chat.call_deepseek", boom)
+    monkeypatch.setattr("app.agent.providers.call_deepseek_decision", boom)
     body = _chat(
         client_with_deepseek,
         session["id"],
