@@ -1,0 +1,314 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>MathGraph AI - Empty State</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary": "#b61722",
+                        "inverse-surface": "#2e3039",
+                        "inverse-on-surface": "#f0f0fb",
+                        "surface-variant": "#e1e2ed",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "surface-bright": "#faf8ff",
+                        "outline": "#737686",
+                        "error-container": "#ffdad6",
+                        "secondary-fixed-dim": "#ffb3ad",
+                        "on-secondary-container": "#fffbff",
+                        "on-surface": "#191b23",
+                        "primary-container": "#2563eb",
+                        "on-surface-variant": "#434655",
+                        "surface-container-highest": "#e1e2ed",
+                        "secondary-fixed": "#ffdad7",
+                        "tertiary": "#006242",
+                        "on-background": "#191b23",
+                        "on-tertiary-container": "#bdffdb",
+                        "on-secondary-fixed-variant": "#930013",
+                        "tertiary-fixed-dim": "#4edea3",
+                        "on-secondary-fixed": "#410004",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-dim": "#d9d9e5",
+                        "surface": "#faf8ff",
+                        "surface-container-low": "#f3f3fe",
+                        "on-primary": "#ffffff",
+                        "surface-container-high": "#e7e7f3",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed": "#00174b",
+                        "surface-tint": "#0053db",
+                        "primary-fixed": "#dbe1ff",
+                        "on-tertiary-fixed": "#002113",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "on-tertiary-fixed-variant": "#005236",
+                        "tertiary-fixed": "#6ffbbe",
+                        "secondary-container": "#da3437",
+                        "on-tertiary": "#ffffff",
+                        "outline-variant": "#c3c6d7",
+                        "tertiary-container": "#007d55",
+                        "error": "#ba1a1a",
+                        "primary": "#004ac6",
+                        "background": "#faf8ff",
+                        "on-primary-container": "#eeefff",
+                        "on-secondary": "#ffffff",
+                        "inverse-primary": "#b4c5ff",
+                        "surface-container": "#ededf9",
+                        "on-error": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "stack_gap_md": "16px",
+                        "graph_viewer_min_width": "400px",
+                        "stack_gap_sm": "8px",
+                        "sidebar_width": "260px",
+                        "sidebar_collapsed": "56px",
+                        "gutter": "16px",
+                        "margin": "24px",
+                        "stack_gap_lg": "32px"
+                    },
+                    "fontFamily": {
+                        "headline-lg-mobile": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "math-code": ["JetBrains Mono"],
+                        "display": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "math-code": ["15px", { "lineHeight": "22px", "fontWeight": "500" }],
+                        "display": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #faf8ff;
+            color: #191b23;
+            margin: 0;
+            overflow: hidden; /* App-like layout */
+        }
+        
+        .math-grid {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, #e1e2ed 1px, transparent 1px),
+                linear-gradient(to bottom, #e1e2ed 1px, transparent 1px);
+            background-position: center center;
+        }
+        .math-axes {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 100%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+        .math-axes::before { /* X axis */
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: #737686;
+            transform: translateY(-50%);
+        }
+        .math-axes::after { /* Y axis */
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: #737686;
+            transform: translateX(-50%);
+        }
+    </style>
+</head>
+<body class="flex h-screen w-full">
+<!-- TopNavBar (Hidden on desktop, shown on mobile if needed, but this is a workbench app so we stick to side nav mainly, but keeping structural parity if needed) -->
+<header class="md:hidden flex justify-between items-center w-full px-gutter h-16 bg-surface border-b border-outline-variant fixed top-0 z-50">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">function</span>
+<span class="font-headline-md text-headline-md font-bold text-primary">MathGraph AI</span>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer">menu</span>
+</div>
+</header>
+<!-- SideNavBar (Collapsed State) -->
+<nav class="hidden md:flex flex-col bg-surface-container-low border-r border-outline-variant h-full w-sidebar_collapsed fixed left-0 top-0 z-40 transition-all duration-200 py-4 items-center justify-between">
+<div class="flex flex-col items-center w-full gap-8">
+<!-- Brand Icon -->
+<button aria-label="Expand Menu" class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-surface-container-highest transition-colors text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">menu</span>
+</button>
+<!-- CTA (New Plot) - Icon only -->
+<button class="w-10 h-10 flex items-center justify-center rounded-xl bg-primary text-on-primary shadow-sm hover:opacity-90 transition-opacity" title="+ New Plot">
+<span class="material-symbols-outlined">add</span>
+</button>
+<!-- Nav Items -->
+<div class="flex flex-col gap-2 w-full px-2">
+<button class="w-10 h-10 flex items-center justify-center rounded-xl bg-primary-container text-on-primary-container mx-auto" title="Library">
+<span class="material-symbols-outlined">folder_open</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-xl text-on-surface-variant hover:bg-surface-container-highest mx-auto transition-colors" title="Today">
+<span class="material-symbols-outlined">history</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-xl text-on-surface-variant hover:bg-surface-container-highest mx-auto transition-colors" title="Yesterday">
+<span class="material-symbols-outlined">event_repeat</span>
+</button>
+</div>
+</div>
+<!-- Footer Actions -->
+<div class="flex flex-col gap-2 w-full px-2">
+<button class="w-10 h-10 flex items-center justify-center rounded-xl text-on-surface-variant hover:bg-surface-container-highest mx-auto transition-colors" title="Settings">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-xl text-on-surface-variant hover:bg-surface-container-highest mx-auto transition-colors" title="Help">
+<span class="material-symbols-outlined">help</span>
+</button>
+</div>
+</nav>
+<!-- Main Workspace -->
+<main class="flex-1 flex flex-col md:flex-row h-full pt-16 md:pt-0 pl-0 md:pl-sidebar_collapsed transition-all duration-300">
+<!-- Left/Center Column: Chat Interface -->
+<section class="flex-1 flex flex-col bg-surface-bright h-full relative border-r border-outline-variant max-w-[600px] xl:max-w-[700px]">
+<!-- Chat Header -->
+<div class="h-14 border-b border-outline-variant flex items-center px-6 bg-surface-container-lowest/80 backdrop-blur-sm shrink-0">
+<h2 class="font-body-md text-body-md font-medium text-on-surface">新会话</h2>
+<div class="ml-auto flex gap-2">
+<button class="p-2 text-on-surface-variant hover:bg-surface-container rounded-lg transition-colors">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</div>
+</div>
+<!-- Chat Content (Empty State) -->
+<div class="flex-1 overflow-y-auto p-6 flex flex-col justify-center items-center">
+<div class="w-16 h-16 rounded-2xl bg-primary-container text-primary flex items-center justify-center mb-6 shadow-sm">
+<span class="material-symbols-outlined text-4xl" style="font-variation-settings: 'FILL' 1;">function</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface mb-8 text-center max-w-md">你想绘制什么数学图像？</h1>
+<div class="flex flex-col gap-3 w-full max-w-sm">
+<button class="w-full text-left px-4 py-3 rounded-xl border border-outline-variant hover:border-primary hover:bg-surface-container-low transition-all duration-200 flex items-center gap-3 group">
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-on-surface-variant group-hover:bg-primary-container group-hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-sm">show_chart</span>
+</div>
+<span class="font-body-md text-body-md text-on-surface">画一条抛物线</span>
+</button>
+<button class="w-full text-left px-4 py-3 rounded-xl border border-outline-variant hover:border-primary hover:bg-surface-container-low transition-all duration-200 flex items-center gap-3 group">
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-on-surface-variant group-hover:bg-primary-container group-hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-sm">waves</span>
+</div>
+<span class="font-body-md text-body-md text-on-surface">比较正弦与余弦</span>
+</button>
+<button class="w-full text-left px-4 py-3 rounded-xl border border-outline-variant hover:border-primary hover:bg-surface-container-low transition-all duration-200 flex items-center gap-3 group">
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-on-surface-variant group-hover:bg-primary-container group-hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-sm">straighten</span>
+</div>
+<span class="font-math-code text-math-code text-on-surface">绘制 y = 2x + 1</span>
+</button>
+</div>
+</div>
+<!-- Input Area -->
+<div class="p-4 bg-surface-container-lowest shrink-0 border-t border-outline-variant">
+<div class="relative flex items-end gap-2 bg-surface-container-low border border-outline-variant rounded-2xl p-2 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">add_circle</span>
+</button>
+<textarea class="flex-1 bg-transparent border-none focus:ring-0 resize-none font-body-md text-body-md text-on-surface py-2 max-h-32 min-h-[40px]" placeholder="输入方程式或描述..." rows="1"></textarea>
+<button class="p-2 bg-primary text-on-primary rounded-xl hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">send</span>
+</button>
+</div>
+<div class="text-center mt-2">
+<span class="font-label-sm text-label-sm text-outline">MathGraph AI 可以辅助数学可视化与分析</span>
+</div>
+</div>
+</section>
+<!-- Right Column: Graph Viewer (Empty State) -->
+<section class="hidden lg:flex flex-1 flex-col h-full bg-surface-container-lowest min-w-[400px]">
+<!-- Graph Toolbar -->
+<div class="h-14 border-b border-outline-variant flex items-center justify-between px-4 bg-surface-container-lowest shrink-0">
+<div class="flex items-center gap-4">
+<span class="font-label-sm text-label-sm text-on-surface uppercase tracking-wider font-semibold">Viewer</span>
+</div>
+<div class="flex items-center gap-2">
+<button class="w-8 h-8 flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors disabled:opacity-50" disabled="">
+<span class="material-symbols-outlined text-sm">zoom_in</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors disabled:opacity-50" disabled="">
+<span class="material-symbols-outlined text-sm">zoom_out</span>
+</button>
+<div class="w-px h-4 bg-outline-variant mx-1"></div>
+<button class="px-3 h-8 flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors font-label-sm text-label-sm disabled:opacity-50" disabled="">
+<span class="material-symbols-outlined text-sm mr-1">download</span> Export
+                    </button>
+</div>
+</div>
+<!-- Graph Canvas Area -->
+<div class="flex-1 relative overflow-hidden math-grid">
+<div class="math-axes"><div class="absolute inset-0 pointer-events-none">
+  <!-- X-axis labels -->
+  <div class="absolute top-1/2 left-0 w-full flex justify-between px-2 -translate-y-full">
+    <span class="text-[10px] text-outline font-math-code">-10</span>
+    <span class="text-[10px] text-outline font-math-code">-5</span>
+    <span class="text-[10px] text-on-surface font-bold font-math-code translate-x-2">0</span>
+    <span class="text-[10px] text-outline font-math-code">5</span>
+    <span class="text-[10px] text-outline font-math-code">10</span>
+  </div>
+  <!-- Y-axis labels -->
+  <div class="absolute left-1/2 top-0 h-full flex flex-col justify-between py-2 -translate-x-full">
+    <span class="text-[10px] text-outline font-math-code">10</span>
+    <span class="text-[10px] text-outline font-math-code">5</span>
+    <span class="text-[10px] text-on-surface font-bold font-math-code -translate-y-2">0</span>
+    <span class="text-[10px] text-outline font-math-code">-5</span>
+    <span class="text-[10px] text-outline font-math-code">-10</span>
+  </div>
+</div></div>
+<!-- Empty State Overlay on Graph -->
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+<!-- Transparent placeholder to maintain structure, visually grid is enough for empty state -->
+</div>
+<!-- Floating Equation List (Empty) -->
+<div class="absolute top-4 left-4 w-64 bg-surface-container-lowest/90 backdrop-blur-md rounded-xl border border-outline-variant shadow-sm overflow-hidden flex flex-col pointer-events-auto">
+<div class="px-3 py-2 border-b border-outline-variant bg-surface-container-low flex justify-between items-center">
+<span class="font-label-sm text-label-sm text-on-surface font-semibold">Equations</span>
+<span class="material-symbols-outlined text-outline text-sm">visibility</span>
+</div>
+<div class="p-4 flex flex-col items-center justify-center text-center gap-2 min-h-[100px]">
+<span class="material-symbols-outlined text-outline">function</span>
+<span class="font-body-md text-body-md text-outline">无活跃方程</span>
+</div>
+</div>
+<!-- Coordinate Indicator -->
+<div class="absolute bottom-4 right-4 px-3 py-1 bg-surface-container-lowest/80 backdrop-blur border border-outline-variant rounded-md shadow-sm">
+<span class="font-math-code text-math-code text-outline text-xs">x: 0.00, y: 0.00</span>
+</div>
+</div>
+</section>
+</main>
+
+
+</body></html>

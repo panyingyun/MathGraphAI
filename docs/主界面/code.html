@@ -1,0 +1,443 @@
+<!DOCTYPE html><html class="light" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>MathGraph AI - Quadratic Function Analysis</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary": "#b61722",
+                        "inverse-surface": "#2e3039",
+                        "inverse-on-surface": "#f0f0fb",
+                        "surface-variant": "#e1e2ed",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "surface-bright": "#faf8ff",
+                        "outline": "#737686",
+                        "error-container": "#ffdad6",
+                        "secondary-fixed-dim": "#ffb3ad",
+                        "on-secondary-container": "#fffbff",
+                        "on-surface": "#191b23",
+                        "primary-container": "#2563eb",
+                        "on-surface-variant": "#434655",
+                        "surface-container-highest": "#e1e2ed",
+                        "secondary-fixed": "#ffdad7",
+                        "tertiary": "#006242",
+                        "on-background": "#191b23",
+                        "on-tertiary-container": "#bdffdb",
+                        "on-secondary-fixed-variant": "#930013",
+                        "tertiary-fixed-dim": "#4edea3",
+                        "on-secondary-fixed": "#410004",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-dim": "#d9d9e5",
+                        "surface": "#faf8ff",
+                        "surface-container-low": "#f3f3fe",
+                        "on-primary": "#ffffff",
+                        "surface-container-high": "#e7e7f3",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed": "#00174b",
+                        "surface-tint": "#0053db",
+                        "primary-fixed": "#dbe1ff",
+                        "on-tertiary-fixed": "#002113",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "on-tertiary-fixed-variant": "#005236",
+                        "tertiary-fixed": "#6ffbbe",
+                        "secondary-container": "#da3437",
+                        "on-tertiary": "#ffffff",
+                        "outline-variant": "#c3c6d7",
+                        "tertiary-container": "#007d55",
+                        "error": "#ba1a1a",
+                        "primary": "#004ac6",
+                        "background": "#faf8ff",
+                        "on-primary-container": "#eeefff",
+                        "on-secondary": "#ffffff",
+                        "inverse-primary": "#b4c5ff",
+                        "surface-container": "#ededf9",
+                        "on-error": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "stack_gap_md": "16px",
+                        "graph_viewer_min_width": "400px",
+                        "stack_gap_sm": "8px",
+                        "sidebar_width": "260px",
+                        "gutter": "16px",
+                        "margin": "24px",
+                        "stack_gap_lg": "32px"
+                    },
+                    "fontFamily": {
+                        "headline-lg-mobile": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "math-code": ["JetBrains Mono"],
+                        "display": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "math-code": ["15px", { "lineHeight": "22px", "fontWeight": "500" }],
+                        "display": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .graph-grid {
+            background-size: 40px 40px;
+            background-image:
+                linear-gradient(to right, theme('colors.outline-variant') 1px, transparent 1px),
+                linear-gradient(to bottom, theme('colors.outline-variant') 1px, transparent 1px);
+            background-position: center center;
+        }
+        .graph-axis-x {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: theme('colors.on-surface');
+            transform: translateY(-50%);
+        }
+        .graph-axis-y {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 2px;
+            height: 100%;
+            background-color: theme('colors.on-surface');
+            transform: translateX(-50%);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface h-screen overflow-hidden flex flex-col font-body-md">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-on-surface text-primary dark:text-primary-fixed-dim font-body-md text-body-md docked full-width top-0 border-b border-outline-variant dark:border-outline flat no shadows transition-colors duration-200 flex justify-between items-center w-full px-gutter h-16 shrink-0 z-50">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined hover:bg-surface-container dark:hover:bg-inverse-surface p-2 rounded-full cursor-pointer md:hidden">menu</span>
+<div class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim">MathGraph AI</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="hover:bg-surface-container dark:hover:bg-inverse-surface p-2 rounded-full transition-colors text-on-surface-variant dark:text-surface-variant">
+<span class="material-symbols-outlined">share</span>
+</button>
+<button class="hover:bg-surface-container dark:hover:bg-inverse-surface p-2 rounded-full transition-colors text-on-surface-variant dark:text-surface-variant">
+<span class="material-symbols-outlined">csv</span>
+</button>
+<button class="hover:bg-surface-container dark:hover:bg-inverse-surface p-2 rounded-full transition-colors text-on-surface-variant dark:text-surface-variant">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-surface-container ml-2 overflow-hidden border border-outline-variant">
+<img alt="User profile" class="w-full h-full object-cover" data-alt="A clean, professional headshot of a user profile picture against a neutral grey background. The lighting is soft and even, highlighting the subject's face clearly. The image is circular, fitting neatly into an avatar frame." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCt-pY1wriosGtw4sy3M-L4MuxPytKG0g06R1MizJLt95q4Tv5YeRuQM-zLqqUVyiQ0K5JLNjsNpA5zFa7IJgUraFT0AX8XS2asyhygYFlks4HwPDVu9EE13g6Xk3TANZ5AjZZG2VbGzSQJPWZceZKaelsWG3Kr79G9qS51VMEurWXs0r6SDT3ZDdgJTI4maJ9_3Yz7sCa4F_9yZ4V7mGCGuTu8ab0jg_D04Rm0GdgZMToEwPFPyFdBaQ">
+</div>
+</div>
+</header>
+<div class="flex flex-1 h-[calc(100vh-64px)] overflow-hidden">
+<!-- Sidebar -->
+<aside class="hidden md:flex flex-col bg-surface-container-low dark:bg-inverse-surface border-r border-outline-variant dark:border-outline w-sidebar_width h-full shrink-0 z-40 transition-all duration-200 ease-in-out p-4">
+<button class="w-full bg-primary text-on-primary font-body-md text-body-md py-3 px-4 rounded-xl font-semibold flex items-center justify-center gap-2 hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-sm mb-6">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add</span>
+                + New Plot
+            </button>
+<div class="relative mb-6">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full bg-surface border border-outline-variant rounded-lg py-2 pl-10 pr-3 font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" placeholder="Search history..." type="text">
+</div>
+<div class="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+<div class="mb-6">
+<h3 class="font-label-sm text-label-sm text-on-surface-variant mb-2 px-2 uppercase tracking-wider">Today</h3>
+<ul class="space-y-1">
+<li class="">
+<a class="flex items-center gap-3 px-3 py-2 bg-primary-container text-on-primary-container dark:bg-primary dark:text-on-primary rounded-xl transition-all duration-200 ease-in-out group" href="#">
+<span class="material-symbols-outlined text-sm">history</span>
+<span class="truncate font-body-md text-body-md">y=x² Parabola Analysis</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-highest dark:hover:bg-surface-variant rounded-xl transition-all duration-200 ease-in-out group" href="#">
+<span class="material-symbols-outlined text-sm">history</span>
+<span class="truncate font-body-md text-body-md group-hover:text-on-surface transition-colors">sin(x) vs cos(x) Comparison</span>
+</a>
+</li>
+</ul>
+</div>
+<div class="mb-6">
+<h3 class="font-label-sm text-label-sm text-on-surface-variant mb-2 px-2 uppercase tracking-wider">Yesterday</h3>
+<ul class="space-y-1">
+<li class="">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-highest dark:hover:bg-surface-variant rounded-xl transition-all duration-200 ease-in-out group" href="#">
+<span class="material-symbols-outlined text-sm">event_repeat</span>
+<span class="truncate font-body-md text-body-md group-hover:text-on-surface transition-colors">Linear Function Practice</span>
+</a>
+</li>
+</ul>
+</div>
+<div class="mb-6">
+<h3 class="font-label-sm text-label-sm text-on-surface-variant mb-2 px-2 uppercase tracking-wider">Previous 7 Days</h3>
+<ul class="space-y-1">
+<li class="">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-highest dark:hover:bg-surface-variant rounded-xl transition-all duration-200 ease-in-out group" href="#">
+<span class="material-symbols-outlined text-sm">calendar_month</span>
+<span class="truncate font-body-md text-body-md group-hover:text-on-surface transition-colors">Calculus Integration</span>
+</a>
+</li>
+</ul>
+</div>
+<div class="mb-6">
+<h3 class="font-label-sm text-label-sm text-on-surface-variant mb-2 px-2 uppercase tracking-wider">Library</h3>
+<ul class="space-y-1">
+<li class="">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-highest dark:hover:bg-surface-variant rounded-xl transition-all duration-200 ease-in-out group" href="#">
+<span class="material-symbols-outlined text-sm">folder_open</span>
+<span class="truncate font-body-md text-body-md group-hover:text-on-surface transition-colors">Saved Plots</span>
+</a>
+</li>
+</ul>
+</div>
+</div>
+<div class="pt-4 border-t border-outline-variant dark:border-outline mt-auto space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-highest dark:hover:bg-surface-variant rounded-xl transition-all duration-200 ease-in-out group" href="#">
+<span class="material-symbols-outlined text-sm">settings</span>
+<span class="font-body-md text-body-md group-hover:text-on-surface transition-colors">Settings</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-highest dark:hover:bg-surface-variant rounded-xl transition-all duration-200 ease-in-out group" href="#">
+<span class="material-symbols-outlined text-sm">help</span>
+<span class="font-body-md text-body-md group-hover:text-on-surface transition-colors">Help</span>
+</a>
+</div>
+</aside>
+<!-- Middle Column: Chat Area -->
+<main class="flex-1 w-2/5 flex flex-col bg-surface-lowest border-r border-outline-variant relative">
+<div class="flex-1 overflow-y-auto p-margin space-y-stack_gap_lg pb-32 custom-scrollbar">
+<!-- Date Divider -->
+<div class="flex items-center justify-center">
+<span class="bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm px-3 py-1 rounded-full uppercase tracking-wider">Today</span>
+</div>
+<!-- User Message -->
+<div class="flex flex-col items-end gap-2">
+<div class="bg-primary/5 border border-primary/10 text-on-surface rounded-2xl rounded-tr-sm p-4 max-w-[85%] shadow-sm">
+<p class="font-body-md text-body-md">帮我画 <span class="font-math-code text-math-code bg-surface-container px-1 py-0.5 rounded">y = x²</span>，并解释它的图像特征</p>
+</div>
+</div>
+<!-- AI Response -->
+<div class="flex flex-col items-start gap-2">
+<div class="flex items-center gap-2 mb-1">
+<div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined text-[14px]">psychology</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-medium">MathGraph AI</span>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant text-on-surface rounded-2xl rounded-tl-sm p-5 max-w-[90%] shadow-sm space-y-4">
+<p class="font-body-md text-body-md">已生成方程：<span class="font-math-code text-math-code bg-surface-container-highest px-1.5 py-0.5 rounded">y = x²</span>。这是一个二次函数，图像为开口向上的抛物线。</p>
+<div class="bg-surface-container-low p-4 rounded-xl border border-outline-variant/50">
+<h4 class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-3">Key Properties</h4>
+<ul class="space-y-2">
+<li class="flex justify-between items-center border-b border-outline-variant/30 pb-1">
+<span class="font-body-md text-body-md text-on-surface-variant">顶点 (Vertex)</span>
+<span class="font-math-code text-math-code">(0, 0)</span>
+</li>
+<li class="flex justify-between items-center border-b border-outline-variant/30 pb-1">
+<span class="font-body-md text-body-md text-on-surface-variant">对称轴 (Axis of Symmetry)</span>
+<span class="font-math-code text-math-code">x = 0</span>
+</li>
+<li class="flex justify-between items-center border-b border-outline-variant/30 pb-1">
+<span class="font-body-md text-body-md text-on-surface-variant">定义域 (Domain)</span>
+<span class="font-math-code text-math-code">(-∞, +∞)</span>
+</li>
+<li class="flex justify-between items-center">
+<span class="font-body-md text-body-md text-on-surface-variant">值域 (Range)</span>
+<span class="font-math-code text-math-code">[0, +∞)</span>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<!-- User Message -->
+<div class="flex flex-col items-end gap-2">
+<div class="bg-primary/5 border border-primary/10 text-on-surface rounded-2xl rounded-tr-sm p-4 max-w-[85%] shadow-sm">
+<p class="font-body-md text-body-md">再加一条 <span class="font-math-code text-math-code bg-surface-container px-1 py-0.5 rounded">y = x</span>，用红色显示</p>
+</div>
+</div>
+</div>
+<!-- Chat Input area -->
+<div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-surface via-surface to-transparent pt-10 pb-6 px-margin">
+<div class="relative bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
+<textarea class="w-full bg-transparent border-none focus:ring-0 resize-none font-body-md text-body-md py-4 pl-4 pr-12 h-[100px] custom-scrollbar" placeholder="Describe an equation or ask a question..."></textarea>
+<div class="absolute bottom-3 left-4 flex gap-2">
+<button class="text-on-surface-variant hover:text-primary transition-colors p-1 rounded hover:bg-surface-container">
+<span class="material-symbols-outlined text-[20px]">functions</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors p-1 rounded hover:bg-surface-container">
+<span class="material-symbols-outlined text-[20px]">calculate</span>
+</button>
+</div>
+<button class="absolute bottom-3 right-3 bg-primary text-on-primary w-8 h-8 rounded-lg flex items-center justify-center hover:bg-primary-container transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[18px]">send</span>
+</button>
+</div>
+</div>
+</main>
+<!-- Right Column: Graphing Area -->
+<section class="flex-1 w-[45%] flex flex-col bg-surface-container-low min-w-graph_viewer_min_width relative">
+<!-- Graph Viewer (Top 70%) -->
+<div class="flex-[7] relative overflow-hidden bg-surface-container-lowest flex items-center justify-center bg-surface-container-low">
+<!-- Cartesian Grid Background -->
+<div class="absolute inset-0 graph-grid opacity-30"></div>
+<div class="graph-axis-x bg-on-surface-variant"></div>
+<div class="graph-axis-y bg-on-surface-variant"></div><!-- X-axis Ticks -->
+<div class="absolute top-1/2 left-0 w-full flex justify-between px-2 -translate-y-1/2 pointer-events-none">
+    <div class="flex flex-col items-center">
+        <div class="h-2 w-px bg-on-surface"></div>
+        <span class="text-[10px] font-math-code text-on-surface-variant mt-1">-10</span>
+    </div>
+    <div class="flex flex-col items-center">
+        <div class="h-2 w-px bg-on-surface"></div>
+        <span class="text-[10px] font-math-code text-on-surface-variant mt-1">-5</span>
+    </div>
+    <div class="w-px h-2"></div> <!-- Space for origin -->
+    <div class="flex flex-col items-center">
+        <div class="h-2 w-px bg-on-surface"></div>
+        <span class="text-[10px] font-math-code text-on-surface-variant mt-1">5</span>
+    </div>
+    <div class="flex flex-col items-center">
+        <div class="h-2 w-px bg-on-surface"></div>
+        <span class="text-[10px] font-math-code text-on-surface-variant mt-1">10</span>
+    </div>
+</div>
+<!-- Y-axis Ticks -->
+<div class="absolute left-1/2 top-0 h-full flex flex-col justify-between py-2 -translate-x-1/2 pointer-events-none">
+    <div class="flex items-center">
+        <div class="w-2 h-px bg-on-surface"></div>
+        <span class="text-[10px] font-math-code text-on-surface-variant ml-1">10</span>
+    </div>
+    <div class="flex items-center">
+        <div class="w-2 h-px bg-on-surface"></div>
+        <span class="text-[10px] font-math-code text-on-surface-variant ml-1">5</span>
+    </div>
+    <div class="w-2 h-px"></div> <!-- Space for origin -->
+    <div class="flex items-center">
+        <div class="w-2 h-px bg-on-surface"></div>
+        <span class="text-[10px] font-math-code text-on-surface-variant ml-1">-5</span>
+    </div>
+    <div class="flex items-center">
+        <div class="w-2 h-px bg-on-surface"></div>
+        <span class="text-[10px] font-math-code text-on-surface-variant ml-1">-10</span>
+    </div>
+</div>
+<!-- SVG Plot (Simulated Parabola & Line) -->
+<svg class="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="-100 -100 200 200">
+<!-- y = x^2 Parabola (Blue) -->
+<path class="text-primary" d="M -50 -100 Q 0 100 50 -100" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke"></path>
+<!-- y = x Line (Red) -->
+<line class="text-secondary" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" x1="-100" x2="100" y1="100" y2="-100"></line>
+</svg>
+<!-- Graph Controls -->
+<div class="absolute top-4 right-4 flex flex-col gap-2 bg-surface-container-lowest/90 backdrop-blur-sm border border-outline-variant p-1 rounded-lg shadow-sm">
+<button class="p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded transition-colors">
+<span class="material-symbols-outlined text-[20px]">add</span>
+</button>
+<div class="w-full h-px bg-outline-variant/50"></div>
+<button class="p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded transition-colors">
+<span class="material-symbols-outlined text-[20px]">remove</span>
+</button>
+<div class="w-full h-px bg-outline-variant/50"></div>
+<button class="p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded transition-colors">
+<span class="material-symbols-outlined text-[20px]">fullscreen</span>
+</button>
+</div>
+<!-- Origin Label -->
+<div class="absolute top-1/2 left-1/2 ml-2 mt-2 font-math-code text-[10px] text-on-surface-variant font-bold">0</div>
+</div>
+<!-- Tabbed Interface (Bottom 30%) -->
+<div class="flex-[3] flex flex-col bg-surface border-t border-outline-variant shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-10">
+<!-- Tabs -->
+<div class="flex border-b border-outline-variant px-4 pt-2">
+<button class="px-4 py-2 border-b-2 border-primary text-primary font-label-sm text-label-sm font-semibold tracking-wider uppercase">
+                        Equations
+                    </button>
+<button class="px-4 py-2 border-b-2 border-transparent text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm font-medium tracking-wider uppercase transition-colors">
+                        Analysis
+                    </button>
+</div>
+<!-- Tab Content: Equations -->
+<div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
+<div class="space-y-3">
+<!-- Equation Card: Parabola -->
+<div class="flex items-center justify-between p-3 bg-surface-container-lowest border border-outline-variant rounded-xl hover:border-primary/50 transition-colors shadow-sm cursor-pointer">
+<div class="flex items-center gap-3">
+<label class="flex items-center cursor-pointer">
+<input checked="" class="form-checkbox h-5 w-5 text-primary rounded border-outline-variant focus:ring-primary focus:ring-offset-surface" type="checkbox">
+</label>
+<div class="w-4 h-4 rounded-sm bg-primary"></div>
+<span class="font-math-code text-math-code text-on-surface font-semibold">y = x²</span>
+</div>
+<div class="flex gap-2">
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="text-on-surface-variant hover:text-error transition-colors">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</div>
+<!-- Equation Card: Line -->
+<div class="flex items-center justify-between p-3 bg-surface-container-lowest border border-outline-variant rounded-xl hover:border-secondary/50 transition-colors shadow-sm cursor-pointer">
+<div class="flex items-center gap-3">
+<label class="flex items-center cursor-pointer">
+<input checked="" class="form-checkbox h-5 w-5 text-secondary rounded border-outline-variant focus:ring-secondary focus:ring-offset-surface" type="checkbox">
+</label>
+<div class="w-4 h-4 rounded-sm bg-secondary"></div>
+<span class="font-math-code text-math-code text-on-surface font-semibold">y = x</span>
+</div>
+<div class="flex gap-2">
+<button class="text-on-surface-variant hover:text-secondary transition-colors">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="text-on-surface-variant hover:text-error transition-colors">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+<style>
+        /* Custom Scrollbar for inner elements */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: theme('colors.outline-variant');
+            border-radius: 20px;
+        }
+        .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+            background-color: theme('colors.outline');
+        }
+    </style>
+
+
+</body></html>
