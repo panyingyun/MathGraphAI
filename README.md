@@ -45,3 +45,4 @@ python -m scripts.measure_baseline
 - 后端会再次校验 DeepSeek 返回的结构化方程，再写入会话状态。
 - 表达式有长度 / AST 节点数 / 嵌套深度 / 指数与常量上限；GraphState 有方程数量与 viewport 范围限制。
 - `/api/chat` 支持 `requestId` 幂等与 `expectedRevision` 乐观锁；DeepSeek 失败会明确标记 `fallbackUsed` 与错误码，不再静默降级。
+- 模型只负责决策；状态变更统一经 Command + 确定性 Executor，在 `WorkingGraphState` 上执行，失败不落库。UI 通过 `/api/sessions/{id}/commands` 复用同一执行边界。

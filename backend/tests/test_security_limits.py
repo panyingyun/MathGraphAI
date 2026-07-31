@@ -46,8 +46,9 @@ def test_rejects_oversized_viewport(monkeypatch):
 
 
 def test_rejects_too_many_equations(monkeypatch):
-    monkeypatch.setattr("app.services.graph_service.settings", replace(settings, max_equations=1))
-    monkeypatch.setattr("app.schemas.graph.settings", replace(settings, max_equations=1))
+    limited = replace(settings, max_equations=1)
+    monkeypatch.setattr("app.agent.tools.graph_tools.settings", limited)
+    monkeypatch.setattr("app.schemas.graph.settings", limited)
     current = GraphState(
         equations=[
             EquationItem(

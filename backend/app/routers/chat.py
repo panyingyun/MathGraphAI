@@ -9,13 +9,15 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session as DatabaseSession
 
+from ..agent.adapter import structured_result_to_command
+from ..agent.executor import execute_command
+from ..agent.working_state import WorkingGraphState
 from ..config import settings
 from ..database import get_db
 from ..models.message import MessageModel
 from ..schemas.chat import ChatRequest, ChatResponse, StructuredResult
 from ..schemas.graph import GraphState
 from ..services.deepseek_service import call_deepseek, map_exception
-from ..services.graph_service import apply_result, bump_revision, validate_result
 from ..services.local_parser import parse_locally
 from ..services.model_errors import ModelErrorCode, ModelServiceError
 from ..services.session_service import (
@@ -58,7 +60,8 @@ async def parse_request(
 
     try:
         raw = await call_deepseek(build_messages(payload.message, graph_state, recent))
-        result = validate_result(StructuredResult.model_validate(raw), graph_state)
+        # 决策阶段只做 Schema 校验；方程安全与状态变更交给 Executor。
+        result = StructuredResult.model_validate(raw)
         return ParseOutcome(result=result, decision_provider="deepseek")
     except Exception as exc:  # noqa: BLE001 - classified into ModelServiceError / schema errors
         if isinstance(exc, ModelServiceError):
@@ -165,6 +168,7 @@ async def chat(payload: ChatRequest, database: DatabaseSession = Depends(get_db)
     fallback_reason = None
     error_code = None
     status_value = "success"
+    working = WorkingGraphState.from_graph(graph_state)
 
     try:
         outcome = await parse_request(payload, graph_state, recent)
@@ -190,27 +194,54 @@ async def chat(payload: ChatRequest, database: DatabaseSession = Depends(get_db)
                 decision_provider=decision_provider,
             )
             status_value = "error"
+            working.discard()
         else:
-            result = validate_result(result, graph_state)
-            graph_state = bump_revision(apply_result(graph_state, result))
-            persist_graph_state(session_row, graph_state)
-            maybe_generate_title(session_row, graph_state)
-            content = result.explanation or "已完成图像更新。"
-            if fallback_used and fallback_reason:
-                content = f"{content}\n（{fallback_reason}）"
-            assistant_row = add_message(
-                database,
-                session_row.id,
-                "assistant",
-                content,
-                result,
-                "success",
-                request_id=request_id,
-                agent_mode=settings.agent_mode,
-                decision_provider=decision_provider,
-            )
-            status_value = "success"
+            command = structured_result_to_command(result, command_id=f"cmd_{request_id[-12:]}", source="agent")
+            if command is None:
+                raise ValueError(f"无法适配意图 {result.intent}")
+            execution = execute_command(working, command)
+            if not execution.success:
+                error_code = execution.error_code or "execution_error"
+                content = execution.error_message or "命令执行失败"
+                if "方程" in content or execution.error_code == "expression_error":
+                    content = f"方程解析失败：{execution.error_message}。例如可以输入 y = x^2 或 y = sin(x)。"
+                if fallback_used and fallback_reason:
+                    content = f"{content}\n（{fallback_reason}）"
+                fail_result = StructuredResult(intent="unknown", error=execution.error_message, explanation=content)
+                assistant_row = add_message(
+                    database,
+                    session_row.id,
+                    "assistant",
+                    content,
+                    fail_result,
+                    "error",
+                    request_id=request_id,
+                    agent_mode=settings.agent_mode,
+                    decision_provider=decision_provider,
+                )
+                status_value = "error"
+                working.discard()
+            else:
+                graph_state = working.commit()
+                persist_graph_state(session_row, graph_state)
+                maybe_generate_title(session_row, graph_state)
+                content = result.explanation or "已完成图像更新。"
+                if fallback_used and fallback_reason:
+                    content = f"{content}\n（{fallback_reason}）"
+                assistant_row = add_message(
+                    database,
+                    session_row.id,
+                    "assistant",
+                    content,
+                    result,
+                    "success",
+                    request_id=request_id,
+                    agent_mode=settings.agent_mode,
+                    decision_provider=decision_provider,
+                )
+                status_value = "success"
     except (InvalidEquation, ValueError) as exc:
+        working.discard()
         result = StructuredResult(
             intent="unknown",
             error=str(exc),
@@ -229,6 +260,7 @@ async def chat(payload: ChatRequest, database: DatabaseSession = Depends(get_db)
             decision_provider=decision_provider,
         )
         status_value = "error"
+        graph_state = working.base
 
     session_row.updated_at = utc_now()
     duration_ms = round((time.perf_counter() - started) * 1000, 2)
@@ -236,14 +268,14 @@ async def chat(payload: ChatRequest, database: DatabaseSession = Depends(get_db)
     message.status = status_value
     response = ChatResponse(
         message=message,
-        graph_state=graph_state,
+        graph_state=graph_state if status_value == "success" else working.base,
         request_id=request_id,
         execution_mode="single" if settings.agent_mode == "off" else settings.agent_mode,
         decision_provider=decision_provider,  # type: ignore[arg-type]
         fallback_used=fallback_used,
         fallback_reason=fallback_reason,
         error_code=error_code,
-        graph_revision=graph_state.revision,
+        graph_revision=(graph_state if status_value == "success" else working.base).revision,
         step_count=1,
         duration_ms=duration_ms,
     )
@@ -272,7 +304,7 @@ async def chat(payload: ChatRequest, database: DatabaseSession = Depends(get_db)
         model=settings.deepseek_model if decision_provider == "deepseek" else None,
         fallbackUsed=fallback_used,
         errorCode=error_code,
-        graphRevision=graph_state.revision,
+        graphRevision=response.graph_revision,
         durationMs=duration_ms,
         status=status_value,
     )

@@ -246,24 +246,26 @@ Agent 完成全部必要动作后返回：
 
 ### 阶段 2：统一 Action、Command 与确定性 Executor
 
+> 状态：**已完成**（见 `backend/app/agent/` 与 `backend/tests/test_executor.py`）
+
 目标：彻底分离“模型决策”和“状态执行”。
 
 任务：
 
-- 新增 `AgentAction`、`AgentFinal`、`Observation`、`Command` 和 `ExecutionResult` Schema。
-- 将现有 `StructuredResult` 适配成 `AgentAction`，作为迁移期兼容层。
-- 把 `graph_service.py` 重构为无数据库依赖的确定性 Executor。
-- 建立工具注册表、工具参数 Schema 和执行 Policy。
-- 建立 `WorkingGraphState`，执行期间不直接修改数据库状态。
-- 将直接 UI 操作转换为 Command，并复用相同的 Executor；UI 操作不调用 DecisionProvider。
-- 增加执行前置条件、后置条件和完整回滚测试。
+- [x] 新增 `AgentAction`、`AgentFinal`、`Observation`、`Command` 和 `ExecutionResult` Schema。
+- [x] 将现有 `StructuredResult` 适配成 `AgentAction`，作为迁移期兼容层。
+- [x] 把 `graph_service.py` 重构为无数据库依赖的确定性 Executor。
+- [x] 建立工具注册表、工具参数 Schema 和执行 Policy。
+- [x] 建立 `WorkingGraphState`，执行期间不直接修改数据库状态。
+- [x] 将直接 UI 操作转换为 Command，并复用相同的 Executor；UI 操作不调用 DecisionProvider。
+- [x] 增加执行前置条件、后置条件和完整回滚测试。
 
 验收标准：
 
-- 相同 GraphState 和 Command 必须产生相同结果。
-- 任一命令失败时，原 GraphState 不发生变化。
-- AgentAction 与 UI Command 进入相同状态执行边界。
-- 现有单步请求和直接 UI 操作行为与重构前一致。
+- [x] 相同 GraphState 和 Command 必须产生相同结果。
+- [x] 任一命令失败时，原 GraphState 不发生变化。
+- [x] AgentAction 与 UI Command 进入相同状态执行边界。
+- [x] 现有单步请求和直接 UI 操作行为与重构前一致。
 
 ### 阶段 3：统一有界 ReAct
 

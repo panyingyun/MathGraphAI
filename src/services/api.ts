@@ -1,3 +1,4 @@
+import type { GraphCommand, SessionCommandResponse } from "../types/agent";
 import type { GraphState } from "../types/graph";
 import type { ChatResponse, Message } from "../types/chat";
 import { ApiError } from "../types/chat";
@@ -53,6 +54,11 @@ export const api = {
     request<ChatResponse>("/chat", {
       method: "POST",
       body: JSON.stringify({ sessionId, message, requestId, expectedRevision }),
+    }),
+  executeCommand: (sessionId: string, command: GraphCommand) =>
+    request<SessionCommandResponse>(`/sessions/${sessionId}/commands`, {
+      method: "POST",
+      body: JSON.stringify(command),
     }),
 };
 

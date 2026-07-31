@@ -223,28 +223,92 @@ export const useAppStore = create<AppState>((set, get) => ({
   updateEquation: async (id, updates) => {
     const current = get().currentSession;
     if (!current) return;
-    await get().updateGraphState({
-      ...current.graphState,
-      equations: current.graphState.equations.map((item) => (item.id === id ? { ...item, ...updates } : item)),
-    });
+    const expectedRevision = current.graphState.revision ?? current.revision ?? 0;
+    try {
+      const result = await api.executeCommand(current.id, {
+        type: "update_equation",
+        target: { equationId: id },
+        arguments: { updates },
+        expectedRevision,
+      });
+      const refreshed = await api.getSession(current.id);
+      set((state) => ({
+        currentSession: { ...refreshed, graphState: result.graphState },
+        sessions: replaceSummary(state.sessions, refreshed),
+        error: null,
+      }));
+    } catch (error) {
+      if (error instanceof ApiError && error.code === "revision_conflict") {
+        const refreshed = await api.getSession(current.id);
+        set({
+          currentSession: refreshed,
+          sessions: replaceSummary(get().sessions, refreshed),
+          error: "会话状态已在其他窗口更新，已为你同步最新内容",
+        });
+        return;
+      }
+      set({ error: error instanceof Error ? error.message : "更新方程失败" });
+    }
   },
 
   removeEquation: async (id) => {
     const current = get().currentSession;
     if (!current) return;
-    await get().updateGraphState({
-      ...current.graphState,
-      equations: current.graphState.equations.filter((item) => item.id !== id),
-    });
+    const expectedRevision = current.graphState.revision ?? current.revision ?? 0;
+    try {
+      const result = await api.executeCommand(current.id, {
+        type: "remove_equation",
+        target: { equationId: id },
+        expectedRevision,
+      });
+      const refreshed = await api.getSession(current.id);
+      set((state) => ({
+        currentSession: { ...refreshed, graphState: result.graphState },
+        sessions: replaceSummary(state.sessions, refreshed),
+        error: null,
+      }));
+    } catch (error) {
+      if (error instanceof ApiError && error.code === "revision_conflict") {
+        const refreshed = await api.getSession(current.id);
+        set({
+          currentSession: refreshed,
+          sessions: replaceSummary(get().sessions, refreshed),
+          error: "会话状态已在其他窗口更新，已为你同步最新内容",
+        });
+        return;
+      }
+      set({ error: error instanceof Error ? error.message : "删除方程失败" });
+    }
   },
 
   updateViewport: async (viewport) => {
     const current = get().currentSession;
     if (!current) return;
-    await get().updateGraphState({
-      ...current.graphState,
-      viewport: { ...current.graphState.viewport, ...viewport },
-    });
+    const expectedRevision = current.graphState.revision ?? current.revision ?? 0;
+    try {
+      const result = await api.executeCommand(current.id, {
+        type: "set_viewport",
+        arguments: { viewport: { ...current.graphState.viewport, ...viewport } },
+        expectedRevision,
+      });
+      const refreshed = await api.getSession(current.id);
+      set((state) => ({
+        currentSession: { ...refreshed, graphState: result.graphState },
+        sessions: replaceSummary(state.sessions, refreshed),
+        error: null,
+      }));
+    } catch (error) {
+      if (error instanceof ApiError && error.code === "revision_conflict") {
+        const refreshed = await api.getSession(current.id);
+        set({
+          currentSession: refreshed,
+          sessions: replaceSummary(get().sessions, refreshed),
+          error: "会话状态已在其他窗口更新，已为你同步最新内容",
+        });
+        return;
+      }
+      set({ error: error instanceof Error ? error.message : "更新坐标范围失败" });
+    }
   },
 
   toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
