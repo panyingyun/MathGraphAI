@@ -14,5 +14,8 @@ class MessageModel(Base):
     content: Mapped[str] = mapped_column(Text, nullable=False)
     structured_result: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(String(20), default="success", nullable=False)
+    request_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, index=True)
+    agent_mode: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    decision_provider: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
     created_at: Mapped[str] = mapped_column(String, nullable=False)
     session = relationship("SessionModel", back_populates="messages")

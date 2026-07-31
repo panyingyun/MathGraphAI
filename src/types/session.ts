@@ -7,9 +7,12 @@ export interface SessionSummary {
   isFavorite: boolean;
   createdAt: string;
   updatedAt: string;
+  revision: number;
 }
 
 export interface Session extends SessionSummary {
   messages: Message[];
   graphState: GraphState;
+  schemaVersion?: number;
+  contextSummary?: string | null;
 }

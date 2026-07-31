@@ -40,10 +40,12 @@ export interface GraphState {
   viewport: Viewport;
   settings: GraphSettings;
   analysis?: GraphAnalysis;
+  revision: number;
 }
 
 export const EMPTY_GRAPH_STATE: GraphState = {
   equations: [],
   viewport: { xMin: -10, xMax: 10, yMin: -10, yMax: 10 },
   settings: { showGrid: true, showAxis: true, showLegend: true, sampleCount: 1000 },
+  revision: 0,
 };

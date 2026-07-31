@@ -5,12 +5,16 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from . import models  # noqa: F401
 from .database import Base, engine
+from .migrations import run_migrations
 from .routers import chat, sessions
+from .utils.logging_utils import configure_logging
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    configure_logging()
     Base.metadata.create_all(bind=engine)
+    run_migrations(engine)
     yield
 
 

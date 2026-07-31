@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { api } from "../services/api";
+import { ApiError } from "../types/chat";
 import type { Session, SessionSummary } from "../types/session";
 import type { GraphState, EquationItem, Viewport } from "../types/graph";
 
@@ -34,8 +35,8 @@ interface AppState {
 let toastTimer: number | undefined;
 
 function summaryOf(session: Session): SessionSummary {
-  const { id, title, isFavorite, createdAt, updatedAt } = session;
-  return { id, title, isFavorite, createdAt, updatedAt };
+  const { id, title, isFavorite, createdAt, updatedAt, revision } = session;
+  return { id, title, isFavorite, createdAt, updatedAt, revision: revision ?? session.graphState.revision ?? 0 };
 }
 
 function replaceSummary(items: SessionSummary[], session: Session) {
@@ -146,21 +147,52 @@ export const useAppStore = create<AppState>((set, get) => ({
       currentSession: { ...current, messages: [...current.messages, optimistic] },
     });
     try {
-      const result = await api.sendMessage(current.id, content.trim());
+      const result = await api.sendMessage(
+        current.id,
+        content.trim(),
+        current.graphState.revision ?? current.revision ?? 0,
+      );
       const refreshed = await api.getSession(current.id);
+      const toast = result.fallbackUsed
+        ? (result.fallbackReason ?? "已切换到本地解析")
+        : null;
       set((state) => ({
         currentSession: { ...refreshed, graphState: result.graphState },
         sessions: replaceSummary(state.sessions, refreshed),
         isLLMLoading: false,
         error: result.message.status === "error" ? result.message.content : null,
+        toast,
         mobileTab: window.innerWidth < 768 && result.message.status !== "error" ? "graph" : state.mobileTab,
       }));
+      if (toast) {
+        window.clearTimeout(toastTimer);
+        toastTimer = window.setTimeout(() => set({ toast: null }), 2400);
+      }
     } catch (error) {
+      if (error instanceof ApiError && error.code === "revision_conflict") {
+        try {
+          const refreshed = await api.getSession(current.id);
+          set({
+            isLLMLoading: false,
+            currentSession: refreshed,
+            sessions: replaceSummary(get().sessions, refreshed),
+            error: "会话状态已在其他窗口更新，已为你同步最新内容",
+          });
+          return;
+        } catch {
+          // fall through
+        }
+      }
       set((state) => ({
         isLLMLoading: false,
         error: error instanceof Error ? error.message : "当前网络异常，请稍后再试",
         currentSession: state.currentSession
-          ? { ...state.currentSession, messages: state.currentSession.messages.map((m) => m.id === optimistic.id ? { ...m, status: "error" } : m) }
+          ? {
+              ...state.currentSession,
+              messages: state.currentSession.messages.map((m) =>
+                m.id === optimistic.id ? { ...m, status: "error" } : m,
+              ),
+            }
           : null,
       }));
     }
@@ -169,11 +201,21 @@ export const useAppStore = create<AppState>((set, get) => ({
   updateGraphState: async (graphState) => {
     const current = get().currentSession;
     if (!current) return;
+    const expectedRevision = current.graphState.revision ?? current.revision ?? 0;
     set({ currentSession: { ...current, graphState } });
     try {
-      const saved = await api.updateSession(current.id, { graphState });
-      set((state) => ({ sessions: replaceSummary(state.sessions, saved), currentSession: saved }));
+      const saved = await api.updateSession(current.id, { graphState, expectedRevision });
+      set((state) => ({ sessions: replaceSummary(state.sessions, saved), currentSession: saved, error: null }));
     } catch (error) {
+      if (error instanceof ApiError && error.code === "revision_conflict") {
+        const refreshed = await api.getSession(current.id);
+        set({
+          currentSession: refreshed,
+          sessions: replaceSummary(get().sessions, refreshed),
+          error: "会话状态已在其他窗口更新，已为你同步最新内容",
+        });
+        return;
+      }
       set({ error: error instanceof Error ? error.message : "保存图像状态失败" });
     }
   },
@@ -183,7 +225,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (!current) return;
     await get().updateGraphState({
       ...current.graphState,
-      equations: current.graphState.equations.map((item) => item.id === id ? { ...item, ...updates } : item),
+      equations: current.graphState.equations.map((item) => (item.id === id ? { ...item, ...updates } : item)),
     });
   },
 

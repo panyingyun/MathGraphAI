@@ -1,7 +1,9 @@
 import ast
 import math
 import operator
-from typing import Dict
+from typing import Dict, Tuple
+
+from ..config import settings
 
 
 ALLOWED_FUNCTIONS = {
@@ -42,6 +44,39 @@ BIN_OPS = {
 UNARY_OPS = {ast.UAdd: operator.pos, ast.USub: operator.neg}
 
 
+def _ast_depth(node: ast.AST) -> int:
+    children = list(ast.iter_child_nodes(node))
+    if not children:
+        return 1
+    return 1 + max(_ast_depth(child) for child in children)
+
+
+def _check_complexity(tree: ast.AST, normalized: str) -> None:
+    if len(normalized) > settings.max_expression_length:
+        raise InvalidEquation(f"表达式过长，最多允许 {settings.max_expression_length} 个字符")
+
+    nodes = list(ast.walk(tree))
+    if len(nodes) > settings.max_ast_nodes:
+        raise InvalidEquation(f"表达式过于复杂，AST 节点数不能超过 {settings.max_ast_nodes}")
+
+    depth = _ast_depth(tree)
+    if depth > settings.max_ast_depth:
+        raise InvalidEquation(f"表达式嵌套过深，深度不能超过 {settings.max_ast_depth}")
+
+    for node in nodes:
+        if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
+            if abs(float(node.value)) > settings.max_numeric_constant:
+                raise InvalidEquation(f"数值常量超出范围，绝对值不能超过 {settings.max_numeric_constant:g}")
+        if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Pow):
+            if isinstance(node.right, ast.Constant) and isinstance(node.right.value, (int, float)):
+                if abs(float(node.right.value)) > settings.max_power_exponent:
+                    raise InvalidEquation(f"指数过大，绝对值不能超过 {settings.max_power_exponent:g}")
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "pow":
+            if len(node.args) >= 2 and isinstance(node.args[1], ast.Constant) and isinstance(node.args[1].value, (int, float)):
+                if abs(float(node.args[1].value)) > settings.max_power_exponent:
+                    raise InvalidEquation(f"指数过大，绝对值不能超过 {settings.max_power_exponent:g}")
+
+
 def _evaluate_node(node: ast.AST, scope: Dict[str, object]) -> float:
     if isinstance(node, ast.Expression):
         return _evaluate_node(node.body, scope)
@@ -63,7 +98,7 @@ def _evaluate_node(node: ast.AST, scope: Dict[str, object]) -> float:
     raise InvalidEquation("方程包含无法计算的表达式")
 
 
-def compile_expression(source: str):
+def compile_expression(source: str) -> Tuple[str, object]:
     normalized = normalize_expression(source)
     if not normalized:
         raise InvalidEquation("等号右侧不能为空")
@@ -81,6 +116,8 @@ def compile_expression(source: str):
         if isinstance(node, ast.Call):
             if not isinstance(node.func, ast.Name) or node.func.id not in ALLOWED_FUNCTIONS:
                 raise InvalidEquation("方程调用了不支持的函数")
+
+    _check_complexity(tree, normalized)
 
     def evaluate(x: float) -> float:
         scope = {"x": x, "pi": math.pi, "e": math.e, **ALLOWED_FUNCTIONS}

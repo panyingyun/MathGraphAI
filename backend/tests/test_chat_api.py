@@ -94,6 +94,9 @@ def test_deepseek_failure_falls_back_to_local(client_with_deepseek, monkeypatch)
     body = response.json()
     assert body["message"]["status"] == "success"
     assert body["graphState"]["equations"][0]["normalizedExpression"] == "cos(x)"
+    assert body["fallbackUsed"] is True
+    assert body["decisionProvider"] == "local"
+    assert body["errorCode"]
 
 
 @pytest.mark.fallback

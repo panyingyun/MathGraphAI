@@ -6,6 +6,12 @@ const ALLOWED_FUNCTIONS = new Set(["sin", "cos", "tan", "log", "sqrt", "abs", "e
 const ALLOWED_OPERATORS = new Set(["+", "-", "*", "/", "^", "%"]);
 const ALLOWED_NODE_TYPES = new Set(["ConstantNode", "SymbolNode", "OperatorNode", "FunctionNode", "ParenthesisNode"]);
 
+const MAX_EXPRESSION_LENGTH = 256;
+const MAX_AST_NODES = 128;
+const MAX_AST_DEPTH = 32;
+const MAX_NUMERIC_CONSTANT = 1_000_000;
+const MAX_POWER_EXPONENT = 100;
+
 export class EquationError extends Error {
   constructor(message: string) {
     super(message);
@@ -25,8 +31,19 @@ export function normalizeExpression(source: string): string {
     .trim();
 }
 
+function nodeDepth(node: MathNode): number {
+  const args = (node as unknown as { args?: MathNode[] }).args;
+  if (!args?.length) return 1;
+  return 1 + Math.max(...args.map(nodeDepth));
+}
+
 function validateNode(node: MathNode) {
+  let count = 0;
   node.traverse((child) => {
+    count += 1;
+    if (count > MAX_AST_NODES) {
+      throw new EquationError(`表达式过于复杂，AST 节点数不能超过 ${MAX_AST_NODES}`);
+    }
     if (!ALLOWED_NODE_TYPES.has(child.type)) {
       throw new EquationError("方程中包含不允许的表达式");
     }
@@ -36,24 +53,51 @@ function validateNode(node: MathNode) {
         throw new EquationError(`不支持变量或函数“${name}”，当前只允许变量 x`);
       }
     }
+    if (child.type === "ConstantNode") {
+      const value = Number((child as unknown as { value: unknown }).value);
+      if (Number.isFinite(value) && Math.abs(value) > MAX_NUMERIC_CONSTANT) {
+        throw new EquationError(`数值常量超出范围，绝对值不能超过 ${MAX_NUMERIC_CONSTANT}`);
+      }
+    }
     if (child.type === "FunctionNode") {
       const fnName = (child as unknown as { fn: { name?: string } }).fn.name;
       if (!fnName || !ALLOWED_FUNCTIONS.has(fnName)) {
         throw new EquationError(`不支持函数“${fnName ?? "未知"}”`);
       }
+      if (fnName === "pow") {
+        const exponent = (child as unknown as { args?: MathNode[] }).args?.[1];
+        if (exponent?.type === "ConstantNode") {
+          const value = Number((exponent as unknown as { value: unknown }).value);
+          if (Number.isFinite(value) && Math.abs(value) > MAX_POWER_EXPONENT) {
+            throw new EquationError(`指数过大，绝对值不能超过 ${MAX_POWER_EXPONENT}`);
+          }
+        }
+      }
     }
     if (child.type === "OperatorNode") {
-      const op = (child as unknown as { op: string }).op;
-      if (!ALLOWED_OPERATORS.has(op)) {
-        throw new EquationError(`不支持运算符“${op}”`);
+      const opNode = child as unknown as { op: string; args?: MathNode[] };
+      if (!ALLOWED_OPERATORS.has(opNode.op)) {
+        throw new EquationError(`不支持运算符“${opNode.op}”`);
+      }
+      if (opNode.op === "^" && opNode.args?.[1]?.type === "ConstantNode") {
+        const value = Number((opNode.args[1] as unknown as { value: unknown }).value);
+        if (Number.isFinite(value) && Math.abs(value) > MAX_POWER_EXPONENT) {
+          throw new EquationError(`指数过大，绝对值不能超过 ${MAX_POWER_EXPONENT}`);
+        }
       }
     }
   });
+  if (nodeDepth(node) > MAX_AST_DEPTH) {
+    throw new EquationError(`表达式嵌套过深，深度不能超过 ${MAX_AST_DEPTH}`);
+  }
 }
 
 export function compileExpression(source: string): (x: number) => number {
   const normalized = normalizeExpression(source);
   if (!normalized) throw new EquationError("请输入等号右侧的函数表达式");
+  if (normalized.length > MAX_EXPRESSION_LENGTH) {
+    throw new EquationError(`表达式过长，最多允许 ${MAX_EXPRESSION_LENGTH} 个字符`);
+  }
   let node: MathNode;
   try {
     node = parse(normalized);

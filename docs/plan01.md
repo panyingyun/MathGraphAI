@@ -223,24 +223,26 @@ Agent 完成全部必要动作后返回：
 
 ### 阶段 1：可靠性、安全和可观测性
 
+> 状态：**已完成**（见下方实现要点与 `backend/tests/test_idempotency_revision.py` 等）
+
 目标：先解决静默错误和安全上限，再扩展 Agent 能力。
 
 任务：
 
-- 将 `except Exception` 改为明确的模型异常分类：认证、限流、超时、网络、响应格式和 Schema 错误。
-- 增加结构化日志字段：`requestId`、`sessionId`、`agentMode`、`decisionProvider`、`model`、耗时、fallback、错误码。
-- 增加 DeepSeek 超时、有限重试和错误映射；只对可重试错误重试。
-- 为方程增加长度、AST 节点数、嵌套深度、数值常量和指数范围限制。
-- 为 GraphState 增加最大方程数量、viewport 合理范围和分析结果大小限制。
-- 增加 `requestId` 幂等检查和 `GraphState.revision` 乐观锁。
-- 引入可管理的 SQLite Schema 迁移机制，保留现有数据。
+- [x] 将 `except Exception` 改为明确的模型异常分类：认证、限流、超时、网络、响应格式和 Schema 错误。
+- [x] 增加结构化日志字段：`requestId`、`sessionId`、`agentMode`、`decisionProvider`、`model`、耗时、fallback、错误码。
+- [x] 增加 DeepSeek 超时、有限重试和错误映射；只对可重试错误重试。
+- [x] 为方程增加长度、AST 节点数、嵌套深度、数值常量和指数范围限制。
+- [x] 为 GraphState 增加最大方程数量、viewport 合理范围和分析结果大小限制。
+- [x] 增加 `requestId` 幂等检查和 `GraphState.revision` 乐观锁。
+- [x] 引入可管理的 SQLite Schema 迁移机制，保留现有数据。
 
 验收标准：
 
-- DeepSeek 配置错误可以切换 LocalDecisionProvider，但必须明确记录 `fallbackUsed`、原因和错误分类，不能静默掩盖。
-- 同一个 `requestId` 重试不会生成重复消息或重复修改状态。
-- 旧 revision 写入返回明确的冲突错误，不覆盖新状态。
-- 恶意或超复杂表达式能在确定时间内被拒绝。
+- [x] DeepSeek 配置错误可以切换 LocalDecisionProvider，但必须明确记录 `fallbackUsed`、原因和错误分类，不能静默掩盖。
+- [x] 同一个 `requestId` 重试不会生成重复消息或重复修改状态。
+- [x] 旧 revision 写入返回明确的冲突错误，不覆盖新状态。
+- [x] 恶意或超复杂表达式能在确定时间内被拒绝。
 
 ### 阶段 2：统一 Action、Command 与确定性 Executor
 

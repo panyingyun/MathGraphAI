@@ -43,3 +43,5 @@ python -m scripts.measure_baseline
 - 前端通过 math.js AST 白名单解析表达式，不使用 `eval` 或 `new Function`。
 - 仅允许变量 `x` 以及 `sin`、`cos`、`tan`、`log`、`sqrt`、`abs`、`exp`、`pow`。
 - 后端会再次校验 DeepSeek 返回的结构化方程，再写入会话状态。
+- 表达式有长度 / AST 节点数 / 嵌套深度 / 指数与常量上限；GraphState 有方程数量与 viewport 范围限制。
+- `/api/chat` 支持 `requestId` 幂等与 `expectedRevision` 乐观锁；DeepSeek 失败会明确标记 `fallbackUsed` 与错误码，不再静默降级。

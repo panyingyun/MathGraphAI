@@ -12,6 +12,7 @@ from sqlalchemy.pool import StaticPool
 from app.config import settings
 from app.database import Base, get_db
 from app.main import app
+from app.migrations import run_migrations
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -41,6 +42,7 @@ def db_session():
     )
     TestingSessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
     Base.metadata.create_all(bind=engine)
+    run_migrations(engine)
     session = TestingSessionLocal()
     try:
         yield session
@@ -50,13 +52,17 @@ def db_session():
         engine.dispose()
 
 
+def _patch_local_settings(monkeypatch):
+    local = replace(settings, deepseek_api_key="", agent_mode="off")
+    monkeypatch.setattr("app.routers.chat.settings", local)
+    monkeypatch.setattr("app.services.deepseek_service.settings", local)
+    monkeypatch.setattr("app.config.settings", local)
+
+
 @pytest.fixture()
 def client(db_session, monkeypatch):
     """隔离 SQLite，并默认关闭 DeepSeek，走本地解析主路径。"""
-    monkeypatch.setattr(
-        "app.routers.chat.settings",
-        replace(settings, deepseek_api_key=""),
-    )
+    _patch_local_settings(monkeypatch)
 
     def override_get_db():
         try:
@@ -73,10 +79,10 @@ def client(db_session, monkeypatch):
 @pytest.fixture()
 def client_with_deepseek(db_session, monkeypatch):
     """DeepSeek Key 非空，便于模拟模型失败后的本地回退。"""
-    monkeypatch.setattr(
-        "app.routers.chat.settings",
-        replace(settings, deepseek_api_key="test-key-not-used"),
-    )
+    remote = replace(settings, deepseek_api_key="test-key-not-used", agent_mode="off")
+    monkeypatch.setattr("app.routers.chat.settings", remote)
+    monkeypatch.setattr("app.services.deepseek_service.settings", remote)
+    monkeypatch.setattr("app.config.settings", remote)
 
     def override_get_db():
         try:
