@@ -2,6 +2,8 @@
 
 本文描述当前代码如何落地 `sw-design.md` 中的软件架构与 MVP 边界。
 
+![MathGraph AI 项目架构图](./architecture-diagram.svg)
+
 ## 1. 总体结构
 
 ```mermaid

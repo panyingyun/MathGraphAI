@@ -1,0 +1,192 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1300" viewBox="0 0 1800 1300" role="img" aria-labelledby="title desc">
+  <title id="title">MathGraph AI 代码阅读地图</title>
+  <desc id="desc">将 MathGraph AI 的前端与后端代码文件放入对应架构模块，并标出推荐阅读顺序和关键调用关系。</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f8fbff"/><stop offset="1" stop-color="#eef5ff"/></linearGradient>
+    <linearGradient id="front" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1967e8"/><stop offset="1" stop-color="#08a4d8"/></linearGradient>
+    <linearGradient id="back" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7357e8"/><stop offset="1" stop-color="#a855f7"/></linearGradient>
+    <linearGradient id="data" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#078d73"/><stop offset="1" stop-color="#16b88a"/></linearGradient>
+    <pattern id="grid" width="28" height="28" patternUnits="userSpaceOnUse"><path d="M28 0H0V28" fill="none" stroke="#8eb6e8" stroke-opacity=".10"/></pattern>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="7" stdDeviation="10" flood-color="#174b8f" flood-opacity=".08"/></filter>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#174b8f" flood-opacity=".07"/></filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10Z" fill="#3979cf"/></marker>
+    <marker id="arrowPurple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10Z" fill="#7a5be2"/></marker>
+    <marker id="arrowGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10Z" fill="#0b9b7b"/></marker>
+    <style>
+      text { font-family: Inter, "PingFang SC", "Microsoft YaHei", sans-serif; fill: #17243a; }
+      .title { font-size: 34px; font-weight: 750; letter-spacing: -.02em; }
+      .subtitle { font-size: 14px; fill: #667b95; }
+      .panel-title { font-size: 21px; font-weight: 750; }
+      .panel-sub { font-size: 11px; fill: #71839b; letter-spacing: .10em; }
+      .module { font-size: 15px; font-weight: 720; }
+      .folder { font: 700 11px "JetBrains Mono", Consolas, monospace; fill: #34659f; letter-spacing: .04em; }
+      .file { font: 500 12px "JetBrains Mono", Consolas, monospace; fill: #253955; }
+      .file-dim { font: 500 11px "JetBrains Mono", Consolas, monospace; fill: #6c819c; }
+      .note { font-size: 11px; fill: #6c819c; }
+      .step { font-size: 12px; font-weight: 700; fill: #fff; }
+      .flow { fill:none; stroke:#3979cf; stroke-width:2.2; marker-end:url(#arrow); }
+      .flow-purple { fill:none; stroke:#7a5be2; stroke-width:2.2; marker-end:url(#arrowPurple); }
+      .flow-green { fill:none; stroke:#0b9b7b; stroke-width:2.2; marker-end:url(#arrowGreen); }
+      .flow-dash { fill:none; stroke:#6485ae; stroke-width:1.8; stroke-dasharray:6 6; marker-end:url(#arrow); }
+    </style>
+  </defs>
+
+  <rect width="1800" height="1300" fill="url(#bg)"/>
+  <rect width="1800" height="1300" fill="url(#grid)"/>
+  <circle cx="1680" cy="90" r="260" fill="#cde9ff" opacity=".24"/>
+  <circle cx="40" cy="1230" r="260" fill="#ddd8ff" opacity=".20"/>
+
+  <!-- Header -->
+  <g transform="translate(58 40)">
+    <rect width="54" height="54" rx="16" fill="url(#front)" filter="url(#soft)"/>
+    <path d="M12 37c7-18 14-22 20-5 4 11 8 3 12-8M12 35c10-7 20-4 30-12" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/>
+    <path d="m40 9 1.4 5 5 1.4-5 1.4-1.4 5-1.4-5-5-1.4 5-1.4z" fill="#fff"/>
+    <text x="72" y="25" class="title">MathGraph AI 代码阅读地图</text>
+    <text x="72" y="50" class="subtitle">把架构模块映射到具体文件，从入口沿调用链阅读到数据库</text>
+  </g>
+  <g transform="translate(1395 52)">
+    <rect width="130" height="31" rx="16" fill="#e8f2ff" stroke="#bcd5fb"/><circle cx="18" cy="15.5" r="5" fill="#2874db"/><text x="31" y="20" class="note">前端 React</text>
+    <rect x="140" width="130" height="31" rx="16" fill="#f2ecff" stroke="#d8cafa"/><circle cx="158" cy="15.5" r="5" fill="#7a5be2"/><text x="171" y="20" class="note">后端 FastAPI</text>
+    <rect x="280" width="95" height="31" rx="16" fill="#e5f8f2" stroke="#b9e2d6"/><circle cx="298" cy="15.5" r="5" fill="#0b9b7b"/><text x="311" y="20" class="note">数据</text>
+  </g>
+
+  <!-- Reading order -->
+  <g transform="translate(60 118)" filter="url(#soft)">
+    <rect width="1680" height="82" rx="18" fill="#fff" fill-opacity=".88" stroke="#cad9ed"/>
+    <text x="22" y="31" class="folder">RECOMMENDED READING ORDER</text>
+    <text x="22" y="56" class="module">建议阅读顺序</text>
+    <g transform="translate(190 18)">
+      <circle cx="22" cy="22" r="18" fill="#2874db"/><text x="22" y="27" text-anchor="middle" class="step">1</text><text x="50" y="19" class="module">入口与类型</text><text x="50" y="39" class="note">main / App / types</text>
+      <path d="M175 22h42" class="flow"/>
+      <circle cx="247" cy="22" r="18" fill="#2874db"/><text x="247" y="27" text-anchor="middle" class="step">2</text><text x="275" y="19" class="module">界面与状态</text><text x="275" y="39" class="note">components / store</text>
+      <path d="M404 22h42" class="flow"/>
+      <circle cx="476" cy="22" r="18" fill="#16a1d3"/><text x="476" y="27" text-anchor="middle" class="step">3</text><text x="504" y="19" class="module">API 边界</text><text x="504" y="39" class="note">api.ts / routers</text>
+      <path d="M627 22h42" class="flow-purple"/>
+      <circle cx="699" cy="22" r="18" fill="#7a5be2"/><text x="699" y="27" text-anchor="middle" class="step">4</text><text x="727" y="19" class="module">业务服务</text><text x="727" y="39" class="note">services</text>
+      <path d="M850 22h42" class="flow-purple"/>
+      <circle cx="922" cy="22" r="18" fill="#925ee7"/><text x="922" y="27" text-anchor="middle" class="step">5</text><text x="950" y="19" class="module">校验与模型</text><text x="950" y="39" class="note">utils / schemas</text>
+      <path d="M1082 22h42" class="flow-green"/>
+      <circle cx="1154" cy="22" r="18" fill="#0b9b7b"/><text x="1154" y="27" text-anchor="middle" class="step">6</text><text x="1182" y="19" class="module">持久化与测试</text><text x="1182" y="39" class="note">models / tests</text>
+    </g>
+  </g>
+
+  <!-- Main panels -->
+  <g filter="url(#shadow)">
+    <rect x="60" y="230" width="760" height="930" rx="25" fill="#fff" fill-opacity=".93" stroke="#bdd4ef"/>
+    <rect x="850" y="230" width="890" height="930" rx="25" fill="#fff" fill-opacity=".93" stroke="#d1c5ed"/>
+  </g>
+  <rect x="60" y="230" width="760" height="66" rx="25" fill="#e8f2ff"/><rect x="60" y="272" width="760" height="24" fill="#e8f2ff"/>
+  <circle cx="92" cy="263" r="13" fill="#2874db"/><path d="M86 258h12v10H86zM88 255h8" fill="none" stroke="#fff" stroke-width="1.8"/>
+  <text x="116" y="260" class="panel-title">前端代码 · Web Workbench</text><text x="116" y="280" class="panel-sub">REACT / VITE / TYPESCRIPT</text>
+  <rect x="850" y="230" width="890" height="66" rx="25" fill="#f0ebff"/><rect x="850" y="272" width="890" height="24" fill="#f0ebff"/>
+  <circle cx="882" cy="263" r="13" fill="#7a5be2"/><path d="m882 254 2.6 6.1 6.4 2.9-6.4 2.9-2.6 6.1-2.6-6.1-6.4-2.9 6.4-2.9z" fill="#fff"/>
+  <text x="906" y="260" class="panel-title">后端代码 · API &amp; Domain</text><text x="906" y="280" class="panel-sub">FASTAPI / PYDANTIC / SQLALCHEMY</text>
+
+  <!-- Front: bootstrap -->
+  <g filter="url(#soft)">
+    <rect x="88" y="320" width="340" height="164" rx="15" fill="#f7faff" stroke="#c7d9ee"/>
+    <rect x="452" y="320" width="340" height="164" rx="15" fill="#f7faff" stroke="#c7d9ee"/>
+  </g>
+  <circle cx="112" cy="347" r="15" fill="#2874db"/><text x="112" y="352" text-anchor="middle" class="step">1</text>
+  <text x="138" y="348" class="module">应用入口与组装</text><text x="112" y="375" class="folder">ROOT / SRC</text>
+  <text x="112" y="400" class="file">index.html</text><text x="112" y="422" class="file">src/main.tsx</text><text x="112" y="444" class="file">src/App.tsx</text><text x="112" y="466" class="file-dim">↳ 挂载 React、初始化会话、组合三栏布局</text>
+  <text x="476" y="348" class="module">构建与视觉基础</text><text x="476" y="375" class="folder">CONFIG / THEME</text>
+  <text x="476" y="400" class="file">vite.config.ts</text><text x="476" y="422" class="file">tailwind.config.js</text><text x="476" y="444" class="file">postcss.config.js</text><text x="476" y="466" class="file">src/styles.css</text>
+
+  <!-- Front: components -->
+  <g filter="url(#soft)"><rect x="88" y="508" width="704" height="294" rx="15" fill="#f9fbff" stroke="#c7d9ee"/></g>
+  <circle cx="112" cy="537" r="15" fill="#2874db"/><text x="112" y="542" text-anchor="middle" class="step">2</text>
+  <text x="138" y="538" class="module">界面组件</text><text x="700" y="538" class="folder">src/components/</text>
+  <line x1="322" y1="555" x2="322" y2="778" stroke="#d6e2f1"/><line x1="548" y1="555" x2="548" y2="778" stroke="#d6e2f1"/>
+  <text x="112" y="572" class="folder">layout/</text>
+  <text x="112" y="600" class="file">BrandMark.tsx</text><text x="112" y="624" class="file">TopBar.tsx</text><text x="112" y="648" class="file">SidebarSessions.tsx</text>
+  <text x="112" y="684" class="note">负责品牌、顶部操作、</text><text x="112" y="703" class="note">会话历史与折叠导航</text>
+  <text x="346" y="572" class="folder">chat/</text>
+  <text x="346" y="600" class="file">ChatPanel.tsx</text><text x="346" y="624" class="file">ChatInput.tsx</text><text x="346" y="648" class="file">MessageItem.tsx</text><text x="346" y="672" class="file">PromptSuggestions.tsx</text>
+  <text x="346" y="708" class="note">空状态、消息流、加载状态、</text><text x="346" y="727" class="note">错误反馈与输入交互</text>
+  <text x="572" y="572" class="folder">graph/</text>
+  <text x="572" y="600" class="file">ResultPanel.tsx</text><text x="572" y="624" class="file">GraphViewer.tsx</text><text x="572" y="648" class="file">EquationList.tsx</text><text x="572" y="672" class="file">ViewportSettings.tsx</text><text x="572" y="696" class="file">GraphAnalysisPanel.tsx</text>
+  <text x="572" y="736" class="note">Plotly 图像、方程管理、</text><text x="572" y="755" class="note">坐标设置与分析结果</text>
+
+  <!-- Front: state/data -->
+  <g filter="url(#soft)">
+    <rect x="88" y="826" width="340" height="300" rx="15" fill="#eef5ff" stroke="#b7d1f1"/>
+    <rect x="452" y="826" width="340" height="300" rx="15" fill="#f7faff" stroke="#c7d9ee"/>
+  </g>
+  <circle cx="112" cy="855" r="15" fill="#2874db"/><text x="112" y="860" text-anchor="middle" class="step">3</text>
+  <text x="138" y="856" class="module">状态、请求与安全采样</text>
+  <text x="112" y="891" class="folder">src/stores/</text><text x="112" y="916" class="file">appStore.ts</text><text x="112" y="938" class="note">会话、消息、GraphState 与 UI 状态</text>
+  <text x="112" y="976" class="folder">src/services/</text><text x="112" y="1001" class="file">api.ts</text><text x="112" y="1023" class="note">封装 /api/sessions 与 /api/chat</text>
+  <text x="112" y="1061" class="folder">src/utils/</text><text x="112" y="1086" class="file">graphSampler.ts</text><text x="112" y="1108" class="note">math.js AST 白名单与曲线采样</text>
+  <text x="476" y="856" class="module">前后端共享概念</text><text x="476" y="891" class="folder">src/types/</text>
+  <text x="476" y="916" class="file">session.ts</text><text x="476" y="940" class="file">chat.ts</text><text x="476" y="964" class="file">graph.ts</text>
+  <path d="M476 986h284" stroke="#d4e1f0"/>
+  <text x="476" y="1015" class="folder">核心类型</text><text x="476" y="1041" class="file-dim">Session / Message</text><text x="476" y="1063" class="file-dim">GraphState / EquationItem</text><text x="476" y="1085" class="file-dim">Viewport / StructuredResult</text><text x="476" y="1110" class="note">阅读前先理解这些数据结构</text>
+
+  <!-- Backend: entry/routes -->
+  <g filter="url(#soft)">
+    <rect x="878" y="320" width="400" height="164" rx="15" fill="#f9f6ff" stroke="#d5caeb"/>
+    <rect x="1302" y="320" width="410" height="164" rx="15" fill="#f9f6ff" stroke="#d5caeb"/>
+  </g>
+  <circle cx="902" cy="347" r="15" fill="#7a5be2"/><text x="902" y="352" text-anchor="middle" class="step">4</text>
+  <text x="928" y="348" class="module">应用入口与基础设施</text><text x="902" y="375" class="folder">backend/app/</text>
+  <text x="902" y="400" class="file">main.py</text><text x="902" y="423" class="file">config.py</text><text x="902" y="446" class="file">database.py</text><text x="902" y="468" class="file-dim">↳ FastAPI / 环境变量 / SQLAlchemy Session</text>
+  <text x="1326" y="348" class="module">HTTP 路由</text><text x="1326" y="375" class="folder">backend/app/routers/</text>
+  <text x="1326" y="400" class="file">sessions.py</text><text x="1326" y="423" class="file">chat.py</text><text x="1326" y="446" class="file-dim">__init__.py</text><text x="1326" y="468" class="note">接收请求、调用服务、返回 Pydantic 模型</text>
+
+  <!-- Backend: schemas/services -->
+  <g filter="url(#soft)">
+    <rect x="878" y="508" width="400" height="266" rx="15" fill="#fbf9ff" stroke="#d5caeb"/>
+    <rect x="1302" y="508" width="410" height="348" rx="15" fill="#f7f3ff" stroke="#d1c2ed"/>
+  </g>
+  <circle cx="902" cy="537" r="15" fill="#925ee7"/><text x="902" y="542" text-anchor="middle" class="step">5</text>
+  <text x="928" y="538" class="module">API 数据契约</text><text x="902" y="570" class="folder">backend/app/schemas/</text>
+  <text x="902" y="598" class="file">base.py</text><text x="902" y="622" class="file">session.py</text><text x="902" y="646" class="file">chat.py</text><text x="902" y="670" class="file">graph.py</text><text x="902" y="694" class="file-dim">__init__.py</text>
+  <text x="902" y="730" class="note">Pydantic 校验、camelCase 转换、</text><text x="902" y="750" class="note">前后端稳定数据结构</text>
+  <text x="1326" y="538" class="module">领域服务与 AI 编排</text><text x="1326" y="570" class="folder">backend/app/services/</text>
+  <text x="1326" y="598" class="file">deepseek_service.py</text><text x="1326" y="621" class="file-dim">唯一的 DeepSeek HTTP 调用入口</text>
+  <text x="1326" y="656" class="file">local_parser.py</text><text x="1326" y="679" class="file-dim">无 Key / 异常时的本地规则回退</text>
+  <text x="1326" y="714" class="file">graph_service.py</text><text x="1326" y="737" class="file-dim">验证并应用 StructuredResult</text>
+  <text x="1326" y="772" class="file">session_service.py</text><text x="1326" y="795" class="file-dim">消息、会话与 GraphState 持久化</text>
+  <text x="1326" y="830" class="file-dim">__init__.py</text>
+
+  <!-- Backend: utils/models -->
+  <g filter="url(#soft)">
+    <rect x="878" y="798" width="400" height="328" rx="15" fill="#fff9ff" stroke="#d8cbea"/>
+    <rect x="1302" y="880" width="410" height="246" rx="15" fill="#f1faf7" stroke="#bfe0d7"/>
+  </g>
+  <text x="902" y="832" class="module">安全校验与 Prompt 工具</text><text x="902" y="863" class="folder">backend/app/utils/</text>
+  <text x="902" y="891" class="file">prompt_builder.py</text><text x="902" y="914" class="file-dim">组装系统提示词与会话上下文</text>
+  <text x="902" y="949" class="file">json_repair.py</text><text x="902" y="972" class="file-dim">清理 Markdown 包裹并解析 JSON</text>
+  <text x="902" y="1007" class="file">equation_validator.py</text><text x="902" y="1030" class="file-dim">Python AST 白名单与安全求值</text>
+  <text x="902" y="1065" class="file-dim">__init__.py</text><text x="902" y="1100" class="note">DeepSeek 输出在进入 GraphState 前必须经过此层</text>
+  <circle cx="1326" cy="909" r="15" fill="#0b9b7b"/><text x="1326" y="914" text-anchor="middle" class="step">6</text>
+  <text x="1352" y="910" class="module">数据库模型与验证</text>
+  <text x="1326" y="945" class="folder">backend/app/models/</text><text x="1326" y="972" class="file">session.py</text><text x="1326" y="995" class="file">message.py</text><text x="1326" y="1018" class="file-dim">__init__.py</text>
+  <text x="1515" y="945" class="folder">backend/</text><text x="1515" y="972" class="file">math_graph_ai.db</text><text x="1515" y="995" class="file">requirements.txt</text><text x="1515" y="1018" class="file-dim">.env（不提交）</text>
+  <path d="M1326 1041h352" stroke="#cfe4de"/>
+  <text x="1326" y="1069" class="folder">backend/tests/</text><text x="1326" y="1096" class="file">test_local_parser.py</text>
+
+  <!-- Connections -->
+  <path d="M258 484v24" class="flow"/>
+  <path d="M440 802v24" class="flow"/>
+  <path d="M428 976h24" class="flow"/>
+  <path d="M792 976h28c20 0 20-574 58-574" class="flow"/>
+  <text x="824" y="691" class="note" transform="rotate(-90 824 691)">REST / JSON</text>
+  <path d="M1278 402h24" class="flow-purple"/>
+  <path d="M1507 484v24" class="flow-purple"/>
+  <path d="M1302 641h-24" class="flow-purple"/>
+  <path d="M1078 774v24" class="flow-purple"/>
+  <path d="M1507 856v24" class="flow-green"/>
+  <path d="M1278 1040h24" class="flow-green"/>
+  <path d="M1302 729h-24c-22 0-22 332-48 332" class="flow-dash"/>
+
+  <!-- Bottom guide -->
+  <g filter="url(#soft)">
+    <rect x="60" y="1186" width="1680" height="76" rx="17" fill="#fff" fill-opacity=".88" stroke="#cad9ed"/>
+  </g>
+  <text x="86" y="1216" class="folder">START HERE</text><text x="86" y="1243" class="module">先看数据结构，再沿一次“画 y = x”的请求链阅读</text>
+  <text x="515" y="1216" class="file-dim">src/types/graph.ts</text><text x="649" y="1216" class="note">→</text><text x="670" y="1216" class="file-dim">src/stores/appStore.ts</text><text x="834" y="1216" class="note">→</text><text x="855" y="1216" class="file-dim">routers/chat.py</text><text x="970" y="1216" class="note">→</text><text x="991" y="1216" class="file-dim">services/graph_service.py</text>
+  <text x="515" y="1244" class="file-dim">services/session_service.py</text><text x="685" y="1244" class="note">→</text><text x="706" y="1244" class="file-dim">models/</text><text x="774" y="1244" class="note">→</text><text x="795" y="1244" class="file-dim">SQLite</text>
+  <text x="1670" y="1230" text-anchor="end" class="note">Code Map · 2026</text>
+</svg>

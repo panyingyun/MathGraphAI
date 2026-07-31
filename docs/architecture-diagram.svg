@@ -1,0 +1,225 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" role="img" aria-labelledby="title desc">
+  <title id="title">MathGraph AI 项目架构图</title>
+  <desc id="desc">展示用户通过 React 三栏工作台，经 FastAPI、AI 编排和安全校验，连接 DeepSeek 与 SQLite，并由 Plotly 绘制图像的完整架构。</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f7faff"/>
+      <stop offset="0.55" stop-color="#f4f7ff"/>
+      <stop offset="1" stop-color="#eef6ff"/>
+    </linearGradient>
+    <linearGradient id="brand" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#155eef"/>
+      <stop offset="1" stop-color="#06a9d9"/>
+    </linearGradient>
+    <linearGradient id="ai" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7357e8"/>
+      <stop offset="1" stop-color="#a855f7"/>
+    </linearGradient>
+    <linearGradient id="data" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#008f72"/>
+      <stop offset="1" stop-color="#14b88a"/>
+    </linearGradient>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M 32 0 L 0 0 0 32" fill="none" stroke="#8eb6e8" stroke-opacity="0.11" stroke-width="1"/>
+    </pattern>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#174b8f" flood-opacity="0.08"/>
+    </filter>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#174b8f" flood-opacity="0.08"/>
+    </filter>
+    <marker id="arrowBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2874db"/>
+    </marker>
+    <marker id="arrowPurple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#7957dd"/>
+    </marker>
+    <marker id="arrowGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#0b9b7b"/>
+    </marker>
+    <style>
+      text { font-family: Inter, "PingFang SC", "Microsoft YaHei", sans-serif; fill: #17243a; }
+      .lane-title { font-size: 18px; font-weight: 700; letter-spacing: .08em; }
+      .lane-sub { font-size: 12px; fill: #6e7f97; letter-spacing: .08em; }
+      .node-title { font-size: 16px; font-weight: 700; }
+      .node-sub { font-size: 12px; fill: #6e7f97; }
+      .tech { font-size: 11px; font-weight: 600; fill: #34639d; letter-spacing: .06em; }
+      .small { font-size: 11px; fill: #70839b; }
+      .flow { fill: none; stroke: #2874db; stroke-width: 2.4; marker-end: url(#arrowBlue); }
+      .flow-ai { fill: none; stroke: #7957dd; stroke-width: 2.4; marker-end: url(#arrowPurple); }
+      .flow-data { fill: none; stroke: #0b9b7b; stroke-width: 2.4; marker-end: url(#arrowGreen); }
+      .return { fill: none; stroke: #4d76aa; stroke-width: 2; stroke-dasharray: 7 7; marker-end: url(#arrowBlue); }
+    </style>
+  </defs>
+
+  <rect width="1600" height="1000" fill="url(#bg)"/>
+  <rect width="1600" height="1000" fill="url(#grid)"/>
+  <circle cx="1460" cy="90" r="210" fill="#c8e7ff" opacity="0.22"/>
+  <circle cx="40" cy="940" r="250" fill="#dcd7ff" opacity="0.20"/>
+
+  <!-- Header -->
+  <g transform="translate(64 42)">
+    <rect x="0" y="0" width="52" height="52" rx="15" fill="url(#brand)" filter="url(#soft)"/>
+    <path d="M11 36c7-18 13-21 19-5 4 11 8 3 12-7M12 34c8-6 18-3 28-11" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/>
+    <path d="m37 10 1.4 4.7 4.6 1.3-4.6 1.3L37 22l-1.3-4.7-4.7-1.3 4.7-1.3L37 10Z" fill="#fff"/>
+    <text x="70" y="24" font-size="32" font-weight="750" letter-spacing="-.02em">MathGraph AI 项目架构</text>
+    <text x="70" y="48" font-size="14" fill="#677b95">自然语言驱动的数学方程绘图、分析与会话管理工作台</text>
+  </g>
+  <g transform="translate(1160 55)">
+    <rect width="112" height="30" rx="15" fill="#e8f1ff" stroke="#bcd5fb"/><circle cx="17" cy="15" r="5" fill="#2874db"/><text x="29" y="19" class="small">交互 / API</text>
+    <rect x="122" width="116" height="30" rx="15" fill="#f1ebff" stroke="#d7c8fb"/><circle cx="139" cy="15" r="5" fill="#7957dd"/><text x="151" y="19" class="small">AI 处理链</text>
+    <rect x="248" width="116" height="30" rx="15" fill="#e4f8f2" stroke="#b8e6d9"/><circle cx="265" cy="15" r="5" fill="#0b9b7b"/><text x="277" y="19" class="small">数据持久化</text>
+  </g>
+
+  <!-- Lane backgrounds -->
+  <g filter="url(#shadow)">
+    <rect x="54" y="140" width="500" height="790" rx="24" fill="#ffffff" fill-opacity="0.91" stroke="#c8d8ed"/>
+    <rect x="578" y="140" width="270" height="790" rx="24" fill="#ffffff" fill-opacity="0.91" stroke="#c8d8ed"/>
+    <rect x="872" y="140" width="440" height="790" rx="24" fill="#ffffff" fill-opacity="0.91" stroke="#d3c9ef"/>
+    <rect x="1336" y="140" width="210" height="790" rx="24" fill="#ffffff" fill-opacity="0.91" stroke="#bfe1d8"/>
+  </g>
+
+  <!-- Lane headers -->
+  <g>
+    <rect x="54" y="140" width="500" height="68" rx="24" fill="#eaf2ff"/><rect x="54" y="184" width="500" height="24" fill="#eaf2ff"/>
+    <circle cx="84" cy="174" r="12" fill="#2874db"/><path d="M78 174h12M84 168v12" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+    <text x="106" y="171" class="lane-title">前端工作台</text><text x="106" y="190" class="lane-sub">PRESENTATION</text>
+
+    <rect x="578" y="140" width="270" height="68" rx="24" fill="#e7f6ff"/><rect x="578" y="184" width="270" height="24" fill="#e7f6ff"/>
+    <circle cx="608" cy="174" r="12" fill="#06a9d9"/><path d="M603 170h10v8h-10zM600 174h3M613 174h3" fill="none" stroke="#fff" stroke-width="1.8"/>
+    <text x="630" y="171" class="lane-title">API 层</text><text x="630" y="190" class="lane-sub">FASTAPI</text>
+
+    <rect x="872" y="140" width="440" height="68" rx="24" fill="#f0ebff"/><rect x="872" y="184" width="440" height="24" fill="#f0ebff"/>
+    <circle cx="902" cy="174" r="12" fill="#7957dd"/><path d="m902 166 2.3 5.3 5.7 2.7-5.7 2.5-2.3 5.5-2.4-5.5-5.6-2.5 5.6-2.7z" fill="#fff"/>
+    <text x="924" y="171" class="lane-title">业务与 AI 编排</text><text x="924" y="190" class="lane-sub">DOMAIN SERVICES</text>
+
+    <rect x="1336" y="140" width="210" height="68" rx="24" fill="#e4f8f2"/><rect x="1336" y="184" width="210" height="24" fill="#e4f8f2"/>
+    <circle cx="1366" cy="174" r="12" fill="#0b9b7b"/><ellipse cx="1366" cy="170" rx="6" ry="3" fill="none" stroke="#fff" stroke-width="1.7"/><path d="M1360 170v8c0 3 12 3 12 0v-8" fill="none" stroke="#fff" stroke-width="1.7"/>
+    <text x="1388" y="171" class="lane-title">外部与数据</text><text x="1388" y="190" class="lane-sub">INFRASTRUCTURE</text>
+  </g>
+
+  <!-- User -->
+  <g filter="url(#soft)">
+    <circle cx="24" cy="382" r="22" fill="#fff" stroke="#bdd2ee"/>
+    <circle cx="24" cy="376" r="6" fill="#2874db"/><path d="M12 394c2-10 22-10 24 0" fill="#d8e8ff" stroke="#2874db" stroke-width="1.5"/>
+  </g>
+  <text x="8" y="420" class="small">用户</text>
+  <path d="M46 382H83" class="flow"/>
+
+  <!-- Frontend nodes -->
+  <g filter="url(#soft)">
+    <rect x="82" y="238" width="444" height="92" rx="15" fill="#f9fbff" stroke="#c8d8ed"/>
+    <rect x="98" y="254" width="122" height="58" rx="10" fill="#eef4ff" stroke="#c8dcfb"/>
+    <rect x="236" y="254" width="122" height="58" rx="10" fill="#eef4ff" stroke="#c8dcfb"/>
+    <rect x="374" y="254" width="136" height="58" rx="10" fill="#eef4ff" stroke="#c8dcfb"/>
+  </g>
+  <text x="159" y="278" text-anchor="middle" class="node-title">会话管理</text><text x="159" y="299" text-anchor="middle" class="node-sub">Sidebar</text>
+  <text x="297" y="278" text-anchor="middle" class="node-title">AI 对话</text><text x="297" y="299" text-anchor="middle" class="node-sub">ChatPanel</text>
+  <text x="442" y="278" text-anchor="middle" class="node-title">绘图结果</text><text x="442" y="299" text-anchor="middle" class="node-sub">ResultPanel</text>
+
+  <g filter="url(#soft)">
+    <rect x="82" y="352" width="444" height="110" rx="15" fill="#edf4ff" stroke="#a9c9f5"/>
+    <rect x="98" y="372" width="52" height="52" rx="14" fill="url(#brand)"/>
+    <path d="M111 403c8-21 13-20 18-5 4 10 7 3 10-6" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+  </g>
+  <text x="168" y="388" class="tech">REACT · VITE · TYPESCRIPT</text>
+  <text x="168" y="416" class="node-title">三栏式响应式 Web 工作台</text>
+  <text x="168" y="440" class="node-sub">桌面三栏 · 平板抽屉 · 移动端 Tab</text>
+
+  <g filter="url(#soft)">
+    <rect x="82" y="484" width="210" height="104" rx="15" fill="#fff" stroke="#c8d8ed"/>
+    <rect x="316" y="484" width="210" height="104" rx="15" fill="#fff" stroke="#c8d8ed"/>
+  </g>
+  <text x="103" y="512" class="tech">CLIENT STATE</text><text x="103" y="539" class="node-title">Zustand Store</text><text x="103" y="563" class="node-sub">Session · Message · GraphState</text>
+  <text x="337" y="512" class="tech">API CLIENT</text><text x="337" y="539" class="node-title">REST Service</text><text x="337" y="563" class="node-sub">/api/sessions · /api/chat</text>
+
+  <g filter="url(#soft)">
+    <rect x="82" y="612" width="444" height="160" rx="15" fill="#f8fbff" stroke="#c8d8ed"/>
+    <rect x="100" y="634" width="125" height="104" rx="12" fill="#ecf4ff" stroke="#bfd5f4"/>
+    <rect x="242" y="634" width="125" height="104" rx="12" fill="#ecf4ff" stroke="#bfd5f4"/>
+    <rect x="384" y="634" width="125" height="104" rx="12" fill="#ecf4ff" stroke="#bfd5f4"/>
+  </g>
+  <text x="162" y="664" text-anchor="middle" class="tech">SAFE PARSE</text><text x="162" y="693" text-anchor="middle" class="node-title">math.js</text><text x="162" y="716" text-anchor="middle" class="node-sub">AST 白名单</text>
+  <text x="304" y="664" text-anchor="middle" class="tech">VISUALIZE</text><text x="304" y="693" text-anchor="middle" class="node-title">Plotly.js</text><text x="304" y="716" text-anchor="middle" class="node-sub">采样 · 缩放 · 导出</text>
+  <text x="446" y="664" text-anchor="middle" class="tech">FORMULA</text><text x="446" y="693" text-anchor="middle" class="node-title">KaTeX</text><text x="446" y="716" text-anchor="middle" class="node-sub">数学公式展示</text>
+  <rect x="82" y="797" width="444" height="88" rx="14" fill="#f1f6fe" stroke="#cad9ed"/>
+  <text x="104" y="828" class="tech">FRONTEND SAFETY BOUNDARY</text>
+  <text x="104" y="855" class="node-title">仅允许变量 x 与受控函数</text><text x="104" y="876" class="node-sub">禁止 eval / new Function · NaN 与 Infinity 断点处理</text>
+
+  <!-- API nodes -->
+  <g filter="url(#soft)">
+    <rect x="605" y="248" width="216" height="86" rx="14" fill="#effaff" stroke="#b9dfef"/>
+    <rect x="605" y="362" width="216" height="112" rx="14" fill="#f8fcff" stroke="#c8d8ed"/>
+    <rect x="605" y="500" width="216" height="112" rx="14" fill="#f8fcff" stroke="#c8d8ed"/>
+    <rect x="605" y="638" width="216" height="104" rx="14" fill="#effaff" stroke="#b9dfef"/>
+    <rect x="605" y="770" width="216" height="92" rx="14" fill="#f8fcff" stroke="#c8d8ed"/>
+  </g>
+  <text x="629" y="276" class="tech">HTTP ENTRY</text><text x="629" y="302" class="node-title">FastAPI Application</text><text x="629" y="322" class="node-sub">CORS · 生命周期 · 健康检查</text>
+  <text x="629" y="391" class="tech">SESSION ROUTER</text><text x="629" y="420" class="node-title">会话 CRUD</text><text x="629" y="444" class="node-sub">新建 · 切换 · 更新 · 删除</text>
+  <text x="629" y="529" class="tech">CHAT ROUTER</text><text x="629" y="558" class="node-title">消息处理入口</text><text x="629" y="582" class="node-sub">上下文读取 · 事务写入</text>
+  <text x="629" y="667" class="tech">SCHEMA GATE</text><text x="629" y="696" class="node-title">Pydantic v2</text><text x="629" y="720" class="node-sub">camelCase ↔ snake_case</text>
+  <text x="629" y="799" class="tech">ERROR BOUNDARY</text><text x="629" y="828" class="node-title">统一错误响应</text><text x="629" y="850" class="node-sub">原会话与图像状态不丢失</text>
+
+  <!-- Service nodes -->
+  <g filter="url(#soft)">
+    <rect x="900" y="238" width="384" height="96" rx="15" fill="#f7f3ff" stroke="#d4c8ef"/>
+    <rect x="900" y="362" width="180" height="126" rx="15" fill="#f5f0ff" stroke="#d4c8ef"/>
+    <rect x="1104" y="362" width="180" height="126" rx="15" fill="#f0f7ff" stroke="#bfd5f4"/>
+    <rect x="900" y="516" width="384" height="104" rx="15" fill="#fff7ff" stroke="#dacceb"/>
+    <rect x="900" y="648" width="384" height="104" rx="15" fill="#f1f9ff" stroke="#bdd8ed"/>
+    <rect x="900" y="780" width="384" height="90" rx="15" fill="#f4fbf8" stroke="#bfe1d8"/>
+  </g>
+  <text x="924" y="266" class="tech">ORCHESTRATION</text><text x="924" y="294" class="node-title">Chat Service / Prompt Builder</text><text x="924" y="317" class="node-sub">当前 GraphState + 最近 8 条消息 + 用户输入</text>
+  <text x="924" y="392" class="tech">PRIMARY</text><text x="924" y="421" class="node-title">DeepSeek Service</text><text x="924" y="447" class="node-sub">结构化 JSON 意图解析</text><text x="924" y="468" class="small">超时 60s · temperature 0.1</text>
+  <text x="1128" y="392" class="tech">FALLBACK</text><text x="1128" y="421" class="node-title">本地解析器</text><text x="1128" y="447" class="node-sub">无 Key / 网络异常 / 非法响应</text><text x="1128" y="468" class="small">常用方程与命令规则</text>
+  <text x="924" y="545" class="tech">ZERO-TRUST VALIDATION</text><text x="924" y="575" class="node-title">JSON 修复 + 语义校验 + AST 方程校验</text><text x="924" y="599" class="node-sub">补充 ID / 默认值 · 拒绝危险表达式与不完整意图</text>
+  <text x="924" y="677" class="tech">DOMAIN STATE</text><text x="924" y="706" class="node-title">GraphState 更新器</text><text x="924" y="730" class="node-sub">plot · add · update · remove · viewport · analyze</text>
+  <text x="924" y="809" class="tech">PERSISTENCE SERVICE</text><text x="924" y="838" class="node-title">Session Service</text><text x="924" y="859" class="node-sub">消息与图像状态原子化保存</text>
+
+  <!-- Infrastructure nodes -->
+  <g filter="url(#soft)">
+    <rect x="1362" y="272" width="158" height="154" rx="18" fill="#f7f3ff" stroke="#d1c2f0"/>
+    <circle cx="1441" cy="321" r="28" fill="url(#ai)"/>
+    <path d="m1441 303 5.2 12.8 13.8 5.2-13.8 5.2-5.2 13.8-5.2-13.8-13.8-5.2 13.8-5.2z" fill="#fff"/>
+    <rect x="1362" y="580" width="158" height="176" rx="18" fill="#f0fbf7" stroke="#b9dfd3"/>
+  </g>
+  <text x="1441" y="370" text-anchor="middle" class="node-title">DeepSeek API</text><text x="1441" y="394" text-anchor="middle" class="node-sub">deepseek-chat</text><text x="1441" y="414" text-anchor="middle" class="small">环境变量注入 Key</text>
+  <ellipse cx="1441" cy="625" rx="47" ry="18" fill="#cbf0e5" stroke="#0b9b7b" stroke-width="2"/>
+  <path d="M1394 625v64c0 10 21 18 47 18s47-8 47-18v-64" fill="#e4f8f2" stroke="#0b9b7b" stroke-width="2"/>
+  <path d="M1394 657c0 10 21 18 47 18s47-8 47-18" fill="none" stroke="#0b9b7b" stroke-width="1.6" opacity=".65"/>
+  <text x="1441" y="730" text-anchor="middle" class="node-title">SQLite</text><text x="1441" y="751" text-anchor="middle" class="node-sub">SQLAlchemy 2</text>
+  <rect x="1362" y="798" width="158" height="68" rx="14" fill="#f5faf8" stroke="#c2dfd7"/>
+  <text x="1441" y="826" text-anchor="middle" class="tech">DATA MODEL</text><text x="1441" y="851" text-anchor="middle" class="node-sub">sessions · messages</text>
+
+  <!-- Flows -->
+  <path d="M526 407H570C588 407 588 291 589 291" fill="none" stroke="#2874db" stroke-width="2.4"/>
+  <path d="M589 282.6L605.8 291 589 299.4Z" fill="#2874db"/>
+  <text x="546" y="337" class="small" transform="rotate(-90 546 337)">REST / JSON</text>
+  <path d="M821 556H900" class="flow"/>
+  <path d="M1092 334v28" class="flow-ai"/>
+  <path d="M990 488v28" class="flow-ai"/>
+  <path d="M1194 488v28" class="flow"/>
+  <path d="M1284 425h40C1344 425 1344 349 1346 349" fill="none" stroke="#7957dd" stroke-width="2.4"/>
+  <path d="M1346 340.6L1362.8 349 1346 357.4Z" fill="#7957dd"/>
+  <path d="M1362 396c-20 0-20 120-78 120" class="flow-ai"/>
+  <path d="M1092 620v28" class="flow"/>
+  <path d="M1092 752v28" class="flow-data"/>
+  <path d="M1284 825h42C1344 825 1344 668 1346 668" fill="none" stroke="#0b9b7b" stroke-width="2.4"/>
+  <path d="M1346 659.6L1362.8 668 1346 676.4Z" fill="#0b9b7b"/>
+  <path d="M821 418h28c14 0 14-194 32-194h426c22 0 22 444 55 444" class="flow-data" opacity=".65"/>
+  <text x="1072" y="220" text-anchor="middle" class="small">会话直接读写 SQLite</text>
+
+  <!-- Return path -->
+  <path d="M900 706H866V902H566V544H526" class="return"/>
+  <text x="700" y="921" text-anchor="middle" class="small">Assistant Message + 最新 GraphState</text>
+  <path d="M316 588v24" class="flow"/>
+  <path d="M292 536h24" class="flow"/>
+
+  <!-- Footer -->
+  <g transform="translate(62 952)">
+    <circle cx="8" cy="8" r="5" fill="#2874db"/><text x="22" y="13" class="small">同步请求链路</text>
+    <circle cx="160" cy="8" r="5" fill="#7957dd"/><text x="174" y="13" class="small">AI 决策链路</text>
+    <circle cx="304" cy="8" r="5" fill="#0b9b7b"/><text x="318" y="13" class="small">数据持久化链路</text>
+    <text x="1448" y="13" text-anchor="end" class="small">MVP Architecture · 2026</text>
+  </g>
+</svg>
