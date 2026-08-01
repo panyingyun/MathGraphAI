@@ -1,6 +1,6 @@
 # MathGraph AI ReAct 准确性加固与收尾优化计划（Plan 02）
 
-> 状态：待实施  
+> 状态：实施中（阶段 A 已完成，2026-08-01）
 > 前置条件：Plan 01 阶段 0–5 已完成  
 > 核心目标：保持“所有自然语言请求统一进入 ReAct”，把系统从“链路可以运行”提升到“任务结果可以验证”
 
@@ -103,10 +103,10 @@ backend/app/schemas/agent.py
 
 验收：
 
-- [ ] 明确要求修改状态的请求，零 Action `final` 必须被拒绝。
-- [ ] 复合请求只完成部分目标时不能提交。
-- [ ] 删除指定方程不会误删其他方程。
-- [ ] GoalSpec 不引入新的执行路由，所有请求仍进入 AgentRunner。
+- [x] 明确要求修改状态的请求，零 Action `final` 必须被拒绝。
+- [x] 复合请求只完成部分目标时不能提交。
+- [x] 删除指定方程不会误删其他方程。
+- [x] GoalSpec 不引入新的执行路由，所有请求仍进入 AgentRunner。
 
 ### 3.2 Final Gate
 
@@ -138,9 +138,9 @@ AgentFinal
 
 验收：
 
-- [ ] `mutationExpected=true` 且没有成功写 Action 时，不能返回 success。
-- [ ] Runner 的 success 表示任务目标已满足，而不只是模型正常结束。
-- [ ] 未通过 Final Gate 的请求不修改数据库 revision。
+- [x] `mutationExpected=true` 且没有成功写 Action 时，不能返回 success。
+- [x] Runner 的 success 表示任务目标已满足，而不只是模型正常结束。
+- [x] 未通过 Final Gate 的请求不修改数据库 revision。
 
 ### 3.3 精确工具参数 Schema
 
@@ -184,10 +184,10 @@ class ToolSpec:
 
 验收：
 
-- [ ] 每个工具都具有 required 字段、类型、范围和示例。
-- [ ] 不再向模型暴露泛化的 `{arguments: object}`。
-- [ ] 工具参数错误在执行前被识别，并产生稳定错误码。
-- [ ] JSON Action 与原生 tool_calls 使用同一 Schema。
+- [x] 每个工具都具有 required 字段、类型、范围和示例。
+- [x] 不再向模型暴露泛化的 `{arguments: object}`。
+- [x] 工具参数错误在执行前被识别，并产生稳定错误码。
+- [x] JSON Action 与原生 tool_calls 使用同一 Schema。
 
 ### 3.4 画布上下文与历史解耦
 
@@ -217,9 +217,9 @@ AGENT_INCLUDE_CHAT_HISTORY=false
 
 验收：
 
-- [ ] “删除 y=x+1”可以直接解析到唯一 equationId。
-- [ ] “把第一条曲线改成红色”能基于当前方程顺序和 ID 操作。
-- [ ] 关闭聊天历史不会丢失当前 GraphState 的表达式和标签。
+- [x] “删除 y=x+1”可以直接解析到唯一 equationId。
+- [x] “把第一条曲线改成红色”能基于当前方程顺序和 ID 操作。
+- [x] 关闭聊天历史不会丢失当前 GraphState 的表达式和标签。
 
 ### 3.5 Runner 终止与重复调用修正
 
@@ -487,12 +487,23 @@ Shadow 不提交数据，但必须执行相同的 Final Gate。
 
 ### 阶段 A：准确性契约
 
-1. RequestSpec / GoalSpec。
-2. GoalValidator 和 Final Gate。
-3. 每工具 Pydantic 参数 Schema。
-4. GraphState 表达式与聊天历史解耦。
+状态：**已完成（2026-08-01）**。
+
+1. [x] RequestSpec / GoalSpec。
+2. [x] GoalValidator 和 Final Gate。
+3. [x] 每工具 Pydantic 参数 Schema。
+4. [x] GraphState 表达式与聊天历史解耦。
 
 退出条件：零 Action mutation 不再成功，工具参数在执行前可验证。
+
+实现记录：
+
+- 新增 `backend/app/agent/request_spec.py`，从用户请求生成绘图、添加、删除、更新、视口和数学分析等可验证目标。
+- 新增 `backend/app/agent/goal_validator.py`；`AgentFinal`、重复调用确定性收尾及 `off` 模式收尾均需通过 Final Gate，失败最多回填一次 `goal_not_satisfied` 供模型修复，仍失败则丢弃 WorkingGraphState。
+- 新增 `backend/app/agent/tool_schemas.py`，全部 16 个领域工具使用独立 Pydantic 参数模型；JSON Action、原生 `tool_calls` 与 Executor 执行前校验共用 `model_json_schema()`。
+- 新增 `AGENT_INCLUDE_GRAPH_EXPRESSIONS=true` 与 `AGENT_GOAL_REPAIR_ATTEMPTS=1`；关闭聊天历史时仍携带当前方程的 ID、原始表达式、标准化表达式、标签、颜色和可见性。
+- 修正指定表达式删除链路，`删除 y=x+1` 先映射精确 equationId，找不到目标时不删除其他方程。
+- 新增 `backend/tests/test_stage_a_accuracy.py`，覆盖零 Action 假成功、复合目标部分完成回滚、误删保护、Schema 同源、执行前参数校验与上下文解耦。
 
 ### 阶段 B：Runner 安全收尾
 
@@ -540,11 +551,11 @@ Shadow 不提交数据，但必须执行相同的 Final Gate。
 
 Plan 02 完成必须同时满足：
 
-- [ ] 所有自然语言请求仍统一进入 AgentRunner。
-- [ ] RequestSpec、GoalValidator 和 Final Gate 已上线。
-- [ ] 所有工具拥有精确 Pydantic 参数 Schema。
-- [ ] 当前 GraphState 表达式始终可供 Agent 决策。
-- [ ] mutation 请求零 Action 假成功率为 0%。
+- [x] 所有自然语言请求仍统一进入 AgentRunner。
+- [x] RequestSpec、GoalValidator 和 Final Gate 已上线。
+- [x] 所有工具拥有精确 Pydantic 参数 Schema。
+- [x] 当前 GraphState 表达式始终可供 Agent 决策。
+- [x] mutation 请求零 Action 假成功率为 0%。
 - [ ] 重复破坏性 Action 为 0。
 - [ ] final 与 GraphState / Observation 事实一致率为 100%。
 - [ ] 单步、复合、安全拒绝达到 §4.2 准确率目标。

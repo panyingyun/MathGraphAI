@@ -156,6 +156,67 @@ def plan_local_decisions(message: str, graph_state: GraphState) -> Tuple[List[Ag
     actions: List[AgentAction] = []
     notes: List[str] = []
 
+    # 删除请求中的 y=... 是目标引用，不是待绘制的新方程。
+    if any(word in text for word in ("删除", "移除", "去掉", "删掉")):
+        single = parse_locally(message, graph_state)
+        if single.intent == "unknown":
+            return [], single.explanation or single.error or "无法确定删除目标。", single.error or "unknown"
+        action = structured_result_to_action(single)
+        if action is None:
+            return [], single.explanation or "无法确定删除目标。", single.error or "unknown"
+        return [action], single.explanation or "已删除所选方程。", None
+
+    explicitly_plots = any(word in text for word in ("画", "绘制", "作图", "画出", "绘出"))
+    expression_update = bool(
+        len(expressions) >= 2
+        or re.search(r"(?:改成|改为|修改为|替换为|设为|设置为)\s*y\s*=", text, re.I)
+    )
+    visible = None
+    if "隐藏" in text or "不可见" in text:
+        visible = False
+    elif any(word in text for word in ("显示出来", "设为可见", "设置为可见")):
+        visible = True
+    width_match = re.search(r"(?:线宽|粗细)[^\d]{0,8}(\d+(?:\.\d+)?)", text)
+    line_width = float(width_match.group(1)) if width_match else None
+    updates = {}
+    if color:
+        updates["color"] = color
+    if expression_update and expressions:
+        updates["normalizedExpression"] = expressions[-1]
+    if visible is not None:
+        updates["visible"] = visible
+    if line_width is not None:
+        updates["lineWidth"] = line_width
+
+    if graph_state.equations and updates and not explicitly_plots:
+        target = None
+        target_expression = expressions[0] if expressions and (len(expressions) >= 2 or not expression_update) else None
+        if target_expression:
+            target = next(
+                (
+                    item
+                    for item in graph_state.equations
+                    if item.normalized_expression.replace(" ", "") == target_expression.replace(" ", "")
+                ),
+                None,
+            )
+        elif re.search(r"第\s*一(?:条|个)?", text):
+            target = graph_state.equations[0]
+        else:
+            target = graph_state.equations[-1]
+        if target is None:
+            return [], "找不到要修改的方程，未更改其他曲线。", "equation_not_found"
+        actions.append(
+            AgentAction(
+                tool="update_equation",
+                target={"equationId": target.id},
+                arguments={"updates": updates},
+            )
+        )
+        if viewport:
+            actions.append(AgentAction(tool="set_viewport", arguments={"viewport": viewport}))
+        return actions, "已更新指定曲线。", None
+
     if expressions and _wants_intersections(text):
         try:
             planned = _plan_intersection_focus(text, expressions, color, graph_state)

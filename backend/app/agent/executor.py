@@ -5,6 +5,8 @@ from __future__ import annotations
 import uuid
 from typing import Optional
 
+from pydantic import ValidationError
+
 from ..schemas.agent import Command, ExecutionResult, Observation
 from ..schemas.graph import GraphState
 from .policy import PolicyViolation, assert_tool_allowed, check_postconditions, check_preconditions
@@ -48,11 +50,33 @@ def execute_command(working: WorkingGraphState, command: Command) -> ExecutionRe
 
     try:
         assert_tool_allowed(command.type, command.source)
+        tool = get_tool(command.type)
+        try:
+            validated_arguments = tool.arguments_model.model_validate(command.arguments or {})
+            normalized_target = command.target
+            if command.target is not None and tool.target_model is not None:
+                normalized_target = tool.target_model.model_validate(command.target).model_dump(
+                    by_alias=True,
+                    exclude_none=True,
+                )
+        except ValidationError as exc:
+            first = exc.errors(include_url=False)[0]
+            location = ".".join(str(item) for item in first.get("loc") or []) or "arguments"
+            raise PolicyViolation(
+                "invalid_arguments",
+                f"{command.type} 参数 {location} 无效：{first.get('msg', '校验失败')}",
+            ) from exc
+
+        command = command.model_copy(
+            update={
+                "arguments": validated_arguments.model_dump(by_alias=True, exclude_none=True),
+                "target": normalized_target,
+            }
+        )
         precondition = check_preconditions(command, working.current)
         if precondition:
             raise PolicyViolation(precondition.code, precondition.message)
 
-        tool = get_tool(command.type)
         data = tool.handler(working, command.arguments or {}, command.target)
         postcondition = check_postconditions(command, before, working.current)
         if postcondition:

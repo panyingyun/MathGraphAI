@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 from ..config import settings
-from ..schemas.agent import AgentAction, AgentFinal, Command, Observation
+from ..schemas.agent import AgentAction, AgentFinal, Command, GoalValidationResult, Observation
 from ..schemas.chat import StepSummary
 from ..schemas.graph import GraphState
 from ..services.model_errors import ModelErrorCode, ModelServiceError
@@ -20,7 +20,9 @@ from . import cancel_registry
 from .adapter import action_to_command
 from .context_builder import truncate_observation
 from .executor import execute_command
+from .goal_validator import validate_goal
 from .providers import DecisionContext, DecisionProvider, LocalDecisionProvider, select_primary_provider
+from .request_spec import build_request_spec
 from .shadow import diff_graph_states, run_local_baseline
 from .working_state import WorkingGraphState
 
@@ -89,6 +91,16 @@ def _tool_summary(tool: str) -> str:
     return mapping.get(tool, f"已执行 {tool}")
 
 
+def _goal_observation(result: GoalValidationResult) -> Observation:
+    return Observation(
+        tool="goal_validator",
+        success=False,
+        data={"completed": result.completed, "missing": result.missing},
+        error_code="goal_not_satisfied",
+        error_message=result.message,
+    )
+
+
 async def _execute_with_timeout(working: WorkingGraphState, command: Command):
     loop = asyncio.get_running_loop()
     return await asyncio.wait_for(
@@ -118,6 +130,7 @@ class AgentRunner:
     ) -> RunnerResult:
         started = time.perf_counter()
         working = WorkingGraphState.from_graph(graph_state)
+        request_spec = build_request_spec(user_message, graph_state)
         provider: DecisionProvider = self.provider
         provider.reset()
         cancel_registry.register(request_id)
@@ -128,10 +141,12 @@ class AgentRunner:
         decision_provider = provider.name
         steps: List[StepSummary] = []
         observations: List[Observation] = []
+        executed_tools: List[str] = []
         fingerprints: List[str] = []
         repeat_streak = 0
         action_steps = 0
         model_calls = 0
+        goal_repair_attempts = 0
         max_steps = 1 if settings.agent_mode == "off" else settings.agent_max_steps
         shadow_candidate: Optional[GraphState] = None
         cancelled = False
@@ -145,6 +160,7 @@ class AgentRunner:
             request_id=request_id,
             context_summary=context_summary,
             prior_steps=steps,
+            request_spec=request_spec,
         )
 
         final_message = ""
@@ -221,7 +237,33 @@ class AgentRunner:
                 if isinstance(decision, AgentFinal):
                     phase = "save"
                     final_message = decision.message
-                    if working.dirty:
+                    validation = validate_goal(
+                        request_spec,
+                        working.base,
+                        working.current,
+                        observations,
+                        executed_tools,
+                    )
+                    if not validation.satisfied:
+                        gate_observation = _goal_observation(validation)
+                        observations.append(gate_observation)
+                        if goal_repair_attempts < settings.agent_goal_repair_attempts:
+                            goal_repair_attempts += 1
+                            steps.append(
+                                _public_step(
+                                    len(steps),
+                                    "goal_validator",
+                                    "error",
+                                    f"完成校验未通过，允许修复：{', '.join(validation.missing)}",
+                                )
+                            )
+                            phase = "execute"
+                            continue
+                        error_code = "goal_not_satisfied"
+                        final_message = f"未能完成全部请求（缺少：{', '.join(validation.missing)}），已保留原图。"
+                        working.discard()
+                        success = False
+                    elif working.dirty:
                         success = True
                         if not fallback_used:
                             error_code = None
@@ -280,7 +322,14 @@ class AgentRunner:
                         action_steps += 1
                         continue
 
-                    if working.dirty:
+                    validation = validate_goal(
+                        request_spec,
+                        working.base,
+                        working.current,
+                        observations,
+                        executed_tools,
+                    )
+                    if working.dirty and validation.satisfied:
                         phase = "save"
                         final_message = "已完成图像更新。"
                         success = True
@@ -289,6 +338,15 @@ class AgentRunner:
                         steps.append(
                             _public_step(len(steps), decision.tool, "final", "重复调用已自动结束并保留结果")
                         )
+                        break
+
+                    if not validation.satisfied:
+                        error_code = "goal_not_satisfied"
+                        final_message = f"任务只完成了一部分（缺少：{', '.join(validation.missing)}），已保留原图。"
+                        observations.append(_goal_observation(validation))
+                        working.discard()
+                        steps.append(_public_step(len(steps), "goal_validator", "error", final_message))
+                        success = False
                         break
 
                     error_code = "repeated_action"
@@ -337,13 +395,29 @@ class AgentRunner:
                     success = False
                     break
 
+                executed_tools.append(decision.tool)
                 steps.append(_public_step(len(steps), decision.tool, "success", _tool_summary(decision.tool), duration_ms))
 
                 if settings.agent_mode == "off":
                     phase = "save"
-                    final_message = "已完成图像更新。"
-                    success = True
-                    steps.append(_public_step(len(steps), None, "final", final_message))
+                    validation = validate_goal(
+                        request_spec,
+                        working.base,
+                        working.current,
+                        observations,
+                        executed_tools,
+                    )
+                    if validation.satisfied:
+                        final_message = "已完成图像更新。"
+                        success = True
+                        steps.append(_public_step(len(steps), None, "final", final_message))
+                    else:
+                        error_code = "goal_not_satisfied"
+                        final_message = f"未能完成全部请求（缺少：{', '.join(validation.missing)}），已保留原图。"
+                        observations.append(_goal_observation(validation))
+                        working.discard()
+                        success = False
+                        steps.append(_public_step(len(steps), "goal_validator", "error", final_message))
                     break
         finally:
             cancel_registry.unregister(request_id)

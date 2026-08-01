@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Protocol, Union
 
-from ..schemas.agent import AgentAction, AgentFinal, Observation
+from ..schemas.agent import AgentAction, AgentFinal, Observation, RequestSpec
 from ..schemas.graph import GraphState
 from ..services.deepseek_service import call_deepseek_decision
 from ..services.model_errors import ModelServiceError
@@ -27,6 +27,7 @@ class DecisionContext:
     step_index: int = 0
     context_summary: Optional[str] = None
     prior_steps: List[Any] = field(default_factory=list)
+    request_spec: Optional[RequestSpec] = None
 
 
 class DecisionProvider(Protocol):
@@ -77,6 +78,7 @@ class DeepSeekDecisionProvider:
             observation_payloads,
             context_summary=context.context_summary,
             prior_steps=context.prior_steps,
+            request_spec=context.request_spec,
         )
         tools = openai_tool_definitions() if self.prefer_tool_calls else None
         raw = await call_deepseek_decision(messages, tools=tools)

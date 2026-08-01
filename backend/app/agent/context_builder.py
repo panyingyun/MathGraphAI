@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 from typing import Any, Dict, List, Optional
 
 from ..config import settings
-from ..schemas.agent import Observation
+from ..schemas.agent import Observation, RequestSpec
 from ..schemas.chat import StepSummary
 from ..schemas.graph import GraphState
 from .context_budget import build_command_history, select_recent_messages
@@ -21,9 +22,11 @@ REACT_SYSTEM_PROMPT = """你是 MathGraph AI 的决策模块。根据用户请�
 - 不要输出思维过程，只输出 JSON。
 - 显函数只允许变量 x；函数只允许 sin, cos, tan, log, sqrt, abs, exp, pow；乘法用 *，幂用 ^。
 - 只根据本轮 userMessage、currentGraphState 与本轮 observations 决策；不要臆造未出现在 userMessage 中的表达式。
-- 若需已有曲线的具体表达式，先 get_graph_state；用户本轮写出新的 y=... 时，按 userMessage 原文用 plot_equations 整图替换。
+- 已有曲线的 ID、表达式和标签直接读取 currentGraphState；只有需要刷新摘要时才调用 get_graph_state。用户本轮写出新的 y=... 时，按 userMessage 原文用 plot_equations 整图替换。
 - 说「再加/添加」时用 add_equations；复合请求拆成多个 action，全部完成后必须 final。
 - 不要用相同参数重复调用同一工具；Observation.success=true 后若目标已达成，立即 final。
+- availableTools.argumentsSchema 是工具 arguments 的精确契约；必须满足 required、类型和范围。
+- requestSpec.requiredEffects 中的目标必须全部完成后才能 final；若收到 goal_validator 失败 Observation，按 missing 修复一次。
 - 若无法理解，直接 final 并说明原因。
 - 修改已有曲线时优先使用方程 ID；新方程由工具分配 ID。
 - 画两条及以上曲线时，plot_equations 会自动标注交点；通常一步 plot 后即可 final，无需重复 plot。
@@ -39,6 +42,8 @@ def available_tools_schema() -> List[Dict[str, Any]]:
             "name": name,
             "description": spec.description,
             "permission": spec.permission,
+            "argumentsSchema": spec.arguments_model.model_json_schema(by_alias=True),
+            "targetSchema": spec.target_model.model_json_schema(by_alias=True) if spec.target_model else None,
         }
         for name, spec in TOOL_REGISTRY.items()
     ]
@@ -53,6 +58,7 @@ def graph_summary(state: GraphState, *, include_expressions: bool = True) -> Dic
             "visible": item.visible,
         }
         if include_expressions:
+            entry["expression"] = item.expression
             entry["normalizedExpression"] = item.normalized_expression
             entry["label"] = item.label
         equations.append(entry)
@@ -63,9 +69,7 @@ def graph_summary(state: GraphState, *, include_expressions: bool = True) -> Dic
         "markers": [
             {"id": item.id, "kind": item.kind, "label": item.label, "x": item.x, "y": item.y}
             for item in (state.markers or [])[: settings.math_max_points]
-        ]
-        if include_expressions
-        else [],
+        ],
         "viewport": state.viewport.model_dump(by_alias=True),
     }
 
@@ -94,11 +98,15 @@ def build_react_messages(
     *,
     context_summary: Optional[str] = None,
     prior_steps: Optional[List[StepSummary]] = None,
+    request_spec: Optional[RequestSpec] = None,
 ) -> List[Dict[str, Any]]:
-    # 默认只认本轮提示词：不带聊天历史/摘要，也不把旧方程表达式塞进上下文。
+    # 聊天历史与当前画布事实独立配置；关闭历史不应隐藏已有方程。
     include_history = settings.agent_include_chat_history
     structured: Dict[str, Any] = {
-        "currentGraphState": graph_summary(graph_state, include_expressions=include_history),
+        "currentGraphState": graph_summary(
+            graph_state,
+            include_expressions=settings.agent_include_graph_expressions,
+        ),
         # 仅本轮已执行步骤，不是聊天历史。
         "commandHistory": build_command_history(prior_steps or []),
     }
@@ -111,6 +119,7 @@ def build_react_messages(
         "structuredContext": structured,
         "observations": observations[-8:],
         "availableTools": available_tools_schema(),
+        "requestSpec": request_spec.model_dump(by_alias=True) if request_spec else None,
     }
     return [
         {"role": "system", "content": REACT_SYSTEM_PROMPT},
@@ -122,19 +131,18 @@ def openai_tool_definitions() -> List[Dict[str, Any]]:
     """原生 tool_calls 适配用的工具声明。"""
     tools = []
     for name, spec in TOOL_REGISTRY.items():
+        parameters = deepcopy(spec.arguments_model.model_json_schema(by_alias=True))
+        parameters.setdefault("type", "object")
+        parameters.setdefault("properties", {})
+        if spec.target_model is not None:
+            parameters["properties"]["target"] = spec.target_model.model_json_schema(by_alias=True)
         tools.append(
             {
                 "type": "function",
                 "function": {
                     "name": name,
                     "description": spec.description,
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "arguments": {"type": "object"},
-                            "target": {"type": "object"},
-                        },
-                    },
+                    "parameters": parameters,
                 },
             }
         )

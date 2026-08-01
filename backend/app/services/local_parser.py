@@ -80,8 +80,25 @@ def parse_locally(message: str, graph_state: GraphState) -> StructuredResult:
     if first_match and graph_state.equations:
         target = graph_state.equations[0]
 
-    if any(word in text for word in ("删除", "移除")):
+    if any(word in text for word in ("删除", "移除", "去掉", "删掉")):
+        requested = extract_equations(text)
+        if requested:
+            expected = requested[0].replace(" ", "")
+            target = next(
+                (
+                    item
+                    for item in graph_state.equations
+                    if item.normalized_expression.replace(" ", "") == expected
+                ),
+                None,
+            )
         if not target:
+            if requested:
+                return StructuredResult(
+                    intent="unknown",
+                    error="找不到指定方程",
+                    explanation=f"当前图中找不到 y = {requested[0]}，未删除其他曲线。",
+                )
             return StructuredResult(intent="unknown", error="当前没有可删除的方程", explanation="请先绘制一个方程。")
         return StructuredResult(intent="remove_equation", target_equation_id=target.id if target else None, explanation="已删除所选方程。")
 

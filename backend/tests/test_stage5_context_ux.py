@@ -23,7 +23,7 @@ def test_select_recent_messages_respects_char_budget():
     assert selected[-1]["content"].startswith("msg-19")
 
 
-def test_build_react_messages_defaults_to_current_prompt_only(monkeypatch):
+def test_build_react_messages_keeps_graph_facts_when_chat_history_is_disabled(monkeypatch):
     import json
     from dataclasses import replace
 
@@ -33,7 +33,11 @@ def test_build_react_messages_defaults_to_current_prompt_only(monkeypatch):
 
     monkeypatch.setattr(
         "app.agent.context_builder.settings",
-        replace(settings, agent_include_chat_history=False),
+        replace(
+            settings,
+            agent_include_chat_history=False,
+            agent_include_graph_expressions=True,
+        ),
     )
     state = GraphState(
         equations=[
@@ -57,8 +61,11 @@ def test_build_react_messages_defaults_to_current_prompt_only(monkeypatch):
     assert "recentMessages" not in structured
     assert "contextSummary" not in structured
     assert structured["currentGraphState"]["equationCount"] == 1
-    assert "normalizedExpression" not in structured["currentGraphState"]["equations"][0]
-    assert "3^x" not in messages[1]["content"]
+    equation = structured["currentGraphState"]["equations"][0]
+    assert equation["expression"] == "y = 3^x"
+    assert equation["normalizedExpression"] == "3^x"
+    assert equation["label"] == "y = 3^x"
+    assert "3^x" in messages[1]["content"]
 
 
 def test_refresh_context_summary_is_deterministic():

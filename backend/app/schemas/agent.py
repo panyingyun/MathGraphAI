@@ -31,6 +31,44 @@ CommandType = Literal[
 
 CommandSource = Literal["agent", "ui", "system"]
 
+GoalEffect = Literal[
+    "plot",
+    "add",
+    "remove",
+    "update",
+    "viewport",
+    "analyze",
+    "explain",
+    "intersections",
+    "zeros",
+    "extrema",
+    "compare",
+    "fit_viewport",
+]
+
+
+class RequestSpec(APIModel):
+    """用户请求的可验证完成条件，不参与执行路径选择。"""
+
+    mutation_expected: bool = False
+    explicit_expressions: List[str] = Field(default_factory=list)
+    required_effects: List[GoalEffect] = Field(default_factory=list)
+    target_expression: Optional[str] = None
+    target_equation_id: Optional[str] = None
+    expected_expression: Optional[str] = None
+    expected_color: Optional[str] = None
+    expected_visible: Optional[bool] = None
+    expected_line_width: Optional[float] = None
+    expected_viewport: Optional[Dict[str, float]] = None
+    requires_observation: List[str] = Field(default_factory=list)
+
+
+class GoalValidationResult(APIModel):
+    satisfied: bool
+    completed: List[str] = Field(default_factory=list)
+    missing: List[str] = Field(default_factory=list)
+    message: str = ""
+
 
 class AgentAction(APIModel):
     type: Literal["action"] = "action"
