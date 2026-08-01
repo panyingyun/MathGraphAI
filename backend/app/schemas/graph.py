@@ -53,6 +53,16 @@ class KeyPoint(APIModel):
     y: float
 
 
+class GraphMarker(APIModel):
+    id: str = ""
+    kind: Literal["intersection", "zero", "extremum", "point"] = "point"
+    label: str = ""
+    x: float
+    y: float
+    color: Optional[str] = None
+    equation_ids: List[str] = Field(default_factory=list)
+
+
 class GraphAnalysis(APIModel):
     function_type: Optional[str] = None
     key_points: Optional[List[KeyPoint]] = None
@@ -68,6 +78,7 @@ class GraphState(APIModel):
     viewport: Viewport = Field(default_factory=Viewport)
     settings: GraphSettings = Field(default_factory=GraphSettings)
     analysis: Optional[GraphAnalysis] = None
+    markers: List[GraphMarker] = Field(default_factory=list)
     revision: int = Field(default=0, ge=0)
 
     @model_validator(mode="after")

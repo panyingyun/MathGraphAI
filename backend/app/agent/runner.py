@@ -8,7 +8,7 @@ import json
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from ..config import settings
 from ..schemas.agent import AgentAction, AgentFinal, Command, Observation
@@ -20,6 +20,7 @@ from .adapter import action_to_command
 from .context_builder import truncate_observation
 from .executor import execute_command
 from .providers import DecisionContext, DecisionProvider, LocalDecisionProvider, select_primary_provider
+from .shadow import diff_graph_states, run_local_baseline
 from .working_state import WorkingGraphState
 
 
@@ -42,6 +43,8 @@ class RunnerResult:
     model_calls: int = 0
     steps: List[StepSummary] = field(default_factory=list)
     execution_mode: str = "react"
+    shadow_diff: Optional[Dict[str, Any]] = None
+    shadow_candidate: Optional[GraphState] = None
 
 
 def _action_fingerprint(action: AgentAction) -> str:
@@ -72,6 +75,13 @@ def _tool_summary(tool: str) -> str:
         "explain_graph": "已生成解释",
         "set_graph_settings": "已更新图像设置",
         "get_graph_state": "已读取图像状态",
+        "calculate_intersections": "已计算交点",
+        "calculate_zeros": "已计算零点",
+        "calculate_extrema": "已计算极值",
+        "compare_functions": "已比较函数",
+        "check_sample": "已检查采样可绘性",
+        "fit_viewport_to_points": "已按点集拟合视口",
+        "set_graph_markers": "已更新图标记",
     }
     return mapping.get(tool, f"已执行 {tool}")
 
@@ -114,9 +124,11 @@ class AgentRunner:
         steps: List[StepSummary] = []
         observations: List[Observation] = []
         fingerprints: List[str] = []
+        repeat_streak = 0
         action_steps = 0
         model_calls = 0
         max_steps = 1 if settings.agent_mode == "off" else settings.agent_max_steps
+        shadow_candidate: Optional[GraphState] = None
 
         context = DecisionContext(
             user_message=user_message,
@@ -209,6 +221,10 @@ class AgentRunner:
 
             fingerprint = _action_fingerprint(decision)
             if fingerprints and fingerprints[-1] == fingerprint:
+                repeat_streak += 1
+            else:
+                repeat_streak = 0
+            if repeat_streak >= settings.agent_max_repeated_actions:
                 error_code = "repeated_action"
                 final_message = "检测到重复工具调用，已停止执行。"
                 working.discard()
@@ -254,10 +270,24 @@ class AgentRunner:
 
         mode = settings.agent_mode
         should_commit = bool(success and working.dirty and mode in {"react", "off"})
+        shadow_diff = None
         if mode == "shadow":
             should_commit = False
+            if success:
+                shadow_candidate = working.current.model_copy(deep=True)
+            baseline_state = run_local_baseline(user_message, graph_state)
+            shadow_diff = diff_graph_states(shadow_candidate, baseline_state)
             result_state = working.base.model_copy(deep=True)
             working.discard()
+            if settings.agent_trace_enabled:
+                log_event(
+                    "agent_shadow_diff",
+                    requestId=request_id,
+                    sessionId=session_id,
+                    decisionProvider=decision_provider,
+                    matched=shadow_diff.get("matched"),
+                    diffs=shadow_diff.get("diffs"),
+                )
         elif should_commit:
             result_state = working.commit()
         else:
@@ -269,6 +299,9 @@ class AgentRunner:
 
         if fallback_used and fallback_reason:
             final_message = f"{final_message}\n（{fallback_reason}）"
+        if mode == "shadow" and shadow_diff is not None:
+            match_text = "一致" if shadow_diff.get("matched") else "存在差异：" + ",".join(shadow_diff.get("diffs") or [])
+            final_message = f"{final_message}\n（Shadow 模式未提交；与本地基线{match_text}）"
 
         if settings.agent_trace_enabled:
             log_event(
@@ -299,6 +332,8 @@ class AgentRunner:
             model_calls=model_calls,
             steps=steps,
             execution_mode="react" if mode == "off" else mode,
+            shadow_diff=shadow_diff,
+            shadow_candidate=shadow_candidate,
         )
 
 

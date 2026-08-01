@@ -35,11 +35,22 @@ export interface GraphAnalysis {
   description?: string;
 }
 
+export interface GraphMarker {
+  id: string;
+  kind: "intersection" | "zero" | "extremum" | "point";
+  label: string;
+  x: number;
+  y: number;
+  color?: string;
+  equationIds?: string[];
+}
+
 export interface GraphState {
   equations: EquationItem[];
   viewport: Viewport;
   settings: GraphSettings;
   analysis?: GraphAnalysis;
+  markers?: GraphMarker[];
   revision: number;
 }
 
@@ -47,5 +58,6 @@ export const EMPTY_GRAPH_STATE: GraphState = {
   equations: [],
   viewport: { xMin: -10, xMax: 10, yMin: -10, yMax: 10 },
   settings: { showGrid: true, showAxis: true, showLegend: true, sampleCount: 1000 },
+  markers: [],
   revision: 0,
 };

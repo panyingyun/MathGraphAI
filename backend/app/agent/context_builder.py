@@ -21,6 +21,9 @@ REACT_SYSTEM_PROMPT = """你是 MathGraph AI 的决策模块。根据用户请�
 - 复合请求拆成多个 action，全部完成后必须 final。
 - 若无法理解，直接 final 并说明原因。
 - 优先使用已有方程 ID；新方程由工具分配 ID。
+- 找交点：先 plot/add 方程，再 calculate_intersections；若需放大，用 Observation.points 调用 fit_viewport_to_points（可带 markers）。
+- 零点/极值：calculate_zeros / calculate_extrema 后可用 set_graph_markers 或 fit_viewport_to_points 写入标记。
+- 比较函数用 compare_functions；判断当前范围是否可绘用 check_sample。
 """
 
 

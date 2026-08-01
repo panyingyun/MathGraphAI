@@ -86,6 +86,7 @@ def plot_equations(working: WorkingGraphState, arguments: Dict[str, Any], _targe
     equations = [_normalize_equation(item, state_len=0, index=index) for index, item in enumerate(raw_equations)]
     next_state = working.current.model_copy(deep=True)
     next_state.equations = equations
+    next_state.markers = []
     if arguments.get("analysis") is not None:
         next_state.analysis = clamp_analysis(GraphAnalysis.model_validate(arguments["analysis"]))
     elif equations:

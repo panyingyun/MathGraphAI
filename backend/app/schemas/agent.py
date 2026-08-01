@@ -20,6 +20,13 @@ CommandType = Literal[
     "set_graph_settings",
     "analyze_function",
     "explain_graph",
+    "calculate_intersections",
+    "calculate_zeros",
+    "calculate_extrema",
+    "compare_functions",
+    "check_sample",
+    "fit_viewport_to_points",
+    "set_graph_markers",
 ]
 
 CommandSource = Literal["agent", "ui", "system"]

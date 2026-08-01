@@ -19,9 +19,20 @@ WRITE_TOOLS: FrozenSet[str] = frozenset(
         "set_graph_settings",
         "analyze_function",
         "explain_graph",
+        "fit_viewport_to_points",
+        "set_graph_markers",
     }
 )
-READ_TOOLS: FrozenSet[str] = frozenset({"get_graph_state"})
+READ_TOOLS: FrozenSet[str] = frozenset(
+    {
+        "get_graph_state",
+        "calculate_intersections",
+        "calculate_zeros",
+        "calculate_extrema",
+        "compare_functions",
+        "check_sample",
+    }
+)
 ALL_TOOLS = WRITE_TOOLS | READ_TOOLS
 
 # UI 与 agent 均可使用的首批工具；后续危险工具可仅开放给 system。
@@ -48,9 +59,19 @@ def assert_tool_allowed(tool: str, source: CommandSource) -> None:
 
 def check_preconditions(command: Command, state: GraphState) -> Optional[PolicyViolation]:
     tool = command.type
-    if tool in {"update_equation", "remove_equation", "analyze_function", "explain_graph"}:
+    if tool in {
+        "update_equation",
+        "remove_equation",
+        "analyze_function",
+        "explain_graph",
+        "calculate_zeros",
+        "calculate_extrema",
+        "check_sample",
+    }:
         if not state.equations:
             return PolicyViolation("precondition_failed", "当前没有可操作的方程")
+    if tool in {"calculate_intersections", "compare_functions"} and len(state.equations) < 2:
+        return PolicyViolation("precondition_failed", "至少需要两条方程")
     if tool == "add_equations":
         equations = command.arguments.get("equations") or []
         if not equations:
@@ -65,6 +86,8 @@ def check_preconditions(command: Command, state: GraphState) -> Optional[PolicyV
         return PolicyViolation("invalid_arguments", "update_equation 缺少 updates")
     if tool == "set_graph_settings" and not command.arguments.get("settings"):
         return PolicyViolation("invalid_arguments", "set_graph_settings 缺少 settings")
+    if tool == "fit_viewport_to_points" and not command.arguments.get("points"):
+        return PolicyViolation("invalid_arguments", "fit_viewport_to_points 缺少 points")
     return None
 
 
@@ -73,11 +96,10 @@ def check_postconditions(command: Command, before: GraphState, after: GraphState
         if before.model_dump() != after.model_dump():
             return PolicyViolation("postcondition_failed", "只读工具不得修改 GraphState")
     if command.type in WRITE_TOOLS and before.model_dump() == after.model_dump() and command.type not in {
-        # analyze/explain may rewrite identical analysis; still ok if dirty set by executor
         "analyze_function",
         "explain_graph",
+        "set_graph_markers",
     }:
-        # Allow no-op writes only when explicitly same content after normalize — still mark success.
         return None
     if len(after.equations) < 0:  # pragma: no cover
         return PolicyViolation("postcondition_failed", "方程列表非法")

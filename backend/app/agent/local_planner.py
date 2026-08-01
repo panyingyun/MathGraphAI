@@ -17,6 +17,7 @@ from ..services.local_parser import (
     parse_locally,
 )
 from ..utils.equation_validator import InvalidEquation
+from ..utils.numeric_analysis import find_intersections, find_zeros, find_extrema, compare_functions
 from .adapter import structured_result_to_action
 
 
@@ -39,6 +40,107 @@ def _color_from_text(text: str) -> Optional[str]:
     return next((value for name, value in COLOR_NAMES.items() if name in text), None)
 
 
+def _wants_intersections(text: str) -> bool:
+    return any(word in text for word in ("交点", "相交", "交汇"))
+
+
+def _wants_zoom_to_points(text: str) -> bool:
+    return any(word in text for word in ("放大", "附近", "聚焦", "缩放到", "视图"))
+
+
+def _wants_zeros(text: str) -> bool:
+    return any(word in text for word in ("零点", "根", "x 截距", "x截距"))
+
+
+def _wants_extrema(text: str) -> bool:
+    return any(word in text for word in ("极值", "极大", "极小", "顶点"))
+
+
+def _wants_compare(text: str) -> bool:
+    return any(word in text for word in ("比较", "对比", "谁更大", "哪个大"))
+
+
+def _equation_payloads(items) -> List[dict]:
+    return [
+        {
+            "expression": item.expression,
+            "normalizedExpression": item.normalized_expression,
+            "label": item.label,
+            "color": item.color,
+            "visible": item.visible,
+            "lineWidth": item.line_width,
+            "type": item.type,
+        }
+        for item in items
+    ]
+
+
+def _plan_intersection_focus(text: str, expressions: List[str], color: Optional[str], graph_state: GraphState):
+    items = []
+    for index, value in enumerate(expressions):
+        paint = color or COLORS[(len(graph_state.equations) + index) % len(COLORS)]
+        items.append(equation_item(value, paint))
+    if len(items) < 2:
+        return None
+
+    analysis = analyze_expression(items[0].normalized_expression)
+    actions: List[AgentAction] = [
+        AgentAction(
+            tool="plot_equations",
+            arguments={
+                "equations": _equation_payloads(items),
+                "analysis": analysis.model_dump(by_alias=True),
+            },
+        )
+    ]
+    # 本地规划器预先计算交点，避免依赖 Observation 回灌。
+    viewport = graph_state.viewport
+    result = find_intersections(
+        items[0].normalized_expression,
+        items[1].normalized_expression,
+        viewport.x_min,
+        viewport.x_max,
+    )
+    points = list(result["points"])
+    markers = [
+        {
+            "id": f"intersect_{index}",
+            "kind": "intersection",
+            "label": f"交点{index + 1}",
+            "x": point["x"],
+            "y": point["y"],
+        }
+        for index, point in enumerate(points)
+    ]
+    actions.append(
+        AgentAction(
+            tool="calculate_intersections",
+            arguments={},
+        )
+    )
+    if points and _wants_zoom_to_points(text):
+        actions.append(
+            AgentAction(
+                tool="fit_viewport_to_points",
+                arguments={"points": points, "markers": markers, "padding": 0.4},
+            )
+        )
+    elif markers:
+        actions.append(AgentAction(tool="set_graph_markers", arguments={"markers": markers}))
+
+    labels = ", ".join(item.label for item in items)
+    if points:
+        coords = "; ".join(f"({p['x']:g}, {p['y']:g})" for p in points[:4])
+        final_message = f"已绘制 {labels}，找到交点 {coords}"
+        if _wants_zoom_to_points(text):
+            final_message += "，并放大到交点附近。"
+        else:
+            final_message += "。"
+    else:
+        final_message = f"已绘制 {labels}，当前范围内未找到交点。"
+    return actions, final_message, None
+
+
 def plan_local_decisions(message: str, graph_state: GraphState) -> Tuple[List[AgentAction], str, Optional[str]]:
     """返回 (actions, final_message, error_message)。"""
     text = message.strip()
@@ -47,6 +149,14 @@ def plan_local_decisions(message: str, graph_state: GraphState) -> Tuple[List[Ag
     viewport = _viewport_from_text(text)
     actions: List[AgentAction] = []
     notes: List[str] = []
+
+    if expressions and _wants_intersections(text):
+        try:
+            planned = _plan_intersection_focus(text, expressions, color, graph_state)
+        except InvalidEquation as exc:
+            return [], f"方程解析失败：{exc}。例如可以输入 y = x^2 或 y = sin(x)。", str(exc)
+        if planned is not None:
+            return planned
 
     if expressions:
         try:
@@ -65,18 +175,7 @@ def plan_local_decisions(message: str, graph_state: GraphState) -> Tuple[List[Ag
             AgentAction(
                 tool=tool,
                 arguments={
-                    "equations": [
-                        {
-                            "expression": item.expression,
-                            "normalizedExpression": item.normalized_expression,
-                            "label": item.label,
-                            "color": item.color,
-                            "visible": item.visible,
-                            "lineWidth": item.line_width,
-                            "type": item.type,
-                        }
-                        for item in items
-                    ],
+                    "equations": _equation_payloads(items),
                     "analysis": analysis.model_dump(by_alias=True),
                 },
             )
@@ -87,16 +186,106 @@ def plan_local_decisions(message: str, graph_state: GraphState) -> Tuple[List[Ag
         if viewport:
             actions.append(AgentAction(tool="set_viewport", arguments={"viewport": viewport}))
             notes.append(f"坐标范围调整为 {viewport.get('xMin'):g} 到 {viewport.get('xMax'):g}")
+
+        # 绘制后可接零点/极值/比较。
+        if len(items) >= 1 and _wants_zeros(text):
+            zeros = find_zeros(items[0].normalized_expression, graph_state.viewport.x_min, graph_state.viewport.x_max)
+            actions.append(AgentAction(tool="calculate_zeros", arguments={}))
+            if zeros["points"]:
+                actions.append(
+                    AgentAction(
+                        tool="set_graph_markers",
+                        arguments={
+                            "markers": [
+                                {
+                                    "id": f"zero_{index}",
+                                    "kind": "zero",
+                                    "label": f"零点{index + 1}",
+                                    "x": point["x"],
+                                    "y": point["y"],
+                                }
+                                for index, point in enumerate(zeros["points"])
+                            ]
+                        },
+                    )
+                )
+                notes.append(f"标记 {len(zeros['points'])} 个零点")
+        if len(items) >= 1 and _wants_extrema(text):
+            extrema = find_extrema(items[0].normalized_expression, graph_state.viewport.x_min, graph_state.viewport.x_max)
+            actions.append(AgentAction(tool="calculate_extrema", arguments={}))
+            if extrema["points"]:
+                actions.append(
+                    AgentAction(
+                        tool="set_graph_markers",
+                        arguments={
+                            "markers": [
+                                {
+                                    "id": f"extremum_{index}",
+                                    "kind": "extremum",
+                                    "label": ("极大" if point["kind"] == "max" else "极小") + f"{index + 1}",
+                                    "x": float(point["x"]),
+                                    "y": float(point["y"]),
+                                }
+                                for index, point in enumerate(extrema["points"])
+                            ]
+                        },
+                    )
+                )
+                notes.append(f"标记 {len(extrema['points'])} 个极值")
+        if len(items) >= 2 and _wants_compare(text):
+            compared = compare_functions(
+                items[0].normalized_expression,
+                items[1].normalized_expression,
+                graph_state.viewport.x_min,
+                graph_state.viewport.x_max,
+            )
+            actions.append(AgentAction(tool="compare_functions", arguments={}))
+            notes.append(compared["summary"])
+
         final_message = "已完成：" + "，".join(notes) + "。"
-        if analysis.description:
+        if analysis.description and not _wants_compare(text):
             final_message += analysis.description
         return actions, final_message, None
+
+    # 已有方程上的交点/放大（无新方程文本）。
+    if _wants_intersections(text) and len(graph_state.equations) >= 2:
+        left, right = graph_state.equations[0], graph_state.equations[1]
+        result = find_intersections(
+            left.normalized_expression,
+            right.normalized_expression,
+            graph_state.viewport.x_min,
+            graph_state.viewport.x_max,
+        )
+        actions = [AgentAction(tool="calculate_intersections", arguments={})]
+        points = list(result["points"])
+        markers = [
+            {
+                "id": f"intersect_{index}",
+                "kind": "intersection",
+                "label": f"交点{index + 1}",
+                "x": point["x"],
+                "y": point["y"],
+                "equationIds": [left.id, right.id],
+            }
+            for index, point in enumerate(points)
+        ]
+        if points and _wants_zoom_to_points(text):
+            actions.append(
+                AgentAction(
+                    tool="fit_viewport_to_points",
+                    arguments={"points": points, "markers": markers, "padding": 0.4},
+                )
+            )
+            return actions, f"已找到 {len(points)} 个交点，并放大到交点附近。", None
+        if markers:
+            actions.append(AgentAction(tool="set_graph_markers", arguments={"markers": markers}))
+        return actions, f"已找到 {len(points)} 个交点。" if points else "当前范围内未找到交点。", None
 
     if (
         color
         and viewport
         and graph_state.equations
-        and not any(word in text for word in ("删除", "移除", "解释", "分析", "单调", "顶点", "零点", "对称"))
+        and not any(word in text for word in ("删除", "移除", "解释", "分析", "单调", "顶点", "零点", "对称", "交点"))
     ):
         target = graph_state.equations[0] if re.search(r"第\s*一", text) else graph_state.equations[-1]
         actions.append(

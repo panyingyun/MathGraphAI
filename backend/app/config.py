@@ -29,7 +29,7 @@ class Settings:
     deepseek_timeout_seconds: float = _env_float("DEEPSEEK_TIMEOUT_SECONDS", 30.0)
     deepseek_max_retries: int = _env_int("DEEPSEEK_MAX_RETRIES", 2)
     agent_mode: str = os.getenv("AGENT_MODE", "react")
-    agent_max_steps: int = _env_int("AGENT_MAX_STEPS", 4)
+    agent_max_steps: int = _env_int("AGENT_MAX_STEPS", 6)
     agent_timeout_seconds: float = _env_float("AGENT_TIMEOUT_SECONDS", 45.0)
     agent_tool_timeout_seconds: float = _env_float("AGENT_TOOL_TIMEOUT_SECONDS", 10.0)
     agent_max_repeated_actions: int = _env_int("AGENT_MAX_REPEATED_ACTIONS", 1)
@@ -45,6 +45,9 @@ class Settings:
     max_power_exponent: float = _env_float("MAX_POWER_EXPONENT", 100.0)
     max_viewport_abs: float = _env_float("MAX_VIEWPORT_ABS", 1_000_000.0)
     max_analysis_chars: int = _env_int("MAX_ANALYSIS_CHARS", 4000)
+    math_sample_count: int = _env_int("MATH_SAMPLE_COUNT", 400)
+    math_tolerance: float = _env_float("MATH_TOLERANCE", 1e-6)
+    math_max_points: int = _env_int("MATH_MAX_POINTS", 32)
 
 
 settings = Settings()

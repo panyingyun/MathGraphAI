@@ -154,6 +154,7 @@ async def chat(payload: ChatRequest, database: DatabaseSession = Depends(get_db)
         step_count=result.step_count,
         duration_ms=duration_ms,
         steps=result.steps,
+        shadow_diff=result.shadow_diff,
     )
     finish_agent_run(
         database,

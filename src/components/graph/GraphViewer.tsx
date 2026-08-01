@@ -35,6 +35,25 @@ export function GraphViewer() {
         samplingError = error instanceof Error ? error.message : "图像渲染失败";
       }
     }
+    const markers = graphState.markers ?? [];
+    if (markers.length > 0) {
+      built.push({
+        x: markers.map((item) => item.x),
+        y: markers.map((item) => item.y),
+        type: "scatter",
+        mode: "markers+text",
+        name: "标记点",
+        text: markers.map((item) => item.label),
+        textposition: "top center",
+        marker: {
+          size: 9,
+          color: markers.map((item) => item.color || "#111827"),
+          symbol: "circle",
+          line: { width: 1, color: "#ffffff" },
+        },
+        hovertemplate: "%{text}<br>x = %{x:.3f}<br>y = %{y:.3f}<extra></extra>",
+      });
+    }
     return { traces: built, error: samplingError };
   }, [graphState]);
   const traces = sampledGraph.traces;

@@ -62,3 +62,4 @@ class ChatResponse(APIModel):
     step_count: int = 0
     duration_ms: float = 0
     steps: List[StepSummary] = Field(default_factory=list)
+    shadow_diff: Optional[Dict[str, Any]] = None
