@@ -154,6 +154,8 @@ def test_shadow_compares_with_local_baseline(monkeypatch):
     assert result.shadow_diff["matched"] is True
     assert result.shadow_candidate is not None
     assert result.shadow_candidate.markers
+    assert "Shadow 候选状态中有" in result.final_message
+    assert "当前图中没有曲线" not in result.final_message
 
 
 def test_shadow_baseline_helper_matches_planner():

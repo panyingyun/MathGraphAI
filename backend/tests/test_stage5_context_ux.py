@@ -56,7 +56,7 @@ def test_build_react_messages_keeps_graph_facts_when_chat_history_is_disabled(mo
         [],
         context_summary="当前方程: y = 3^x",
     )
-    payload = json.loads(messages[1]["content"])
+    payload = json.loads(messages[-1]["content"])
     structured = payload["structuredContext"]
     assert "recentMessages" not in structured
     assert "contextSummary" not in structured
@@ -65,7 +65,7 @@ def test_build_react_messages_keeps_graph_facts_when_chat_history_is_disabled(mo
     assert equation["expression"] == "y = 3^x"
     assert equation["normalizedExpression"] == "3^x"
     assert equation["label"] == "y = 3^x"
-    assert "3^x" in messages[1]["content"]
+    assert "3^x" in messages[-1]["content"]
 
 
 def test_refresh_context_summary_is_deterministic():

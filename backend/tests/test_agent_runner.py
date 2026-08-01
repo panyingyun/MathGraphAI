@@ -179,7 +179,7 @@ def test_runner_detects_repeated_action(monkeypatch):
     assert result.should_commit is False
 
 
-def test_runner_auto_finalizes_on_repeated_write(monkeypatch):
+def test_runner_never_auto_commits_on_repeated_write(monkeypatch):
     from dataclasses import replace
 
     from app.config import settings
@@ -211,10 +211,10 @@ def test_runner_auto_finalizes_on_repeated_write(monkeypatch):
             session_id="session_test",
         )
     )
-    assert result.success
-    assert result.should_commit
-    assert len(result.graph_state.equations) == 2
-    assert result.graph_state.markers
+    assert result.success is False
+    assert result.error_code == "repeated_action"
+    assert result.should_commit is False
+    assert result.graph_state.equations == []
 
 
 @pytest.mark.persistence

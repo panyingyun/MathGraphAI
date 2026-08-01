@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, Protocol, Union
 
 from ..schemas.agent import AgentAction, AgentFinal, Observation, RequestSpec
 from ..schemas.graph import GraphState
-from ..services.deepseek_service import call_deepseek_decision
+from ..services.deepseek_service import call_deepseek_decision, create_deepseek_client
 from ..services.model_errors import ModelServiceError
 from .context_builder import build_react_messages, openai_tool_definitions, truncate_observation
 from .decision_parser import parse_model_decision
@@ -28,6 +28,7 @@ class DecisionContext:
     context_summary: Optional[str] = None
     prior_steps: List[Any] = field(default_factory=list)
     request_spec: Optional[RequestSpec] = None
+    available_tool_names: Optional[List[str]] = None
 
 
 class DecisionProvider(Protocol):
@@ -63,11 +64,19 @@ class LocalDecisionProvider:
 class DeepSeekDecisionProvider:
     name = "deepseek"
 
-    def __init__(self, *, prefer_tool_calls: bool = False) -> None:
-        self.prefer_tool_calls = prefer_tool_calls
+    def __init__(self, *, prefer_tool_calls: bool = False, protocol: Optional[str] = None) -> None:
+        selected = (protocol or ("tool_calls" if prefer_tool_calls else "json")).strip().lower()
+        self.protocol = selected if selected in {"json", "tool_calls"} else "json"
+        self.prefer_tool_calls = self.protocol == "tool_calls"
+        self._client = None
 
     def reset(self) -> None:
-        return
+        if self._client is None or self._client.is_closed:
+            self._client = create_deepseek_client()
+
+    async def aclose(self) -> None:
+        if self._client is not None and not self._client.is_closed:
+            await self._client.aclose()
 
     async def decide(self, context: DecisionContext) -> AgentDecision:
         observation_payloads = [truncate_observation(item) for item in context.observations]
@@ -79,13 +88,20 @@ class DeepSeekDecisionProvider:
             context_summary=context.context_summary,
             prior_steps=context.prior_steps,
             request_spec=context.request_spec,
+            available_tool_names=context.available_tool_names,
+            include_few_shots=not self.prefer_tool_calls,
+            native_tool_calls=self.prefer_tool_calls,
         )
-        tools = openai_tool_definitions() if self.prefer_tool_calls else None
-        raw = await call_deepseek_decision(messages, tools=tools)
+        tools = openai_tool_definitions(context.available_tool_names) if self.prefer_tool_calls else None
+        raw = await call_deepseek_decision(messages, tools=tools, client=self._client)
         return parse_model_decision(content=raw.get("content"), tool_calls=raw.get("tool_calls"))
 
 
-def select_primary_provider(api_key: str, prefer_tool_calls: bool = False) -> DecisionProvider:
+def select_primary_provider(
+    api_key: str,
+    prefer_tool_calls: bool = False,
+    protocol: Optional[str] = None,
+) -> DecisionProvider:
     if api_key:
-        return DeepSeekDecisionProvider(prefer_tool_calls=prefer_tool_calls)
+        return DeepSeekDecisionProvider(prefer_tool_calls=prefer_tool_calls, protocol=protocol)
     return LocalDecisionProvider()

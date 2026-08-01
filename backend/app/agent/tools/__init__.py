@@ -37,6 +37,7 @@ class ToolSpec:
     description: str
     arguments_model: Type[BaseModel]
     target_model: Optional[Type[BaseModel]] = None
+    target_required: bool = False
 
 
 TOOL_REGISTRY: Dict[str, ToolSpec] = {
@@ -47,7 +48,7 @@ TOOL_REGISTRY: Dict[str, ToolSpec] = {
         "update_equation", "write", graph_tools.update_equation, "更新指定方程属性", UpdateEquationArgs, EquationTarget
     ),
     "remove_equation": ToolSpec(
-        "remove_equation", "write", graph_tools.remove_equation, "删除指定方程", EmptyArgs, EquationTarget
+        "remove_equation", "write", graph_tools.remove_equation, "删除指定方程", EmptyArgs, EquationTarget, True
     ),
     "set_viewport": ToolSpec("set_viewport", "write", graph_tools.set_viewport, "设置坐标范围", SetViewportArgs),
     "set_graph_settings": ToolSpec(

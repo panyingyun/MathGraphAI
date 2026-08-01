@@ -79,11 +79,23 @@ def build_request_spec(user_message: str, graph_state: GraphState) -> RequestSpe
 
     wants_remove = _contains_any(text, _REMOVE_WORDS)
     wants_add = _contains_any(text, _ADD_WORDS)
-    wants_update = (
-        _contains_any(text, _UPDATE_WORDS)
-        or expected_color is not None
+    wants_property_update = (
+        expected_color is not None
         or expected_visible is not None
         or expected_line_width is not None
+    )
+    # 「把范围设为/改成 -10 到 10」里的设为/改成只作用于视口，不能当成方程 update。
+    expression_update_hint = bool(
+        re.search(r"(?:改成|改为|修改为|替换为|设为|设置为)\s*y\s*=", text, re.IGNORECASE)
+    ) or (
+        len(expressions) >= 2
+        and _contains_any(text, ("改成", "改为", "修改", "更新", "替换为", "设为", "设置为"))
+    )
+    viewport_language_only = bool(viewport) and not wants_property_update and not expression_update_hint
+    wants_update = (
+        wants_property_update
+        or expression_update_hint
+        or (_contains_any(text, _UPDATE_WORDS) and not viewport_language_only)
     )
     explicitly_plots = _contains_any(text, _PLOT_WORDS)
     updates_existing = wants_update and bool(graph_state.equations) and not wants_add and not explicitly_plots
@@ -129,10 +141,10 @@ def build_request_spec(user_message: str, graph_state: GraphState) -> RequestSpe
         observations.append("compare_functions")
     if _contains_any(text, _ANALYZE_WORDS):
         _append_once(effects, "analyze")
-        observations.append("graph_analysis")
+        observations.append("analyze_function")
     if _contains_any(text, _EXPLAIN_WORDS):
         _append_once(effects, "explain")
-        observations.append("graph_analysis")
+        observations.append("explain_graph")
     if _contains_any(text, _ZOOM_WORDS) and any(
         effect in effects for effect in ("intersections", "zeros", "extrema")
     ):

@@ -26,17 +26,75 @@ REACT_SYSTEM_PROMPT = """你是 MathGraph AI 的决策模块。根据用户请�
 - 说「再加/添加」时用 add_equations；复合请求拆成多个 action，全部完成后必须 final。
 - 不要用相同参数重复调用同一工具；Observation.success=true 后若目标已达成，立即 final。
 - availableTools.argumentsSchema 是工具 arguments 的精确契约；必须满足 required、类型和范围。
+- 只能调用本轮 availableTools 中列出的工具；工具消失表示前置条件不满足或本轮已完成，禁止继续调用。
 - requestSpec.requiredEffects 中的目标必须全部完成后才能 final；若收到 goal_validator 失败 Observation，按 missing 修复一次。
 - 若无法理解，直接 final 并说明原因。
 - 修改已有曲线时优先使用方程 ID；新方程由工具分配 ID。
+- remove_equation 必须提供 target.equationId；不得重复删除同一 ID。
 - 画两条及以上曲线时，plot_equations 会自动标注交点；通常一步 plot 后即可 final，无需重复 plot。
 - 找交点：若图上尚无标记，可 calculate_intersections；若需放大，用 Observation.points 调用 fit_viewport_to_points（可带 markers）。
 - 零点/极值：calculate_zeros / calculate_extrema 后可用 set_graph_markers 或 fit_viewport_to_points 写入标记。
 - 比较函数用 compare_functions；判断当前范围是否可绘用 check_sample。
 """
 
+NATIVE_TOOL_PROTOCOL_SUFFIX = """
+当前使用原生 tool_calls 协议：忽略上面的 JSON 输出格式，每轮只调用一个 available function；任务完成时调用 final_answer。不要在普通 content 中伪造工具执行结果。
+"""
 
-def available_tools_schema() -> List[Dict[str, Any]]:
+
+REACT_FEW_SHOTS = [
+    (
+        {"userMessage": "画 y=x^2", "structuredContext": {"currentGraphState": {"equations": []}}, "observations": []},
+        {"type": "action", "tool": "plot_equations", "arguments": {"equations": [{"expression": "y=x^2"}]}},
+    ),
+    (
+        {
+            "userMessage": "删除 y=x+1",
+            "structuredContext": {
+                "currentGraphState": {
+                    "equations": [{"id": "eq_2", "normalizedExpression": "x+1", "label": "y=x+1"}]
+                }
+            },
+            "observations": [],
+        },
+        {"type": "action", "tool": "remove_equation", "arguments": {}, "target": {"equationId": "eq_2"}},
+    ),
+    (
+        {
+            "userMessage": "把第一条改成红色，范围设为 -5 到 5",
+            "structuredContext": {"currentGraphState": {"equations": [{"id": "eq_1", "normalizedExpression": "x^2"}]}},
+            "observations": [],
+        },
+        {"type": "action", "tool": "update_equation", "arguments": {"updates": {"color": "#da3437"}}, "target": {"equationId": "eq_1"}},
+    ),
+    (
+        {
+            "userMessage": "求两条曲线交点",
+            "structuredContext": {"currentGraphState": {"equations": [{"id": "eq_1"}, {"id": "eq_2"}]}},
+            "observations": [],
+        },
+        {"type": "action", "tool": "calculate_intersections", "arguments": {"equationIds": ["eq_1", "eq_2"]}},
+    ),
+    (
+        {
+            "userMessage": "添加 y=sin(x)",
+            "structuredContext": {"currentGraphState": {"equations": [{"id": "eq_1"}]}},
+            "observations": [
+                {
+                    "tool": "add_equations",
+                    "success": False,
+                    "errorCode": "invalid_arguments",
+                    "data": {"expectedSchema": {"required": ["equations"]}},
+                }
+            ],
+        },
+        {"type": "action", "tool": "add_equations", "arguments": {"equations": [{"expression": "y=sin(x)"}]}},
+    ),
+]
+
+
+def available_tools_schema(tool_names: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+    allowed = set(tool_names) if tool_names is not None else None
     return [
         {
             "name": name,
@@ -44,8 +102,10 @@ def available_tools_schema() -> List[Dict[str, Any]]:
             "permission": spec.permission,
             "argumentsSchema": spec.arguments_model.model_json_schema(by_alias=True),
             "targetSchema": spec.target_model.model_json_schema(by_alias=True) if spec.target_model else None,
+            "targetRequired": spec.target_required,
         }
         for name, spec in TOOL_REGISTRY.items()
+        if allowed is None or name in allowed
     ]
 
 
@@ -99,6 +159,9 @@ def build_react_messages(
     context_summary: Optional[str] = None,
     prior_steps: Optional[List[StepSummary]] = None,
     request_spec: Optional[RequestSpec] = None,
+    available_tool_names: Optional[List[str]] = None,
+    include_few_shots: Optional[bool] = None,
+    native_tool_calls: bool = False,
 ) -> List[Dict[str, Any]]:
     # 聊天历史与当前画布事实独立配置；关闭历史不应隐藏已有方程。
     include_history = settings.agent_include_chat_history
@@ -118,24 +181,36 @@ def build_react_messages(
         "userMessage": user_message,
         "structuredContext": structured,
         "observations": observations[-8:],
-        "availableTools": available_tools_schema(),
+        "availableTools": available_tools_schema(available_tool_names),
         "requestSpec": request_spec.model_dump(by_alias=True) if request_spec else None,
     }
-    return [
-        {"role": "system", "content": REACT_SYSTEM_PROMPT},
-        {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
-    ]
+    system_prompt = REACT_SYSTEM_PROMPT + (NATIVE_TOOL_PROTOCOL_SUFFIX if native_tool_calls else "")
+    messages: List[Dict[str, Any]] = [{"role": "system", "content": system_prompt}]
+    use_few_shots = settings.agent_few_shot_enabled if include_few_shots is None else include_few_shots
+    if use_few_shots:
+        for example_input, example_output in REACT_FEW_SHOTS:
+            messages.append({"role": "user", "content": json.dumps(example_input, ensure_ascii=False)})
+            messages.append({"role": "assistant", "content": json.dumps(example_output, ensure_ascii=False)})
+    messages.append({"role": "user", "content": json.dumps(payload, ensure_ascii=False)})
+    return messages
 
 
-def openai_tool_definitions() -> List[Dict[str, Any]]:
+def openai_tool_definitions(tool_names: Optional[List[str]] = None) -> List[Dict[str, Any]]:
     """原生 tool_calls 适配用的工具声明。"""
     tools = []
+    allowed = set(tool_names) if tool_names is not None else None
     for name, spec in TOOL_REGISTRY.items():
+        if allowed is not None and name not in allowed:
+            continue
         parameters = deepcopy(spec.arguments_model.model_json_schema(by_alias=True))
         parameters.setdefault("type", "object")
         parameters.setdefault("properties", {})
         if spec.target_model is not None:
             parameters["properties"]["target"] = spec.target_model.model_json_schema(by_alias=True)
+            if spec.target_required:
+                parameters.setdefault("required", [])
+                if "target" not in parameters["required"]:
+                    parameters["required"].append("target")
         tools.append(
             {
                 "type": "function",

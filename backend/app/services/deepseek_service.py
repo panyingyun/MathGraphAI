@@ -43,27 +43,27 @@ def map_exception(exc: Exception) -> ModelServiceError:
     return ModelServiceError(ModelErrorCode.UNKNOWN, f"DeepSeek 未知错误: {exc}")
 
 
-async def _post_chat_completions(payload: Dict[str, Any]) -> Dict[str, Any]:
-    if not settings.deepseek_api_key:
-        raise ModelServiceError(ModelErrorCode.AUTH, "DEEPSEEK_API_KEY 未配置", retryable=False)
+def create_deepseek_client() -> httpx.AsyncClient:
+    """创建可在一次 ReAct 运行的多轮决策间复用的连接池。"""
+    return httpx.AsyncClient(timeout=httpx.Timeout(settings.deepseek_timeout_seconds))
 
+
+async def _post_with_client(client: httpx.AsyncClient, payload: Dict[str, Any]) -> Dict[str, Any]:
     attempts = settings.deepseek_max_retries + 1
     last_error: Optional[ModelServiceError] = None
 
     for attempt in range(1, attempts + 1):
         try:
-            timeout = httpx.Timeout(settings.deepseek_timeout_seconds)
-            async with httpx.AsyncClient(timeout=timeout) as client:
-                response = await client.post(
-                    f"{settings.deepseek_base_url.rstrip('/')}/chat/completions",
-                    headers={
-                        "Authorization": f"Bearer {settings.deepseek_api_key}",
-                        "Content-Type": "application/json",
-                    },
-                    json=payload,
-                )
-                response.raise_for_status()
-                return response.json()
+            response = await client.post(
+                f"{settings.deepseek_base_url.rstrip('/')}/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {settings.deepseek_api_key}",
+                    "Content-Type": "application/json",
+                },
+                json=payload,
+            )
+            response.raise_for_status()
+            return response.json()
         except Exception as exc:  # noqa: BLE001 - classified immediately
             mapped = map_exception(exc)
             last_error = mapped
@@ -81,6 +81,22 @@ async def _post_chat_completions(payload: Dict[str, Any]) -> Dict[str, Any]:
 
     assert last_error is not None
     raise last_error
+
+
+async def _post_chat_completions(
+    payload: Dict[str, Any],
+    *,
+    client: Optional[httpx.AsyncClient] = None,
+) -> Dict[str, Any]:
+    if not settings.deepseek_api_key:
+        raise ModelServiceError(ModelErrorCode.AUTH, "DEEPSEEK_API_KEY 未配置", retryable=False)
+
+    if client is not None:
+        return await _post_with_client(client, payload)
+
+    # 兼容非 Agent 调用；同一次调用的重试也必须复用连接池。
+    async with create_deepseek_client() as owned_client:
+        return await _post_with_client(owned_client, payload)
 
 
 async def call_deepseek(messages: List[Dict[str, str]]) -> Dict[str, Any]:
@@ -101,6 +117,7 @@ async def call_deepseek_decision(
     messages: List[Dict[str, Any]],
     *,
     tools: Optional[List[Dict[str, Any]]] = None,
+    client: Optional[httpx.AsyncClient] = None,
 ) -> Dict[str, Any]:
     """
     返回统一决策载荷：
@@ -110,7 +127,7 @@ async def call_deepseek_decision(
     payload: Dict[str, Any] = {
         "model": settings.deepseek_model,
         "messages": messages,
-        "temperature": 0.1,
+        "temperature": settings.agent_decision_temperature,
     }
     if tools:
         payload["tools"] = tools
@@ -118,7 +135,7 @@ async def call_deepseek_decision(
     else:
         payload["response_format"] = {"type": "json_object"}
 
-    data = await _post_chat_completions(payload)
+    data = await _post_chat_completions(payload, client=client)
     message = data["choices"][0]["message"]
     return {
         "content": message.get("content"),

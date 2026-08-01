@@ -20,16 +20,19 @@ from . import cancel_registry
 from .adapter import action_to_command
 from .context_builder import truncate_observation
 from .executor import execute_command
+from .final_response import build_grounded_final_message
 from .goal_validator import validate_goal
 from .providers import DecisionContext, DecisionProvider, LocalDecisionProvider, select_primary_provider
 from .request_spec import build_request_spec
 from .shadow import diff_graph_states, run_local_baseline
+from .tool_policy import select_available_tools
 from .working_state import WorkingGraphState
 
 
 _TOOL_POOL = ThreadPoolExecutor(max_workers=4)
 
 _ERROR_PREFIXES = ("方程解析失败", "无法理解", "无法确定", "请先绘制", "坐标范围无效", "我还无法")
+_RECOVERABLE_TOOL_ERRORS = {"invalid_arguments", "equation_not_found", "precondition_failed"}
 
 
 @dataclass
@@ -102,11 +105,23 @@ def _goal_observation(result: GoalValidationResult) -> Observation:
 
 
 async def _execute_with_timeout(working: WorkingGraphState, command: Command):
+    # 工具在线程池的隔离副本上运行；即使 wait_for 超时，后台线程也不能再污染主工作状态。
+    candidate = WorkingGraphState(
+        base=working.base.model_copy(deep=True),
+        current=working.current.model_copy(deep=True),
+        dirty=working.dirty,
+        observations=list(working.observations),
+    )
     loop = asyncio.get_running_loop()
-    return await asyncio.wait_for(
-        loop.run_in_executor(_TOOL_POOL, execute_command, working, command),
+    result = await asyncio.wait_for(
+        loop.run_in_executor(_TOOL_POOL, execute_command, candidate, command),
         timeout=settings.agent_tool_timeout_seconds,
     )
+    if result.success:
+        working.current = candidate.current.model_copy(deep=True)
+        working.dirty = candidate.dirty
+        working.observations = list(candidate.observations)
+    return result
 
 
 class AgentRunner:
@@ -116,6 +131,7 @@ class AgentRunner:
         self.provider = provider or select_primary_provider(
             settings.deepseek_api_key,
             prefer_tool_calls=settings.agent_prefer_tool_calls,
+            protocol=settings.agent_decision_protocol,
         )
 
     async def run(
@@ -133,20 +149,26 @@ class AgentRunner:
         request_spec = build_request_spec(user_message, graph_state)
         provider: DecisionProvider = self.provider
         provider.reset()
+        primary_provider = provider
         cancel_registry.register(request_id)
 
         fallback_used = False
         fallback_reason: Optional[str] = None
         error_code: Optional[str] = None
         decision_provider = provider.name
+        decision_protocol = getattr(provider, "protocol", "local")
         steps: List[StepSummary] = []
         observations: List[Observation] = []
+        fact_observations: List[Observation] = []
         executed_tools: List[str] = []
         fingerprints: List[str] = []
-        repeat_streak = 0
+        duplicate_counts: Dict[str, int] = {}
+        removed_targets = set()
         action_steps = 0
         model_calls = 0
         goal_repair_attempts = 0
+        tool_repair_attempts = 0
+        recoverable_failures = set()
         max_steps = 1 if settings.agent_mode == "off" else settings.agent_max_steps
         shadow_candidate: Optional[GraphState] = None
         cancelled = False
@@ -198,6 +220,18 @@ class AgentRunner:
                 context.observations = observations
                 context.step_index = action_steps
                 context.prior_steps = list(steps)
+                if settings.agent_dynamic_tools_enabled:
+                    policy_observations = list(fact_observations) + [
+                        item for item in observations if item.tool == "goal_validator"
+                    ]
+                    context.available_tool_names = select_available_tools(
+                        request_spec,
+                        working.current,
+                        policy_observations,
+                        executed_tools,
+                    )
+                else:
+                    context.available_tool_names = None
                 phase = "understand" if action_steps == 0 else "execute"
 
                 try:
@@ -207,7 +241,11 @@ class AgentRunner:
                 except Exception as exc:  # noqa: BLE001
                     if provider.name != "deepseek":
                         raise
-                    mapped = exc if isinstance(exc, ModelServiceError) else ModelServiceError(ModelErrorCode.UNKNOWN, str(exc))
+                    mapped = (
+                        exc
+                        if isinstance(exc, ModelServiceError)
+                        else ModelServiceError(ModelErrorCode.UNKNOWN, str(exc))
+                    )
                     fallback_used = True
                     fallback_reason = mapped.user_message
                     error_code = mapped.code.value
@@ -241,7 +279,7 @@ class AgentRunner:
                         request_spec,
                         working.base,
                         working.current,
-                        observations,
+                        fact_observations,
                         executed_tools,
                     )
                     if not validation.satisfied:
@@ -272,6 +310,9 @@ class AgentRunner:
                         error_code = error_code or "decision_error"
                     else:
                         success = True
+                    if success:
+                        if not fallback_used:
+                            error_code = None
                     steps.append(_public_step(len(steps), None, "final" if success else "error", final_message))
                     break
 
@@ -292,74 +333,110 @@ class AgentRunner:
                     break
 
                 fingerprint = _action_fingerprint(decision)
-                is_repeat = bool(fingerprints and fingerprints[-1] == fingerprint)
+                is_repeat = fingerprint in fingerprints
                 if is_repeat:
-                    repeat_streak += 1
-                else:
-                    repeat_streak = 0
+                    duplicate_counts[fingerprint] = duplicate_counts.get(fingerprint, 0) + 1
 
-                # 模型常在成功后重复同一工具：先软忽略并提示 final；再重复则有结果时自动收尾。
+                # 重复 Action 永不触发提交：第一次回填纠错 Observation，再次重复则失败回滚。
                 if is_repeat:
-                    if repeat_streak <= settings.agent_max_repeated_actions:
+                    validation = validate_goal(
+                        request_spec,
+                        working.base,
+                        working.current,
+                        fact_observations,
+                        executed_tools,
+                    )
+                    if duplicate_counts[fingerprint] <= settings.agent_max_repeated_actions:
                         skip_obs = Observation(
                             tool=decision.tool,
-                            success=True,
+                            success=False,
                             data={
                                 "skipped": True,
                                 "reason": "duplicate_action",
-                                "hint": "该工具与相同参数已执行过，请勿重复调用，直接输出 type=final。",
+                                "goalSatisfied": validation.satisfied,
+                                "missing": validation.missing,
+                                "hint": (
+                                    "目标已满足，请直接输出 type=final。"
+                                    if validation.satisfied
+                                    else "该调用已经执行过，请改用其他工具补齐 missing 目标。"
+                                ),
                             },
+                            error_code="duplicate_action",
+                            error_message="相同工具和参数已经成功执行过，本次未再次执行。",
                         )
                         observations.append(skip_obs)
                         steps.append(
                             _public_step(
                                 len(steps),
                                 decision.tool,
-                                "success",
-                                "已忽略重复调用，等待最终说明",
+                                "error",
+                                "已阻止重复调用，等待模型修正或结束",
                             )
                         )
                         action_steps += 1
                         continue
 
-                    validation = validate_goal(
-                        request_spec,
-                        working.base,
-                        working.current,
-                        observations,
-                        executed_tools,
-                    )
-                    if working.dirty and validation.satisfied:
-                        phase = "save"
-                        final_message = "已完成图像更新。"
-                        success = True
-                        if not fallback_used:
-                            error_code = None
-                        steps.append(
-                            _public_step(len(steps), decision.tool, "final", "重复调用已自动结束并保留结果")
-                        )
-                        break
-
-                    if not validation.satisfied:
-                        error_code = "goal_not_satisfied"
-                        final_message = f"任务只完成了一部分（缺少：{', '.join(validation.missing)}），已保留原图。"
-                        observations.append(_goal_observation(validation))
-                        working.discard()
-                        steps.append(_public_step(len(steps), "goal_validator", "error", final_message))
-                        success = False
-                        break
-
                     error_code = "repeated_action"
-                    final_message = "检测到重复工具调用，已停止执行。"
+                    final_message = "模型仍在重复相同工具调用，已停止并保留原图。"
                     working.discard()
                     steps.append(_public_step(len(steps), decision.tool, "error", final_message))
                     success = False
                     break
 
-                fingerprints.append(fingerprint)
+                if (
+                    context.available_tool_names is not None
+                    and decision.tool not in context.available_tool_names
+                ):
+                    unavailable_observation = Observation(
+                        tool=decision.tool,
+                        success=False,
+                        data={"availableTools": context.available_tool_names},
+                        error_code="tool_not_available",
+                        error_message="该工具不满足当前前置条件或已在本轮完成。",
+                    )
+                    observations.append(unavailable_observation)
+                    action_steps += 1
+                    if tool_repair_attempts < settings.agent_tool_repair_attempts:
+                        tool_repair_attempts += 1
+                        steps.append(
+                            _public_step(
+                                len(steps),
+                                decision.tool,
+                                "error",
+                                "工具当前不可用，已回填可用工具列表供模型修正",
+                            )
+                        )
+                        continue
+                    error_code = "tool_repair_exhausted"
+                    final_message = "模型重复选择当前不可用的工具，已停止并保留原图。"
+                    working.discard()
+                    steps.append(_public_step(len(steps), decision.tool, "error", final_message))
+                    success = False
+                    break
 
                 phase = "compute" if decision.tool.startswith(("calculate_", "compare_", "check_")) else "execute"
-                command = action_to_command(decision, command_id=f"cmd_{request_id[-8:]}_{action_steps}", source="agent")
+                if decision.tool == "remove_equation":
+                    target_id = (decision.target or {}).get("equationId")
+                    if target_id and target_id in removed_targets:
+                        error_code = "duplicate_destructive_action"
+                        final_message = f"方程 {target_id} 已在本轮删除，已阻止重复删除并保留原图。"
+                        working.discard()
+                        steps.append(_public_step(len(steps), decision.tool, "error", final_message))
+                        success = False
+                        break
+                try:
+                    command = action_to_command(
+                        decision,
+                        command_id=f"cmd_{request_id[-8:]}_{action_steps}",
+                        source="agent",
+                    )
+                except Exception:  # noqa: BLE001 - AgentAction 工具名不在 CommandType 契约
+                    error_code = "invalid_decision"
+                    final_message = f"模型返回了无效工具 {decision.tool}，已停止并保留原图。"
+                    working.discard()
+                    steps.append(_public_step(len(steps), decision.tool, "error", final_message))
+                    success = False
+                    break
                 tool_started = time.perf_counter()
                 try:
                     execution = await _execute_with_timeout(working, command)
@@ -381,13 +458,41 @@ class AgentRunner:
                     break
 
                 duration_ms = round((time.perf_counter() - tool_started) * 1000, 2)
+                fact_observations.append(execution.observation)
                 compact = truncate_observation(execution.observation)
                 observations.append(Observation.model_validate(compact))
                 action_steps += 1
 
                 if not execution.success:
-                    error_code = execution.error_code or "execution_error"
-                    final_message = execution.error_message or "工具执行失败"
+                    current_error = execution.error_code or "execution_error"
+                    repair_key = f"{fingerprint}:{current_error}"
+                    can_repair = (
+                        settings.agent_mode != "off"
+                        and current_error in _RECOVERABLE_TOOL_ERRORS
+                        and tool_repair_attempts < settings.agent_tool_repair_attempts
+                        and repair_key not in recoverable_failures
+                    )
+                    if can_repair:
+                        recoverable_failures.add(repair_key)
+                        tool_repair_attempts += 1
+                        error_code = current_error
+                        steps.append(
+                            _public_step(
+                                len(steps),
+                                decision.tool,
+                                "error",
+                                f"工具参数可修复，已回填 Observation（{tool_repair_attempts}/{settings.agent_tool_repair_attempts}）",
+                                duration_ms,
+                            )
+                        )
+                        continue
+
+                    if current_error in _RECOVERABLE_TOOL_ERRORS:
+                        error_code = "tool_repair_exhausted"
+                        final_message = "工具参数修复仍未通过，已停止并保留原图。"
+                    else:
+                        error_code = current_error
+                        final_message = execution.error_message or "工具执行失败"
                     if execution.error_code == "expression_error":
                         final_message = f"方程解析失败：{execution.error_message}。例如可以输入 y = x^2 或 y = sin(x)。"
                     working.discard()
@@ -395,7 +500,12 @@ class AgentRunner:
                     success = False
                     break
 
+                fingerprints.append(fingerprint)
                 executed_tools.append(decision.tool)
+                if decision.tool == "remove_equation":
+                    removed_id = execution.observation.data.get("removedEquationId")
+                    if removed_id:
+                        removed_targets.add(str(removed_id))
                 steps.append(_public_step(len(steps), decision.tool, "success", _tool_summary(decision.tool), duration_ms))
 
                 if settings.agent_mode == "off":
@@ -404,7 +514,7 @@ class AgentRunner:
                         request_spec,
                         working.base,
                         working.current,
-                        observations,
+                        fact_observations,
                         executed_tools,
                     )
                     if validation.satisfied:
@@ -421,6 +531,9 @@ class AgentRunner:
                     break
         finally:
             cancel_registry.unregister(request_id)
+            close_provider = getattr(primary_provider, "aclose", None)
+            if close_provider is not None:
+                await close_provider()
 
         mode = settings.agent_mode
         should_commit = bool(success and working.dirty and mode in {"react", "off"} and not cancelled)
@@ -457,6 +570,25 @@ class AgentRunner:
         if not final_message:
             final_message = "已完成图像更新。" if success else "未能完成请求，已保留原图。"
 
+        if success:
+            grounding_state = result_state
+            is_shadow_candidate = False
+            if mode == "shadow" and shadow_candidate is not None:
+                grounding_state = shadow_candidate
+                is_shadow_candidate = True
+            final_message = build_grounded_final_message(
+                final_message,
+                request_spec,
+                grounding_state,
+                fact_observations,
+                executed_tools,
+                shadow_candidate=is_shadow_candidate,
+            )
+            for index in range(len(steps) - 1, -1, -1):
+                if steps[index].status == "final":
+                    steps[index] = steps[index].model_copy(update={"summary": final_message})
+                    break
+
         if fallback_used and fallback_reason:
             final_message = f"{final_message}\n（{fallback_reason}）"
         if mode == "shadow" and shadow_diff is not None:
@@ -470,6 +602,8 @@ class AgentRunner:
                 sessionId=session_id,
                 agentMode=mode,
                 decisionProvider=decision_provider,
+                decisionProtocol=decision_protocol,
+                decisionTemperature=settings.agent_decision_temperature,
                 fallbackUsed=fallback_used,
                 errorCode=error_code,
                 stepCount=action_steps,

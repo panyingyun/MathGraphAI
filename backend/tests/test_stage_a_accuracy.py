@@ -14,8 +14,8 @@ from app.agent.runner import AgentRunner
 from app.agent.tools import TOOL_REGISTRY
 from app.agent.working_state import WorkingGraphState
 from app.config import settings
-from app.schemas.agent import AgentAction, AgentFinal, Command
-from app.schemas.graph import EquationItem, GraphState
+from app.schemas.agent import AgentAction, AgentFinal, Command, Observation
+from app.schemas.graph import EquationItem, GraphAnalysis, GraphState
 
 
 def _equation(equation_id: str, expression: str, color: str = "#2563eb") -> EquationItem:
@@ -36,8 +36,78 @@ def test_request_spec_extracts_compound_completion_contract():
     assert spec.mutation_expected is True
     assert spec.explicit_expressions == ["x^2"]
     assert spec.required_effects == ["plot", "viewport", "analyze"]
+    assert spec.requires_observation == ["analyze_function"]
     assert spec.expected_color == "#da3437"
     assert spec.expected_viewport == {"xMin": -5, "xMax": 5, "yMin": -5, "yMax": 5}
+
+
+def test_analysis_goal_requires_explicit_successful_observation():
+    before = GraphState()
+    after = GraphState(
+        equations=[_equation("eq_1", "x^2")],
+        analysis=GraphAnalysis(description="抛物线"),
+    )
+    spec = build_request_spec("画 y=x^2 并分析", before)
+
+    plot_only = validate_goal(
+        spec,
+        before,
+        after,
+        [Observation(tool="plot_equations", success=True)],
+        ["plot_equations"],
+    )
+    assert plot_only.satisfied is False
+    assert "analyze" in plot_only.missing
+
+    analyzed = validate_goal(
+        spec,
+        before,
+        after,
+        [
+            Observation(tool="plot_equations", success=True),
+            Observation(tool="analyze_function", success=True),
+        ],
+        ["plot_equations", "analyze_function"],
+    )
+    assert analyzed.satisfied is True
+
+
+def test_local_planner_emits_explicit_analysis_action():
+    actions, _, error = plan_local_decisions("画 y=x^2 并分析", GraphState())
+    assert error is None
+    assert [item.tool for item in actions] == ["plot_equations", "analyze_function"]
+    assert actions[1].arguments == {}
+
+
+def test_request_spec_viewport_set_is_not_equation_update():
+    before = GraphState(equations=[_equation("eq_1", "x")])
+    for message in ("把范围设为 -10 到 10", "坐标范围设为 -5 到 5", "把坐标范围改成 -8 到 8"):
+        spec = build_request_spec(message, before)
+        assert spec.required_effects == ["viewport"], message
+        assert "update" not in spec.required_effects
+
+
+def test_local_runner_commits_viewport_only_set(monkeypatch):
+    before = GraphState(equations=[_equation("eq_1", "x")])
+    monkeypatch.setattr(
+        "app.agent.runner.settings",
+        replace(settings, agent_mode="react", deepseek_api_key=""),
+    )
+    from app.agent.providers import LocalDecisionProvider
+
+    result = asyncio.run(
+        AgentRunner(provider=LocalDecisionProvider()).run(
+            user_message="把范围设为 -10 到 10",
+            graph_state=before,
+            recent_messages=[],
+            request_id="req_viewport_only",
+            session_id="session_test",
+        )
+    )
+    assert result.success is True
+    assert result.should_commit is True
+    assert result.graph_state.viewport.x_min == -10
+    assert result.graph_state.viewport.x_max == 10
 
 
 def test_goal_validator_rejects_zero_action_mutation():
@@ -123,7 +193,7 @@ def test_graph_expressions_are_independent_from_chat_history(monkeypatch):
     )
     state = GraphState(equations=[_equation("eq_1", "x+1")])
     messages = build_react_messages("删除它", state, [{"role": "user", "content": "旧消息"}], [])
-    payload = json.loads(messages[1]["content"])
+    payload = json.loads(messages[-1]["content"])
     structured = payload["structuredContext"]
     assert "recentMessages" not in structured
     assert structured["currentGraphState"]["equations"][0]["normalizedExpression"] == "x+1"

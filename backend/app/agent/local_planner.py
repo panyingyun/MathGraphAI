@@ -66,6 +66,23 @@ def _wants_compare(text: str) -> bool:
     return any(word in text for word in ("比较", "对比", "谁更大", "哪个大"))
 
 
+def _wants_analysis(text: str) -> bool:
+    return any(word in text for word in ("分析", "单调", "对称", "性质", "定义域", "值域"))
+
+
+def _wants_explanation(text: str) -> bool:
+    return any(word in text for word in ("解释", "说明", "解读"))
+
+
+def _append_requested_analysis_actions(actions: List[AgentAction], text: str) -> None:
+    tools = {item.tool for item in actions}
+    if _wants_analysis(text) and "analyze_function" not in tools:
+        actions.append(AgentAction(tool="analyze_function", arguments={}))
+        tools.add("analyze_function")
+    if _wants_explanation(text) and "explain_graph" not in tools:
+        actions.append(AgentAction(tool="explain_graph", arguments={}))
+
+
 def _equation_payloads(items) -> List[dict]:
     return [
         {
@@ -223,6 +240,7 @@ def plan_local_decisions(message: str, graph_state: GraphState) -> Tuple[List[Ag
         except InvalidEquation as exc:
             return [], f"方程解析失败：{exc}。例如可以输入 y = x^2 或 y = sin(x)。", str(exc)
         if planned is not None:
+            _append_requested_analysis_actions(planned[0], text)
             return planned
 
     if expressions:
@@ -253,6 +271,11 @@ def plan_local_decisions(message: str, graph_state: GraphState) -> Tuple[List[Ag
         if viewport:
             actions.append(AgentAction(tool="set_viewport", arguments={"viewport": viewport}))
             notes.append(f"坐标范围调整为 {viewport.get('xMin'):g} 到 {viewport.get('xMax'):g}")
+        if _wants_analysis(text):
+            notes.append("分析函数特征")
+        if _wants_explanation(text):
+            notes.append("解释图像特征")
+        _append_requested_analysis_actions(actions, text)
 
         # 绘制后可接零点/极值/比较。
         if len(items) >= 1 and _wants_zeros(text):
@@ -324,6 +347,7 @@ def plan_local_decisions(message: str, graph_state: GraphState) -> Tuple[List[Ag
             graph_state.viewport.x_max,
         )
         actions = [AgentAction(tool="calculate_intersections", arguments={})]
+        _append_requested_analysis_actions(actions, text)
         points = list(result["points"])
         markers = [
             {
@@ -351,6 +375,88 @@ def plan_local_decisions(message: str, graph_state: GraphState) -> Tuple[List[Ag
             return actions, f"已找到交点 {coords}。", None
         return actions, "当前范围内未找到交点。", None
 
+    if _wants_compare(text) and len(graph_state.equations) >= 2:
+        left, right = graph_state.equations[0], graph_state.equations[1]
+        compared = compare_functions(
+            left.normalized_expression,
+            right.normalized_expression,
+            graph_state.viewport.x_min,
+            graph_state.viewport.x_max,
+        )
+        actions = [
+            AgentAction(
+                tool="compare_functions",
+                arguments={"equationIds": [left.id, right.id]},
+            )
+        ]
+        _append_requested_analysis_actions(actions, text)
+        return actions, compared["summary"], None
+
+    if graph_state.equations and (_wants_zeros(text) or _wants_extrema(text)):
+        target = graph_state.equations[0] if re.search(r"第\s*一", text) else graph_state.equations[-1]
+        actions = []
+        if any(word in text for word in ("分析", "单调", "对称", "性质", "定义域", "值域")):
+            actions.append(
+                AgentAction(
+                    tool="analyze_function",
+                    arguments={},
+                    target={"equationId": target.id},
+                )
+            )
+        _append_requested_analysis_actions(actions, text)
+        if _wants_zeros(text):
+            calculated = find_zeros(
+                target.normalized_expression,
+                graph_state.viewport.x_min,
+                graph_state.viewport.x_max,
+            )
+            actions.append(
+                AgentAction(
+                    tool="calculate_zeros",
+                    arguments={"equationId": target.id},
+                )
+            )
+            markers = [
+                {
+                    "id": f"zero_{index}",
+                    "kind": "zero",
+                    "label": f"零点{index + 1}",
+                    "x": point["x"],
+                    "y": point["y"],
+                    "equationIds": [target.id],
+                }
+                for index, point in enumerate(calculated["points"])
+            ]
+            if markers:
+                actions.append(AgentAction(tool="set_graph_markers", arguments={"markers": markers}))
+            return actions, f"已计算 {target.label} 的零点。", None
+
+        calculated = find_extrema(
+            target.normalized_expression,
+            graph_state.viewport.x_min,
+            graph_state.viewport.x_max,
+        )
+        actions.append(
+            AgentAction(
+                tool="calculate_extrema",
+                arguments={"equationId": target.id},
+            )
+        )
+        markers = [
+            {
+                "id": f"extremum_{index}",
+                "kind": "extremum",
+                "label": ("极大" if point["kind"] == "max" else "极小") + f"{index + 1}",
+                "x": float(point["x"]),
+                "y": float(point["y"]),
+                "equationIds": [target.id],
+            }
+            for index, point in enumerate(calculated["points"])
+        ]
+        if markers:
+            actions.append(AgentAction(tool="set_graph_markers", arguments={"markers": markers}))
+        return actions, f"已计算 {target.label} 的极值点。", None
+
     if (
         color
         and viewport
@@ -375,7 +481,9 @@ def plan_local_decisions(message: str, graph_state: GraphState) -> Tuple[List[Ag
     action = structured_result_to_action(single)
     if action is None:
         return [], single.explanation or "无法理解请求。", single.error or "unknown"
-    return [action], single.explanation or "已完成图像更新。", None
+    actions = [action]
+    _append_requested_analysis_actions(actions, text)
+    return actions, single.explanation or "已完成图像更新。", None
 
 
 def decisions_queue(message: str, graph_state: GraphState) -> List[DecisionItem]:

@@ -21,6 +21,15 @@ WRITE_TOOLS = {
     "set_graph_markers",
 }
 
+_EFFECT_OBSERVATION_TOOLS = {
+    "analyze": {"analyze_function"},
+    "explain": {"explain_graph"},
+    "intersections": {"calculate_intersections"},
+    "zeros": {"calculate_zeros"},
+    "extrema": {"calculate_extrema"},
+    "compare": {"compare_functions"},
+}
+
 
 def _normalized_set(state: GraphState) -> Set[str]:
     return {item.normalized_expression.replace(" ", "") for item in state.equations}
@@ -39,6 +48,19 @@ def _find_target(spec: RequestSpec, state: GraphState) -> Optional[EquationItem]
 
 def _successful_observation_tools(observations: Iterable[Observation]) -> Set[str]:
     return {item.tool for item in observations if item.success}
+
+
+def _required_observations_satisfied(
+    spec: RequestSpec,
+    effect: str,
+    observed: Set[str],
+) -> bool:
+    """将 RequestSpec.requires_observation 纳入 Final Gate，而不是仅依赖工具执行名单。"""
+
+    default_tools = _EFFECT_OBSERVATION_TOOLS.get(effect, set())
+    declared_tools = set(spec.requires_observation) & default_tools
+    required_tools = declared_tools or default_tools
+    return bool(required_tools) and required_tools.issubset(observed)
 
 
 def validate_goal(
@@ -146,23 +168,24 @@ def validate_goal(
                 for key, value in expected.items()
             )
         elif effect == "analyze":
-            satisfied = after.analysis is not None and bool(
-                executed & {"plot_equations", "add_equations", "analyze_function", "explain_graph"}
+            satisfied = (
+                after.analysis is not None
+                and _required_observations_satisfied(spec, effect, observed)
             )
         elif effect == "explain":
             satisfied = (
                 after.analysis is not None
                 and bool(after.analysis.description)
-                and "explain_graph" in executed
+                and _required_observations_satisfied(spec, effect, observed)
             )
         elif effect == "intersections":
-            satisfied = "calculate_intersections" in observed
+            satisfied = _required_observations_satisfied(spec, effect, observed)
         elif effect == "zeros":
-            satisfied = "calculate_zeros" in observed
+            satisfied = _required_observations_satisfied(spec, effect, observed)
         elif effect == "extrema":
-            satisfied = "calculate_extrema" in observed
+            satisfied = _required_observations_satisfied(spec, effect, observed)
         elif effect == "compare":
-            satisfied = "compare_functions" in observed
+            satisfied = _required_observations_satisfied(spec, effect, observed)
         elif effect == "fit_viewport":
             satisfied = "fit_viewport_to_points" in executed
 

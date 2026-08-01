@@ -1,6 +1,6 @@
 # MathGraph AI ReAct 准确性加固与收尾优化计划（Plan 02）
 
-> 状态：实施中（阶段 A 已完成，2026-08-01）
+> 状态：实施中（阶段 A–B 已完成，2026-08-01）
 > 前置条件：Plan 01 阶段 0–5 已完成  
 > 核心目标：保持“所有自然语言请求统一进入 ReAct”，把系统从“链路可以运行”提升到“任务结果可以验证”
 
@@ -235,9 +235,9 @@ AGENT_INCLUDE_CHAT_HISTORY=false
 
 验收：
 
-- [ ] 重复 `calculate_intersections` 不会消耗全部步骤后才被发现。
-- [ ] 重复删除不会影响第二条无关方程。
-- [ ] 部分完成的复合任务不能因为重复 Action 被自动提交。
+- [x] 重复 `calculate_intersections` 不会消耗全部步骤后才被发现。
+- [x] 重复删除不会影响第二条无关方程。
+- [x] 部分完成的复合任务不能因为重复 Action 被自动提交。
 
 ### 3.6 参数错误自修复
 
@@ -284,9 +284,9 @@ AGENT_INCLUDE_CHAT_HISTORY=false
 
 验收：
 
-- [ ] 不满足前置条件的工具不会发送给模型。
-- [ ] 完成交点计算后，不再默认暴露相同计算工具。
-- [ ] 工具裁剪不会阻断合法复合请求。
+- [x] 不满足前置条件的工具不会发送给模型。
+- [x] 完成交点计算后，不再默认暴露相同计算工具。
+- [x] 工具裁剪不会阻断合法复合请求。
 
 ### 3.8 最终回答事实绑定
 
@@ -300,9 +300,9 @@ AGENT_INCLUDE_CHAT_HISTORY=false
 
 验收：
 
-- [ ] 没有执行 `plot_equations` 时不能声称“已绘制”。
-- [ ] final 中的方程列表与最终 GraphState 一致。
-- [ ] final 中的交点、零点和极值与对应 Observation 一致。
+- [x] 没有执行 `plot_equations` 时不能声称“已绘制”。
+- [x] final 中的方程列表与最终 GraphState 一致。
+- [x] final 中的交点、零点和极值与对应 Observation 一致。
 
 ### 3.9 Prompt 与模型协议调优
 
@@ -311,7 +311,7 @@ AGENT_INCLUDE_CHAT_HISTORY=false
 - 将工具决策温度从 `0.1` 对比测试为 `0`。
 - 为绘图、删除、复合修改、交点、参数修复增加少量高质量 few-shot。
 - 对比严格 JSON Action 与原生 tool_calls。
-- `AGENT_PREFER_TOOL_CALLS` 只有在当前 DeepSeek 端点通过契约测试后才开启。
+- `AGENT_DECISION_PROTOCOL=tool_calls` 只有在当前 DeepSeek 端点通过契约测试后才开启；`AGENT_PREFER_TOOL_CALLS` 仅保留兼容。
 - 不通过增加 Prompt 长度替代 Final Gate 和 Schema 校验。
 
 ## 4. 真实 DeepSeek 准确性评测（P0 / Must）
@@ -437,7 +437,7 @@ Shadow 不提交数据，但必须执行相同的 Final Gate。
 | --- | --- | --- |
 | 默认 `AGENT_MODE` | 当前为 `react` | 开发可用 react；发布必须经过 accuracy shadow gate |
 | `AGENT_INCLUDE_CHAT_HISTORY` | 当前为 false | 与 GraphState 表达式开关解耦 |
-| `AGENT_PREFER_TOOL_CALLS` | 当前为 false | Schema 契约测试通过后再 A/B |
+| `AGENT_DECISION_PROTOCOL` | 当前为 json | Schema 契约测试通过后再切换 tool_calls A/B；旧 `AGENT_PREFER_TOOL_CALLS` 仅兼容 |
 | 发布清单 | 分散在 baseline | 新增 `release-checklist.md` |
 
 验收：
@@ -507,13 +507,29 @@ Shadow 不提交数据，但必须执行相同的 Final Gate。
 
 ### 阶段 B：Runner 安全收尾
 
-1. 重复 Action 不再自动提交。
-2. 可修复错误回填 Observation。
-3. 动态工具集合。
-4. 最终回答绑定 GraphState / Observation。
-5. 温度、few-shot 和模型协议 A/B。
+状态：**已完成（2026-08-01）**。
+
+1. [x] 重复 Action 不再自动提交。
+2. [x] 可修复错误回填 Observation。
+3. [x] 动态工具集合。
+4. [x] 最终回答绑定 GraphState / Observation。
+5. [x] 温度、few-shot 和模型协议 A/B。
 
 退出条件：复合任务部分完成不会提交，破坏性工具无重复执行。
+
+实现记录：
+
+- Runner 对任意已成功 Action 的重复调用先回填 `duplicate_action`，再次重复即失败并回滚；不再存在基于 `working.dirty` 的自动提交路径。
+- 线程池工具在隔离的 WorkingGraphState 副本上运行，超时后的后台线程不能继续污染主工作状态。
+- `remove_equation` 强制要求 `target.equationId`，同一请求中成功删除的 ID 不允许再次执行；失败时仍从 WorkingGraphState 基线恢复。
+- `invalid_arguments`、`equation_not_found` 和 `precondition_failed` 会携带紧凑 `expectedSchema`、接收参数类型摘要及可选 equationId 回填一次；同一错误或修复预算耗尽后失败回滚。
+- 新增 `backend/app/agent/tool_policy.py`，按 RequestSpec、当前 GraphState、成功 Observation 和已执行工具裁剪每轮工具；交点/零点/极值计算成功后不再暴露相同计算工具，并开放视口拟合与 marker 工具。
+- 新增 `backend/app/agent/final_response.py`；任务通过 Final Gate 并确定最终提交状态后，由后端重新生成方程、viewport、交点、零点、极值和比较结果，忽略模型自报的未验证数值。
+- Review 收口：`analyze` / `explain` 必须分别具有成功的 `analyze_function` / `explain_graph` Observation，`requires_observation` 使用真实工具名并正式参与 Final Gate；本地复合规划会补发对应动作。
+- Shadow 返回状态仍保持未提交的 base，但事实化回答使用明确标注的 `Shadow 候选状态`，不再混合候选 Observation 与基线 GraphState。
+- 决策温度默认改为 `0`；新增绘图、精确删除、复合修改、交点和参数修复 few-shot；`AGENT_DECISION_PROTOCOL=json|tool_calls` 支持协议 A/B，原生协议继续复用动态精确 Schema。
+- 新增 `AGENT_TOOL_REPAIR_ATTEMPTS=1`、`AGENT_DECISION_TEMPERATURE=0`、`AGENT_FEW_SHOT_ENABLED=true` 和 `AGENT_DYNAMIC_TOOLS_ENABLED=true`，并同步 `.env` 与 `.env.example`。
+- 新增 `backend/tests/test_stage_b_safety.py`，覆盖参数修复、错误预算、重复删除回滚、动态工具、事实化回答、few-shot、协议切换和温度载荷。
 
 ### 阶段 C：真实模型评测
 
@@ -556,8 +572,8 @@ Plan 02 完成必须同时满足：
 - [x] 所有工具拥有精确 Pydantic 参数 Schema。
 - [x] 当前 GraphState 表达式始终可供 Agent 决策。
 - [x] mutation 请求零 Action 假成功率为 0%。
-- [ ] 重复破坏性 Action 为 0。
-- [ ] final 与 GraphState / Observation 事实一致率为 100%。
+- [x] 重复破坏性 Action 为 0。
+- [x] final 与 GraphState / Observation 事实一致率为 100%。
 - [ ] 单步、复合、安全拒绝达到 §4.2 准确率目标。
 - [ ] 真实 DeepSeek 评测报告可以一键生成。
 - [ ] `arguments_summary` 和 Observation 摘要可用于故障定位。

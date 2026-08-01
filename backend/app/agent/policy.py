@@ -72,6 +72,10 @@ def check_preconditions(command: Command, state: GraphState) -> Optional[PolicyV
             return PolicyViolation("precondition_failed", "当前没有可操作的方程")
     if tool in {"calculate_intersections", "compare_functions"} and len(state.equations) < 2:
         return PolicyViolation("precondition_failed", "至少需要两条方程")
+    if tool == "remove_equation":
+        target_id = (command.target or {}).get("equationId")
+        if not target_id:
+            return PolicyViolation("invalid_arguments", "remove_equation 必须提供明确的 target.equationId")
     if tool == "add_equations":
         equations = command.arguments.get("equations") or []
         if not equations:
