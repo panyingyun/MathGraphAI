@@ -37,7 +37,7 @@ export interface Message {
 export interface StepSummary {
   stepIndex: number;
   toolName?: string | null;
-  status: "success" | "error" | "final";
+  status: "success" | "notice" | "warning" | "error" | "final";
   summary: string;
   durationMs?: number;
 }

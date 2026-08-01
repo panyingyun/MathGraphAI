@@ -1,4 +1,4 @@
-import { CheckCircle2, CircleDashed, XCircle } from "lucide-react";
+import { AlertCircle, CheckCircle2, CircleDashed, Info, XCircle } from "lucide-react";
 import { AGENT_PHASE_LABELS, type AgentPhase, type DecisionProvider } from "../../types/agent";
 import type { StepSummary } from "../../types/chat";
 
@@ -50,8 +50,10 @@ export function AgentProgress({
             <li key={`${step.stepIndex}-${step.summary}`} className={`agent-step agent-step-${step.status}`}>
               {step.status === "success" && <CheckCircle2 size={14} />}
               {step.status === "final" && <CheckCircle2 size={14} />}
+              {step.status === "notice" && <Info size={14} />}
+              {step.status === "warning" && <AlertCircle size={14} />}
               {step.status === "error" && <XCircle size={14} />}
-              {!["success", "final", "error"].includes(step.status) && <CircleDashed size={14} />}
+              {!["success", "final", "notice", "warning", "error"].includes(step.status) && <CircleDashed size={14} />}
               <span>{step.summary}</span>
             </li>
           ))}

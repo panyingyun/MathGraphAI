@@ -291,7 +291,7 @@ class AgentRunner:
                                 _public_step(
                                     len(steps),
                                     "goal_validator",
-                                    "error",
+                                    "warning",
                                     f"完成校验未通过，允许修复：{', '.join(validation.missing)}",
                                 )
                             )
@@ -369,8 +369,8 @@ class AgentRunner:
                             _public_step(
                                 len(steps),
                                 decision.tool,
-                                "error",
-                                "已阻止重复调用，等待模型修正或结束",
+                                "notice",
+                                "检测到重复调用，已安全跳过，不影响当前结果",
                             )
                         )
                         action_steps += 1
@@ -402,7 +402,7 @@ class AgentRunner:
                             _public_step(
                                 len(steps),
                                 decision.tool,
-                                "error",
+                                "warning",
                                 "工具当前不可用，已回填可用工具列表供模型修正",
                             )
                         )
@@ -480,7 +480,7 @@ class AgentRunner:
                             _public_step(
                                 len(steps),
                                 decision.tool,
-                                "error",
+                                "warning",
                                 f"工具参数可修复，已回填 Observation（{tool_repair_attempts}/{settings.agent_tool_repair_attempts}）",
                                 duration_ms,
                             )

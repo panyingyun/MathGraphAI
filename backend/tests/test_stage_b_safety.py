@@ -89,6 +89,7 @@ def test_runner_repairs_invalid_arguments_once(monkeypatch):
     assert result.graph_state.equations[0].normalized_expression == "x"
     assert "y=x" in result.final_message
     assert "999" not in result.final_message
+    assert any(step.status == "warning" for step in result.steps)
 
 
 def test_runner_stops_when_same_tool_error_repeats(monkeypatch):

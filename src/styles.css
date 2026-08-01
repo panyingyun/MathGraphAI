@@ -212,6 +212,8 @@ button { color: inherit; }
 .agent-progress ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
 .agent-step { display: flex; align-items: center; gap: 7px; color: #3d4254; font-size: 12px; }
 .agent-step-success, .agent-step-final { color: #007d55; }
+.agent-step-notice { color: #41678f; }
+.agent-step-warning { color: #93621b; }
 .agent-step-error { color: var(--danger); }
 .load-more-messages { align-self: center; margin: 4px auto 8px; padding: 6px 12px; border: 1px solid #d7dbe8; border-radius: 999px; background: #fff; color: #5e6272; font-size: 11px; cursor: pointer; }
 .load-more-messages:disabled { opacity: .55; cursor: default; }

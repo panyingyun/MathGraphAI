@@ -26,7 +26,7 @@ class ChatSessionSummary(APIModel):
 class StepSummary(APIModel):
     step_index: int
     tool_name: Optional[str] = None
-    status: Literal["success", "error", "final"] = "success"
+    status: Literal["success", "notice", "warning", "error", "final"] = "success"
     summary: str
     duration_ms: float = 0
 

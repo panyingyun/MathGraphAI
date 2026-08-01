@@ -215,6 +215,7 @@ def test_runner_never_auto_commits_on_repeated_write(monkeypatch):
     assert result.error_code == "repeated_action"
     assert result.should_commit is False
     assert result.graph_state.equations == []
+    assert any(step.status == "notice" and "安全跳过" in step.summary for step in result.steps)
 
 
 @pytest.mark.persistence
