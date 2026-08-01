@@ -35,7 +35,18 @@ npm test
 # 刷新本地解析耗时基线
 cd backend
 python -m scripts.measure_baseline
+
+# Plan02 阶段 C：ReAct 准确性评测（默认 shadow，写 react-accuracy.json/md）
+cd backend
+python -m scripts.evaluate_react --provider local
+python -m scripts.evaluate_react --provider deepseek --repeats 3
 ```
+
+| 产物 | 路径 |
+| --- | --- |
+| 准确性用例 | `testdata/react_accuracy_cases.json` |
+| 本地 Provider 评测报告 | `docs/baseline/react-accuracy.json` / `react-accuracy.md` |
+| DeepSeek 评测报告 | `docs/baseline/react-accuracy-deepseek.json` / `react-accuracy-deepseek.md` |
 
 ## 已知约定
 

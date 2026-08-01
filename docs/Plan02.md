@@ -533,12 +533,25 @@ Shadow 不提交数据，但必须执行相同的 Final Gate。
 
 ### 阶段 C：真实模型评测
 
-1. 建立 80～100 条准确性用例。
-2. 每条真实 DeepSeek 用例重复 3～5 次。
-3. Shadow 与 expected state 对比。
-4. 输出 `react-accuracy.json/md`。
+状态：**已完成（2026-08-01）**（评测脚手架与基线报告已落地；DeepSeek 尚未通过发布门禁）。
 
-退出条件：达到 §4.2 指标后才允许发布 react 模式。
+1. [x] 建立 80～100 条准确性用例。
+2. [x] 每条真实 DeepSeek 用例支持重复 3～5 次（`--provider deepseek --repeats 3`）。
+3. [x] Shadow 与用例 `expectedEffects` / 期望 GraphState 字段对比。
+4. [x] 输出 `react-accuracy.json/md`。
+
+退出条件：达到 §4.2 指标后才允许发布 react 模式（报告字段 `publishReactAllowed`）。
+
+实现记录：
+
+- 新增 `testdata/react_accuracy_cases.json`（90 条）：单步绘图/增删改/视口、中文变体、引用、复合任务、交点零点极值比较、安全拒绝、多轮状态隔离与修复向用例。
+- 新增 `backend/app/agent/accuracy_compare.py`：按最终 GraphState、工具轨迹与 GoalGate 判分，聚合 §4.2 指标。
+- 新增 `backend/scripts/evaluate_react.py`（根目录 `scripts/evaluate_react.py` 转发）：默认 `shadow` 模式，支持 `--provider local|deepseek`、`--repeats`、`--ids`、`--limit`。
+- 本地 Provider 全量基线：`docs/baseline/react-accuracy.json/md`，`publishReactAllowed=true`。
+- DeepSeek 全量初跑：`docs/baseline/react-accuracy-deepseek.json/md`（repeats=1，overall ≈88.9%，安全拒绝与部分复合/添加仍未达标，`publishReactAllowed=false`）。
+- 新增 `backend/tests/test_stage_c_accuracy_eval.py` 覆盖用例规模与对比逻辑。
+- 用例生成器：`backend/scripts/_gen_react_cases.py`。
+- 判分规则：Agent 最终候选状态（shadow 用 `shadow_candidate`）对照 `expectedExpressions` / `expectedViewport` / 颜色可见性等字段，并用 `expectedEffects` + GoalValidator 检查目标满足；零 Action 假成功与重复破坏性删除单独计数。
 
 ### 阶段 D：质量与发布收口
 
@@ -574,8 +587,8 @@ Plan 02 完成必须同时满足：
 - [x] mutation 请求零 Action 假成功率为 0%。
 - [x] 重复破坏性 Action 为 0。
 - [x] final 与 GraphState / Observation 事实一致率为 100%。
-- [ ] 单步、复合、安全拒绝达到 §4.2 准确率目标。
-- [ ] 真实 DeepSeek 评测报告可以一键生成。
+- [ ] 单步、复合、安全拒绝达到 §4.2 准确率目标（本地 Provider 已达标；DeepSeek 初跑未过门禁，见 `react-accuracy-deepseek.md`）。
+- [x] 真实 DeepSeek 评测报告可以一键生成。
 - [ ] `arguments_summary` 和 Observation 摘要可用于故障定位。
 - [ ] off / shadow / react、取消、回滚和冲突测试通过。
 - [ ] README、`.env.example` 和 release checklist 一致。
