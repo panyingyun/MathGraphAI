@@ -17,7 +17,13 @@ from ..services.local_parser import (
     parse_locally,
 )
 from ..utils.equation_validator import InvalidEquation
-from ..utils.numeric_analysis import find_intersections, find_zeros, find_extrema, compare_functions
+from ..utils.numeric_analysis import (
+    compare_functions,
+    find_extrema,
+    find_intersections,
+    find_zeros,
+    format_point_label,
+)
 from .adapter import structured_result_to_action
 
 
@@ -106,7 +112,7 @@ def _plan_intersection_focus(text: str, expressions: List[str], color: Optional[
         {
             "id": f"intersect_{index}",
             "kind": "intersection",
-            "label": f"交点{index + 1}",
+            "label": format_point_label(point["x"], point["y"]),
             "x": point["x"],
             "y": point["y"],
         }
@@ -130,7 +136,7 @@ def _plan_intersection_focus(text: str, expressions: List[str], color: Optional[
 
     labels = ", ".join(item.label for item in items)
     if points:
-        coords = "; ".join(f"({p['x']:g}, {p['y']:g})" for p in points[:4])
+        coords = "; ".join(format_point_label(p["x"], p["y"]) for p in points[:4])
         final_message = f"已绘制 {labels}，找到交点 {coords}"
         if _wants_zoom_to_points(text):
             final_message += "，并放大到交点附近。"
@@ -262,7 +268,7 @@ def plan_local_decisions(message: str, graph_state: GraphState) -> Tuple[List[Ag
             {
                 "id": f"intersect_{index}",
                 "kind": "intersection",
-                "label": f"交点{index + 1}",
+                "label": format_point_label(point["x"], point["y"]),
                 "x": point["x"],
                 "y": point["y"],
                 "equationIds": [left.id, right.id],
@@ -276,10 +282,13 @@ def plan_local_decisions(message: str, graph_state: GraphState) -> Tuple[List[Ag
                     arguments={"points": points, "markers": markers, "padding": 0.4},
                 )
             )
-            return actions, f"已找到 {len(points)} 个交点，并放大到交点附近。", None
+            coords = "; ".join(format_point_label(p["x"], p["y"]) for p in points[:4])
+            return actions, f"已找到交点 {coords}，并放大到交点附近。", None
         if markers:
             actions.append(AgentAction(tool="set_graph_markers", arguments={"markers": markers}))
-        return actions, f"已找到 {len(points)} 个交点。" if points else "当前范围内未找到交点。", None
+            coords = "; ".join(m["label"] for m in markers[:4])
+            return actions, f"已找到交点 {coords}。", None
+        return actions, "当前范围内未找到交点。", None
 
     if (
         color

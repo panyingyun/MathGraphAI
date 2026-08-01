@@ -171,7 +171,9 @@ def test_repeated_action_guard(monkeypatch):
         "app.agent.runner.settings",
         replace(settings, agent_mode="react", deepseek_api_key="", agent_max_steps=6, agent_max_repeated_actions=1),
     )
+    # 第 1 次执行，第 2 次软忽略，第 3 次超限且无 dirty → 错误
     script = [
+        AgentAction(tool="get_graph_state", arguments={}),
         AgentAction(tool="get_graph_state", arguments={}),
         AgentAction(tool="get_graph_state", arguments={}),
         AgentFinal(message="不应到达"),

@@ -51,6 +51,43 @@ def test_parse_json_and_tool_calls_decisions():
     assert via_tools.message == "好了"
 
 
+@pytest.mark.contract
+def test_parse_action_with_string_arguments_and_target():
+    action = parse_json_decision(
+        {
+            "type": "action",
+            "tool": "plot_equations",
+            "arguments": '{"equations":["y = x^2","y = 2*x+3"]}',
+            "target": "eq_demo",
+        }
+    )
+    assert isinstance(action, AgentAction)
+    assert action.arguments["equations"] == ["y = x^2", "y = 2*x+3"]
+    assert action.target == {"equationId": "eq_demo"}
+
+
+@pytest.mark.state
+def test_plot_equations_accepts_string_items():
+    from app.agent.executor import execute_command
+    from app.agent.adapter import action_to_command
+    from app.agent.working_state import WorkingGraphState
+    from app.schemas.agent import AgentAction
+
+    working = WorkingGraphState.from_graph(GraphState())
+    result = execute_command(
+        working,
+        action_to_command(
+            AgentAction(
+                tool="plot_equations",
+                arguments={"equations": ["y = x^2", "y = 2*x+3"]},
+            )
+        ),
+    )
+    assert result.success, result.error_message
+    assert len(working.current.equations) == 2
+    assert [item.label for item in working.current.markers] == ["(-1, 1)", "(3, 9)"]
+
+
 def test_runner_compound_commits_once(monkeypatch):
     from dataclasses import replace
 
@@ -118,7 +155,7 @@ def test_runner_detects_repeated_action(monkeypatch):
 
         async def decide(self, context: DecisionContext):
             self.n += 1
-            if self.n <= 2:
+            if self.n <= 3:
                 return AgentAction(tool="get_graph_state", arguments={})
             return AgentFinal(message="done")
 
@@ -136,9 +173,48 @@ def test_runner_detects_repeated_action(monkeypatch):
             session_id="session_test",
         )
     )
+    # 只读重复且无 dirty：软忽略一次后仍重复 → 报错且不提交
     assert result.success is False
     assert result.error_code == "repeated_action"
     assert result.should_commit is False
+
+
+def test_runner_auto_finalizes_on_repeated_write(monkeypatch):
+    from dataclasses import replace
+
+    from app.config import settings
+
+    class RepeatPlotProvider:
+        name = "local"
+
+        def reset(self):
+            self.n = 0
+
+        async def decide(self, context: DecisionContext):
+            self.n += 1
+            return AgentAction(
+                tool="plot_equations",
+                arguments={"equations": [{"expression": "y = x^2"}, {"expression": "y = 2*x+3"}]},
+            )
+
+    monkeypatch.setattr(
+        "app.agent.runner.settings",
+        replace(settings, agent_mode="react", agent_max_repeated_actions=1, deepseek_api_key="", agent_max_steps=6),
+    )
+    runner = AgentRunner(provider=RepeatPlotProvider())
+    result = asyncio.run(
+        runner.run(
+            user_message="画两条曲线",
+            graph_state=GraphState(),
+            recent_messages=[],
+            request_id="req_stage3_repeat_write",
+            session_id="session_test",
+        )
+    )
+    assert result.success
+    assert result.should_commit
+    assert len(result.graph_state.equations) == 2
+    assert result.graph_state.markers
 
 
 @pytest.mark.persistence

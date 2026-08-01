@@ -3,6 +3,7 @@ import Plotly from "plotly.js-dist-min";
 import { Expand, LocateFixed, Minus, Plus } from "lucide-react";
 import { useAppStore } from "../../stores/appStore";
 import { sampleFunction } from "../../utils/graphSampler";
+import { buildMarkerAnnotations, buildMarkerTrace, listGraphMarkers } from "../../utils/graphMarkers";
 
 export function GraphViewer() {
   const graphState = useAppStore((state) => state.currentSession?.graphState);
@@ -13,19 +14,30 @@ export function GraphViewer() {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const sampledGraph = useMemo(() => {
-    if (!graphState) return { traces: [] as Record<string, unknown>[], error: null as string | null };
+    if (!graphState) {
+      return {
+        traces: [] as Record<string, unknown>[],
+        annotations: [] as Record<string, unknown>[],
+        error: null as string | null,
+        markerCount: 0,
+      };
+    }
     const built: Record<string, unknown>[] = [];
     let samplingError: string | null = null;
     for (const equation of graphState.equations) {
       try {
-        const sampled = sampleFunction(equation.normalizedExpression, graphState.viewport, graphState.settings.sampleCount);
+        const sampled = sampleFunction(
+          equation.normalizedExpression,
+          graphState.viewport,
+          graphState.settings.sampleCount,
+        );
         built.push({
           x: sampled.x,
           y: sampled.y,
           type: "scatter",
           mode: "lines",
           name: equation.label,
-          visible: equation.visible,
+          visible: equation.visible !== false,
           hovertemplate: "x = %{x:.3f}<br>y = %{y:.3f}<extra>%{fullData.name}</extra>",
           // 使用折线而非 spline，避免离群采样点把指数/高次曲线拉弯。
           line: { color: equation.color, width: equation.lineWidth, shape: "linear" },
@@ -35,26 +47,15 @@ export function GraphViewer() {
         samplingError = error instanceof Error ? error.message : "图像渲染失败";
       }
     }
-    const markers = graphState.markers ?? [];
-    if (markers.length > 0) {
-      built.push({
-        x: markers.map((item) => item.x),
-        y: markers.map((item) => item.y),
-        type: "scatter",
-        mode: "markers+text",
-        name: "标记点",
-        text: markers.map((item) => item.label),
-        textposition: "top center",
-        marker: {
-          size: 9,
-          color: markers.map((item) => item.color || "#111827"),
-          symbol: "circle",
-          line: { width: 1, color: "#ffffff" },
-        },
-        hovertemplate: "%{text}<br>x = %{x:.3f}<br>y = %{y:.3f}<extra></extra>",
-      });
-    }
-    return { traces: built, error: samplingError };
+    const markers = listGraphMarkers(graphState);
+    const markerTrace = buildMarkerTrace(markers);
+    if (markerTrace) built.push(markerTrace);
+    return {
+      traces: built,
+      annotations: buildMarkerAnnotations(markers),
+      error: samplingError,
+      markerCount: markers.length,
+    };
   }, [graphState]);
   const traces = sampledGraph.traces;
 
@@ -63,7 +64,7 @@ export function GraphViewer() {
     if (!element || !graphState) return;
     setRenderError(sampledGraph.error);
     const { viewport, settings } = graphState;
-    void Plotly.react(element, traces, {
+    const layout = {
       autosize: true,
       margin: { l: 44, r: 20, t: 20, b: 38 },
       paper_bgcolor: "#ffffff",
@@ -94,8 +95,21 @@ export function GraphViewer() {
       legend: { x: 0.02, y: 0.98, bgcolor: "rgba(255,255,255,.86)", bordercolor: "#c3c6d7", borderwidth: 1 },
       hovermode: "closest",
       dragmode: "pan",
-    }, { responsive: true, displayModeBar: false, scrollZoom: true });
-  }, [graphState, sampledGraph.error, traces]);
+      annotations: sampledGraph.annotations,
+      // 标记数量变化时强制重绘，避免 Plotly.react 丢掉交点 trace。
+      uirevision: `m${sampledGraph.markerCount}-e${graphState.equations.length}-r${graphState.revision}`,
+    };
+    const config = { responsive: true, displayModeBar: false, scrollZoom: true };
+    // newPlot 比 react 更可靠地替换 annotations / 额外 scatter 层。
+    void Plotly.newPlot(element, traces as never, layout as never, config as never);
+    return () => {
+      try {
+        Plotly.purge(element);
+      } catch {
+        /* ignore */
+      }
+    };
+  }, [graphState, sampledGraph.annotations, sampledGraph.error, sampledGraph.markerCount, traces]);
 
   useEffect(() => {
     const exportHandler = () => {
@@ -104,7 +118,13 @@ export function GraphViewer() {
         showToast("请先绘制方程再导出");
         return;
       }
-      void Plotly.downloadImage(element, { format: "png", filename: "mathgraph-ai", width: 1600, height: 1000, scale: 1 });
+      void Plotly.downloadImage(element, {
+        format: "png",
+        filename: "mathgraph-ai",
+        width: 1600,
+        height: 1000,
+        scale: 1,
+      });
     };
     window.addEventListener("mathgraph:export", exportHandler);
     return () => window.removeEventListener("mathgraph:export", exportHandler);

@@ -30,7 +30,15 @@ class InvalidEquation(ValueError):
 
 def normalize_expression(source: str) -> str:
     value = source.strip().split("=", 1)[-1].strip()
-    return value.replace("²", "^2").replace("³", "^3").replace("π", "pi").replace("×", "*").replace("÷", "/")
+    return (
+        value.replace("²", "^2")
+        .replace("³", "^3")
+        .replace("π", "pi")
+        .replace("×", "*")
+        .replace("·", "*")
+        .replace("⋅", "*")
+        .replace("÷", "/")
+    )
 
 
 BIN_OPS = {

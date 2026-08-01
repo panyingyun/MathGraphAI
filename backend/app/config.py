@@ -32,6 +32,7 @@ class Settings:
     agent_max_steps: int = _env_int("AGENT_MAX_STEPS", 6)
     agent_timeout_seconds: float = _env_float("AGENT_TIMEOUT_SECONDS", 45.0)
     agent_tool_timeout_seconds: float = _env_float("AGENT_TOOL_TIMEOUT_SECONDS", 10.0)
+    # 连续相同 Action 的软忽略次数；超过后若已有变更则自动 final，否则报错。
     agent_max_repeated_actions: int = _env_int("AGENT_MAX_REPEATED_ACTIONS", 1)
     agent_max_model_calls: int = _env_int("AGENT_MAX_MODEL_CALLS", 6)
     agent_max_observation_chars: int = _env_int("AGENT_MAX_OBSERVATION_CHARS", 2000)

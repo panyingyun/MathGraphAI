@@ -11,6 +11,7 @@ from ...utils.numeric_analysis import (
     find_extrema,
     find_intersections,
     find_zeros,
+    format_point_label,
 )
 from ..working_state import WorkingGraphState
 from .graph_tools import ToolError, _resolve_target_id
@@ -64,7 +65,7 @@ def calculate_intersections(
         {
             "id": f"intersect_{index}",
             "kind": "intersection",
-            "label": f"交点{index + 1}",
+            "label": format_point_label(point["x"], point["y"]),
             "x": point["x"],
             "y": point["y"],
             "equationIds": [left.id, right.id],

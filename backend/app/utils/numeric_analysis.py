@@ -12,6 +12,20 @@ from .equation_validator import InvalidEquation, compile_expression
 EvaluateFn = Callable[[float], float]
 
 
+def format_point_label(x: float, y: float) -> str:
+    """图上标注用：(x, y)，整数尽量去小数，其余保留合理精度。"""
+
+    def _fmt(value: float) -> str:
+        if not math.isfinite(value):
+            return str(value)
+        if abs(value - round(value)) < 1e-8:
+            return str(int(round(value)))
+        text = f"{value:.4g}"
+        return text
+
+    return f"({_fmt(x)}, {_fmt(y)})"
+
+
 def _safe_eval(fn: EvaluateFn, x: float) -> Optional[float]:
     try:
         value = float(fn(x))

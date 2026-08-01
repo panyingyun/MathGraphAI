@@ -28,8 +28,11 @@ def test_refresh_context_summary_is_deterministic():
     state = GraphState()
     first = refresh_context_summary(None, user_message="画 y=x", assistant_message="完成", graph_state=state, steps=steps)
     second = refresh_context_summary(first, user_message="再改红色", assistant_message="已改色", graph_state=state, steps=steps)
-    assert "方程" in first
-    assert "||" in second
+    assert "当前方程" in first
+    assert "再改红色" in second
+    # 摘要只反映最新快照，不堆叠历史方程
+    assert "||" not in second
+    assert second.count("当前方程") == 1
     assert len(second) <= 1200
 
 

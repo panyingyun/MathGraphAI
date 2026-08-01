@@ -57,19 +57,22 @@ def refresh_context_summary(
     graph_state: GraphState,
     steps: Sequence[StepSummary],
 ) -> str:
-    """确定性会话摘要（不调用 LLM）。"""
+    """确定性会话摘要（不调用 LLM）。
+
+    方程列表始终以当前图状态为准，不把历史方程拼接进摘要，避免污染下一轮决策。
+    previous 仅保留调用兼容，不再并入正文。
+    """
+    _ = previous
     eq_labels = [item.label or item.normalized_expression for item in graph_state.equations[:6]]
     tools = [step.tool_name for step in steps if step.tool_name][:8]
     marker_count = len(graph_state.markers or [])
     parts = [
-        f"方程: {', '.join(eq_labels) if eq_labels else '无'}",
+        f"当前方程: {', '.join(eq_labels) if eq_labels else '无'}",
         f"标记点: {marker_count}",
         f"最近工具: {', '.join(tools) if tools else '无'}",
-        f"用户: {(user_message or '')[:80]}",
-        f"助手: {(assistant_message or '')[:120]}",
+        f"最近用户: {(user_message or '')[:80]}",
+        f"最近助手: {(assistant_message or '')[:120]}",
     ]
     summary = " | ".join(parts)
-    if previous:
-        merged = f"{previous} || {summary}"
-        return merged[-settings.context_summary_max_chars :]
+    # 不再把旧摘要整段拼接进来（旧方程列表会污染下一轮决策）。
     return summary[: settings.context_summary_max_chars]

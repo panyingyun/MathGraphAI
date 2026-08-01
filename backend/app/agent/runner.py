@@ -220,6 +220,7 @@ class AgentRunner:
 
                 if isinstance(decision, AgentFinal):
                     phase = "save"
+                    decision = maybe_rewrite_final(decision, working.current, user_message)
                     final_message = decision.message
                     if working.dirty:
                         success = True
@@ -241,6 +242,9 @@ class AgentRunner:
                     success = False
                     break
 
+                # 用当前用户消息锚定方程，防止沿用上一轮 2^x 等历史结果。
+                decision = ground_plot_action(decision, user_message)
+
                 if action_steps >= max_steps:
                     error_code = "max_steps_exceeded"
                     final_message = f"已达到最大步骤数 {max_steps}，未收到最终结果，已取消未提交更改。"
@@ -250,17 +254,54 @@ class AgentRunner:
                     break
 
                 fingerprint = _action_fingerprint(decision)
-                if fingerprints and fingerprints[-1] == fingerprint:
+                is_repeat = bool(fingerprints and fingerprints[-1] == fingerprint)
+                if is_repeat:
                     repeat_streak += 1
                 else:
                     repeat_streak = 0
-                if repeat_streak >= settings.agent_max_repeated_actions:
+
+                # 模型常在成功后重复同一工具：先软忽略并提示 final；再重复则有结果时自动收尾。
+                if is_repeat:
+                    if repeat_streak <= settings.agent_max_repeated_actions:
+                        skip_obs = Observation(
+                            tool=decision.tool,
+                            success=True,
+                            data={
+                                "skipped": True,
+                                "reason": "duplicate_action",
+                                "hint": "该工具与相同参数已执行过，请勿重复调用，直接输出 type=final。",
+                            },
+                        )
+                        observations.append(skip_obs)
+                        steps.append(
+                            _public_step(
+                                len(steps),
+                                decision.tool,
+                                "success",
+                                "已忽略重复调用，等待最终说明",
+                            )
+                        )
+                        action_steps += 1
+                        continue
+
+                    if working.dirty:
+                        phase = "save"
+                        final_message = factual_plot_message(working.current) or "已完成图像更新。"
+                        success = True
+                        if not fallback_used:
+                            error_code = None
+                        steps.append(
+                            _public_step(len(steps), decision.tool, "final", "重复调用已自动结束并保留结果")
+                        )
+                        break
+
                     error_code = "repeated_action"
                     final_message = "检测到重复工具调用，已停止执行。"
                     working.discard()
                     steps.append(_public_step(len(steps), decision.tool, "error", final_message))
                     success = False
                     break
+
                 fingerprints.append(fingerprint)
 
                 phase = "compute" if decision.tool.startswith(("calculate_", "compare_", "check_")) else "execute"

@@ -12,6 +12,8 @@ from app.utils.numeric_analysis import find_intersections, find_zeros, find_extr
 
 @pytest.mark.expression
 def test_intersection_precision_x2_and_2x_plus_3():
+    from app.utils.numeric_analysis import format_point_label
+
     result = find_intersections("x^2", "2*x+3", -10, 10)
     assert result["count"] == 2
     xs = sorted(point["x"] for point in result["points"])
@@ -19,6 +21,54 @@ def test_intersection_precision_x2_and_2x_plus_3():
     assert xs[1] == pytest.approx(3, abs=1e-4)
     for point in result["points"]:
         assert point["errorBound"] <= 1e-5 or point["residual"] < 1e-4
+    assert format_point_label(-1.0, 1.0) == "(-1, 1)"
+    assert format_point_label(3.0, 9.0) == "(3, 9)"
+
+
+@pytest.mark.state
+def test_plot_two_curves_auto_marks_intersections_with_xy_labels():
+    working = WorkingGraphState.from_graph(GraphState())
+    plot_equations(
+        working,
+        {
+            "equations": [
+                {"expression": "y = x^2"},
+                {"expression": "y = 2*x+3"},
+            ]
+        },
+        None,
+    )
+    assert len(working.current.markers) == 2
+    labels = sorted(item.label for item in working.current.markers)
+    assert labels == ["(-1, 1)", "(3, 9)"]
+
+
+@pytest.mark.state
+def test_plot_three_curves_marks_all_pairwise_intersections():
+    """多条曲线时需标注所有曲线对交点，而非仅前两条。"""
+    from app.agent.tools.graph_tools import add_equations
+
+    working = WorkingGraphState.from_graph(GraphState())
+    # 故意把不相交的一对放在前两位，旧逻辑会漏标 (-1,-1)
+    plot_equations(
+        working,
+        {
+            "equations": [
+                {"expression": "y = x"},
+                {"expression": "y = 2^x"},
+                {"expression": "y = 2*x + 1"},
+            ]
+        },
+        None,
+    )
+    labels = {item.label for item in working.current.markers}
+    assert "(-1, -1)" in labels
+    assert "(0, 1)" in labels
+
+    working2 = WorkingGraphState.from_graph(GraphState())
+    plot_equations(working2, {"equations": [{"expression": "y = x"}]}, None)
+    add_equations(working2, {"equations": [{"expression": "y = 2*x + 1"}]}, None)
+    assert any(item.label == "(-1, -1)" for item in working2.current.markers)
 
 
 @pytest.mark.expression

@@ -14,6 +14,33 @@ from .adapter import structured_result_to_action
 AgentDecision = Union[AgentAction, AgentFinal]
 
 
+def _coerce_mapping(value: Any) -> Dict[str, Any]:
+    if value is None:
+        return {}
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return {}
+        try:
+            parsed = json.loads(text) if text[0] in "{[" else parse_json_response(text)
+        except Exception:  # noqa: BLE001
+            return {}
+        return parsed if isinstance(parsed, dict) else {}
+    return {}
+
+
+def _normalize_target(value: Any) -> Optional[Dict[str, Any]]:
+    if value is None:
+        return None
+    if isinstance(value, str) and value.strip():
+        return {"equationId": value.strip()}
+    if isinstance(value, dict):
+        return value
+    return None
+
+
 def _from_mapping(data: Dict[str, Any]) -> AgentDecision:
     decision_type = str(data.get("type") or "").lower()
     if decision_type == "final":
@@ -21,8 +48,8 @@ def _from_mapping(data: Dict[str, Any]) -> AgentDecision:
     if decision_type == "action" or data.get("tool"):
         return AgentAction(
             tool=str(data.get("tool")),
-            arguments=dict(data.get("arguments") or {}),
-            target=data.get("target"),
+            arguments=_coerce_mapping(data.get("arguments")),
+            target=_normalize_target(data.get("target")),
         )
     if data.get("intent"):
         result = StructuredResult.model_validate(data)
@@ -48,16 +75,15 @@ def parse_tool_calls(tool_calls: List[Dict[str, Any]]) -> AgentDecision:
     call = tool_calls[0]
     function = call.get("function") or {}
     name = function.get("name") or call.get("name")
-    arguments_raw = function.get("arguments") or call.get("arguments") or {}
-    if isinstance(arguments_raw, str):
-        arguments = json.loads(arguments_raw) if arguments_raw.strip() else {}
-    else:
-        arguments = dict(arguments_raw)
+    arguments = _coerce_mapping(function.get("arguments") or call.get("arguments") or {})
     if name in {"final_answer", "final"}:
         return AgentFinal(message=str(arguments.get("message") or "已完成。"))
-    nested_arguments = arguments.get("arguments") if isinstance(arguments.get("arguments"), dict) else arguments
-    target = arguments.get("target")
-    return AgentAction(tool=str(name), arguments=dict(nested_arguments or {}), target=target)
+    nested = arguments.get("arguments")
+    nested_arguments = nested if isinstance(nested, dict) else arguments
+    target = _normalize_target(arguments.get("target") or nested_arguments.get("target"))
+    payload = dict(nested_arguments or {})
+    payload.pop("target", None)
+    return AgentAction(tool=str(name), arguments=payload, target=target)
 
 
 def parse_model_decision(

@@ -35,10 +35,19 @@ def analyze_expression(expression: str) -> GraphAnalysis:
 
 
 def extract_equations(message: str) -> List[str]:
+    """从当前用户话里抽出 y=...；支持 · × ² ³ 等常见符号。"""
     found: List[str] = []
-    for match in re.finditer(r"y\s*=\s*([a-zA-Z0-9π.\s+\-*/^()]+)", message, flags=re.IGNORECASE):
+    # 允许中点乘号、全角运算符；在「与/以及/和/,”等分隔处截断，避免吞掉后半句。
+    pattern = r"y\s*=\s*([a-zA-Z0-9π.\s+\-*/^()·⋅×÷²³]+)"
+    for match in re.finditer(pattern, message, flags=re.IGNORECASE):
         candidate = match.group(1).strip()
-        candidate = re.split(r"\s+(?:and|with)\s+", candidate, maxsplit=1, flags=re.IGNORECASE)[0].strip()
+        candidate = re.split(
+            r"\s+(?:and|with|与|以及|和|还有|并)\s+|[,，;；]",
+            candidate,
+            maxsplit=1,
+            flags=re.IGNORECASE,
+        )[0].strip()
+        candidate = normalize_expression(candidate)
         if candidate:
             found.append(candidate)
     if not found and "经过原点" in message and "斜率" in message:

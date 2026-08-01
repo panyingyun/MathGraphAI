@@ -6,21 +6,31 @@ from typing import Any, Dict, List, Optional
 
 from ...schemas.graph import GraphMarker, KeyPoint, Viewport
 from ...utils.graph_limits import clamp_analysis
-from ...utils.numeric_analysis import fit_viewport
+from ...utils.numeric_analysis import fit_viewport, format_point_label
 from ..working_state import WorkingGraphState
 from .graph_tools import ToolError
 
 
-def _parse_markers(raw_markers: List[Dict[str, Any]]) -> List[GraphMarker]:
+def _parse_markers(raw_markers: List[Any]) -> List[GraphMarker]:
     markers: List[GraphMarker] = []
     for index, item in enumerate(raw_markers):
+        if not isinstance(item, dict):
+            continue
+        x = float(item["x"])
+        y = float(item["y"])
+        kind = item.get("kind") or "point"
+        raw_label = item.get("label")
+        if kind == "intersection" or not raw_label or str(raw_label).startswith("交点"):
+            label = format_point_label(x, y)
+        else:
+            label = str(raw_label)
         markers.append(
             GraphMarker(
                 id=str(item.get("id") or f"marker_{index}"),
-                kind=item.get("kind") or "point",
-                label=str(item.get("label") or f"P{index + 1}"),
-                x=float(item["x"]),
-                y=float(item["y"]),
+                kind=kind,
+                label=label,
+                x=x,
+                y=y,
                 color=item.get("color"),
                 equation_ids=list(item.get("equationIds") or item.get("equation_ids") or []),
             )
