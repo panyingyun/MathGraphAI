@@ -11,7 +11,6 @@ from ..schemas.chat import StepSummary
 from ..schemas.graph import GraphState
 from .context_budget import build_command_history, select_recent_messages
 from .registry import TOOL_REGISTRY
-from .request_grounding import requested_expressions
 
 
 REACT_SYSTEM_PROMPT = """你是 MathGraph AI 的决策模块。根据用户请求与 Observation，每次只输出一个 JSON 决策：
@@ -21,11 +20,9 @@ REACT_SYSTEM_PROMPT = """你是 MathGraph AI 的决策模块。根据用户请�
 规则：
 - 不要输出思维过程，只输出 JSON。
 - 显函数只允许变量 x；函数只允许 sin, cos, tan, log, sqrt, abs, exp, pow；乘法用 *，幂用 ^。
-- 【最高优先级】userMessage 与 requestedEquations 是本次请求的唯一真相来源。用户写出的底数/系数必须原样使用（例如 3^x 不可改成 2^x，x+5 不可改成 x）。
-- currentGraphState / recentMessages / contextSummary 只表示「画布现状与历史」，禁止用它们替换用户刚给出的新方程。
-- 用户本轮给出一条或多条 y=... 时：用 plot_equations 按 requestedEquations 整图替换；不要沿用旧图里的方程。
-- 仅当用户说「再加/添加」且只给一条新方程时，才用 add_equations。
-- 复合请求拆成多个 action，全部完成后必须 final；final.message 必须复述实际绘制的方程，不得编造。
+- 只根据本轮 userMessage、currentGraphState 与本轮 observations 决策；不要臆造未出现在 userMessage 中的表达式。
+- 若需已有曲线的具体表达式，先 get_graph_state；用户本轮写出新的 y=... 时，按 userMessage 原文用 plot_equations 整图替换。
+- 说「再加/添加」时用 add_equations；复合请求拆成多个 action，全部完成后必须 final。
 - 不要用相同参数重复调用同一工具；Observation.success=true 后若目标已达成，立即 final。
 - 若无法理解，直接 final 并说明原因。
 - 修改已有曲线时优先使用方程 ID；新方程由工具分配 ID。
@@ -47,22 +44,28 @@ def available_tools_schema() -> List[Dict[str, Any]]:
     ]
 
 
-def graph_summary(state: GraphState) -> Dict[str, Any]:
+def graph_summary(state: GraphState, *, include_expressions: bool = True) -> Dict[str, Any]:
+    equations: List[Dict[str, Any]] = []
+    for item in state.equations:
+        entry: Dict[str, Any] = {
+            "id": item.id,
+            "color": item.color,
+            "visible": item.visible,
+        }
+        if include_expressions:
+            entry["normalizedExpression"] = item.normalized_expression
+            entry["label"] = item.label
+        equations.append(entry)
     return {
         "revision": state.revision,
-        "equations": [
-            {
-                "id": item.id,
-                "normalizedExpression": item.normalized_expression,
-                "color": item.color,
-                "visible": item.visible,
-            }
-            for item in state.equations
-        ],
+        "equationCount": len(state.equations),
+        "equations": equations,
         "markers": [
             {"id": item.id, "kind": item.kind, "label": item.label, "x": item.x, "y": item.y}
             for item in (state.markers or [])[: settings.math_max_points]
-        ],
+        ]
+        if include_expressions
+        else [],
         "viewport": state.viewport.model_dump(by_alias=True),
     }
 
@@ -92,29 +95,22 @@ def build_react_messages(
     context_summary: Optional[str] = None,
     prior_steps: Optional[List[StepSummary]] = None,
 ) -> List[Dict[str, Any]]:
-    trimmed_messages = select_recent_messages(recent_messages)
-    requested = requested_expressions(user_message)
+    # 默认只认本轮提示词：不带聊天历史/摘要，也不把旧方程表达式塞进上下文。
+    include_history = settings.agent_include_chat_history
+    structured: Dict[str, Any] = {
+        "currentGraphState": graph_summary(graph_state, include_expressions=include_history),
+        # 仅本轮已执行步骤，不是聊天历史。
+        "commandHistory": build_command_history(prior_steps or []),
+    }
+    if include_history:
+        structured["contextSummary"] = context_summary or ""
+        structured["recentMessages"] = select_recent_messages(recent_messages)
+
     payload = {
         "userMessage": user_message,
-        "requestedEquations": [{"expression": f"y = {item}", "normalizedExpression": item} for item in requested],
-        "instruction": (
-            "严格按 userMessage / requestedEquations 绘图；忽略历史里不一致的旧方程。"
-            if requested
-            else "本轮未解析到新方程；可在 currentGraphState 上做分析或修改。"
-        ),
-        "structuredContext": {
-            "contextSummary": context_summary or "",
-            "currentGraphState": graph_summary(graph_state),
-            "commandHistory": build_command_history(prior_steps or []),
-            # 历史消息仅作指代消解，内容可能含旧方程，不得覆盖本次 userMessage。
-            "recentMessages": trimmed_messages,
-        },
+        "structuredContext": structured,
         "observations": observations[-8:],
         "availableTools": available_tools_schema(),
-        "budget": {
-            "recentMessageChars": settings.context_recent_message_chars,
-            "maxRecentMessages": settings.context_max_recent_messages,
-        },
     }
     return [
         {"role": "system", "content": REACT_SYSTEM_PROMPT},

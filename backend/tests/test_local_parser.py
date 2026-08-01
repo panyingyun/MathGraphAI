@@ -4,7 +4,7 @@ import pytest
 
 from app.schemas.graph import GraphState
 from app.services.graph_service import apply_result
-from app.services.local_parser import parse_locally
+from app.services.local_parser import extract_equations, parse_locally
 
 
 def test_plot_quadratic():
@@ -92,3 +92,9 @@ def test_catalog_parse_failures(chat_cases):
         assert result.intent == case["expectedIntent"], case["id"]
         if case.get("graphUnchanged"):
             assert state.model_dump() == before
+
+
+def test_extract_equations_accepts_middle_dot_and_separators():
+    text = "y = 2 · x + 1 与 y = x + 5 以及 y = 3^x 的图像分析"
+    found = [item.replace(" ", "") for item in extract_equations(text)]
+    assert found == ["2*x+1", "x+5", "3^x"]

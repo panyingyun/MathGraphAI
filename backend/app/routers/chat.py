@@ -101,8 +101,12 @@ async def chat(payload: ChatRequest, database: DatabaseSession = Depends(get_db)
                 return cached
         raise HTTPException(status_code=409, detail={"code": "request_in_progress", "message": "相同请求正在处理中"})
 
-    recent = load_recent_messages_for_agent(database, session_row.id)
-    context_summary = session_row.context_summary
+    recent = (
+        load_recent_messages_for_agent(database, session_row.id)
+        if settings.agent_include_chat_history
+        else []
+    )
+    context_summary = session_row.context_summary if settings.agent_include_chat_history else None
 
     user_row = add_message(
         database,

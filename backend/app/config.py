@@ -38,6 +38,12 @@ class Settings:
     agent_max_observation_chars: int = _env_int("AGENT_MAX_OBSERVATION_CHARS", 2000)
     agent_trace_enabled: bool = os.getenv("AGENT_TRACE_ENABLED", "true").lower() in {"1", "true", "yes"}
     agent_prefer_tool_calls: bool = os.getenv("AGENT_PREFER_TOOL_CALLS", "false").lower() in {"1", "true", "yes"}
+    # false：决策只看本轮 userMessage + 当前画布 + 本轮 Observation，不带聊天历史/会话摘要。
+    agent_include_chat_history: bool = os.getenv("AGENT_INCLUDE_CHAT_HISTORY", "false").lower() in {
+        "1",
+        "true",
+        "yes",
+    }
     max_equations: int = _env_int("MAX_EQUATIONS", 20)
     max_expression_length: int = _env_int("MAX_EXPRESSION_LENGTH", 256)
     max_ast_nodes: int = _env_int("MAX_AST_NODES", 128)

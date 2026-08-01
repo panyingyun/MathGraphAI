@@ -23,6 +23,44 @@ def test_select_recent_messages_respects_char_budget():
     assert selected[-1]["content"].startswith("msg-19")
 
 
+def test_build_react_messages_defaults_to_current_prompt_only(monkeypatch):
+    import json
+    from dataclasses import replace
+
+    from app.agent.context_builder import build_react_messages
+    from app.config import settings
+    from app.schemas.graph import EquationItem, GraphState
+
+    monkeypatch.setattr(
+        "app.agent.context_builder.settings",
+        replace(settings, agent_include_chat_history=False),
+    )
+    state = GraphState(
+        equations=[
+            EquationItem(
+                id="eq1",
+                expression="y = 3^x",
+                normalized_expression="3^x",
+                label="y = 3^x",
+            )
+        ]
+    )
+    messages = build_react_messages(
+        "画 y = 2^x",
+        state,
+        [{"role": "assistant", "content": "已绘制 y=3^x"}],
+        [],
+        context_summary="当前方程: y = 3^x",
+    )
+    payload = json.loads(messages[1]["content"])
+    structured = payload["structuredContext"]
+    assert "recentMessages" not in structured
+    assert "contextSummary" not in structured
+    assert structured["currentGraphState"]["equationCount"] == 1
+    assert "normalizedExpression" not in structured["currentGraphState"]["equations"][0]
+    assert "3^x" not in messages[1]["content"]
+
+
 def test_refresh_context_summary_is_deterministic():
     steps = [StepSummary(step_index=0, tool_name="plot_equations", status="success", summary="已绘制方程")]
     state = GraphState()

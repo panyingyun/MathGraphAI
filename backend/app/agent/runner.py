@@ -220,7 +220,6 @@ class AgentRunner:
 
                 if isinstance(decision, AgentFinal):
                     phase = "save"
-                    decision = maybe_rewrite_final(decision, working.current, user_message)
                     final_message = decision.message
                     if working.dirty:
                         success = True
@@ -241,9 +240,6 @@ class AgentRunner:
                     steps.append(_public_step(len(steps), None, "error", final_message))
                     success = False
                     break
-
-                # 用当前用户消息锚定方程，防止沿用上一轮 2^x 等历史结果。
-                decision = ground_plot_action(decision, user_message)
 
                 if action_steps >= max_steps:
                     error_code = "max_steps_exceeded"
@@ -286,7 +282,7 @@ class AgentRunner:
 
                     if working.dirty:
                         phase = "save"
-                        final_message = factual_plot_message(working.current) or "已完成图像更新。"
+                        final_message = "已完成图像更新。"
                         success = True
                         if not fallback_used:
                             error_code = None
