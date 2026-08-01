@@ -48,6 +48,10 @@ class Settings:
     math_sample_count: int = _env_int("MATH_SAMPLE_COUNT", 400)
     math_tolerance: float = _env_float("MATH_TOLERANCE", 1e-6)
     math_max_points: int = _env_int("MATH_MAX_POINTS", 32)
+    context_recent_message_chars: int = _env_int("CONTEXT_RECENT_MESSAGE_CHARS", 2400)
+    context_max_recent_messages: int = _env_int("CONTEXT_MAX_RECENT_MESSAGES", 16)
+    context_summary_max_chars: int = _env_int("CONTEXT_SUMMARY_MAX_CHARS", 1200)
+    message_page_size: int = _env_int("MESSAGE_PAGE_SIZE", 30)
 
 
 settings = Settings()

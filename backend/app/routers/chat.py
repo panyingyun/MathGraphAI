@@ -1,28 +1,29 @@
 import time
 import uuid
-from typing import Dict, List
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session as DatabaseSession
 
+from ..agent import cancel_registry
 from ..agent.runner import run_agent
 from ..config import settings
 from ..database import get_db
-from ..models.message import MessageModel
-from ..schemas.chat import ChatRequest, ChatResponse, StructuredResult
+from ..schemas.chat import CancelRequest, CancelResponse, ChatRequest, ChatResponse, StructuredResult
 from ..services.session_service import (
     add_message,
     cached_chat_response,
+    chat_session_summary,
     create_agent_run,
     finish_agent_run,
     get_agent_run_by_request_id,
     get_session_row,
     load_graph_state,
+    load_recent_messages_for_agent,
     maybe_generate_title,
     message_schema,
     persist_graph_state,
+    update_context_summary,
     utc_now,
 )
 from ..utils.logging_utils import log_event
@@ -40,6 +41,17 @@ def _conflict(current: int, expected: int) -> HTTPException:
             "currentRevision": current,
             "expectedRevision": expected,
         },
+    )
+
+
+@router.post("/cancel", response_model=CancelResponse)
+async def cancel_chat(payload: CancelRequest):
+    """协作式取消：Runner 在下一步检查后 discard，不提交 WorkingGraphState。"""
+    found = cancel_registry.request_cancel(payload.request_id)
+    return CancelResponse(
+        request_id=payload.request_id,
+        cancelled=found,
+        message="已发送取消信号" if found else "未找到进行中的请求（可能已结束）",
     )
 
 
@@ -89,12 +101,10 @@ async def chat(payload: ChatRequest, database: DatabaseSession = Depends(get_db)
                 return cached
         raise HTTPException(status_code=409, detail={"code": "request_in_progress", "message": "相同请求正在处理中"})
 
-    recent_rows = database.scalars(
-        select(MessageModel).where(MessageModel.session_id == session_row.id).order_by(MessageModel.created_at.desc()).limit(8)
-    ).all()
-    recent = [{"role": item.role, "content": item.content} for item in reversed(recent_rows)]
+    recent = load_recent_messages_for_agent(database, session_row.id)
+    context_summary = session_row.context_summary
 
-    add_message(
+    user_row = add_message(
         database,
         session_row.id,
         "user",
@@ -102,6 +112,7 @@ async def chat(payload: ChatRequest, database: DatabaseSession = Depends(get_db)
         request_id=request_id,
         agent_mode=settings.agent_mode,
     )
+    database.commit()
 
     result = await run_agent(
         user_message=payload.message,
@@ -109,9 +120,10 @@ async def chat(payload: ChatRequest, database: DatabaseSession = Depends(get_db)
         recent_messages=recent,
         request_id=request_id,
         session_id=session_row.id,
+        context_summary=context_summary,
     )
 
-    status_value = "success" if result.success else "error"
+    status_value = "cancelled" if result.cancelled else ("success" if result.success else "error")
     if result.should_commit:
         graph_state = result.graph_state
         persist_graph_state(session_row, graph_state)
@@ -131,16 +143,25 @@ async def chat(payload: ChatRequest, database: DatabaseSession = Depends(get_db)
         "assistant",
         result.final_message,
         structured,
-        status_value,
+        "error" if status_value in {"error", "cancelled"} else "success",
         request_id=request_id,
         agent_mode=settings.agent_mode,
         decision_provider=result.decision_provider,
     )
 
+    new_summary = update_context_summary(
+        session_row,
+        user_message=payload.message,
+        assistant_message=result.final_message,
+        graph_state=graph_state,
+        steps=result.steps,
+    )
+
     session_row.updated_at = utc_now()
     duration_ms = round((time.perf_counter() - started) * 1000, 2)
     message = message_schema(assistant_row)
-    message.status = status_value
+    message.status = "error" if status_value in {"error", "cancelled"} else "success"
+    user_message = message_schema(user_row)
     response = ChatResponse(
         message=message,
         graph_state=graph_state,
@@ -155,6 +176,11 @@ async def chat(payload: ChatRequest, database: DatabaseSession = Depends(get_db)
         duration_ms=duration_ms,
         steps=result.steps,
         shadow_diff=result.shadow_diff,
+        session_summary=chat_session_summary(session_row),
+        context_summary=new_summary,
+        new_messages=[user_message, message],
+        phase=result.phase,  # type: ignore[arg-type]
+        cancelled=result.cancelled,
     )
     finish_agent_run(
         database,
@@ -166,11 +192,14 @@ async def chat(payload: ChatRequest, database: DatabaseSession = Depends(get_db)
         error_code=result.error_code,
         response=response,
         step_count=result.step_count,
+        steps=result.steps,
     )
     database.commit()
     database.refresh(assistant_row)
     response.message = message_schema(assistant_row)
-    response.message.status = status_value
+    response.message.status = message.status
+    response.new_messages = [user_message, response.message]
+    response.session_summary = chat_session_summary(session_row)
 
     log_event(
         "chat_completed",
@@ -185,5 +214,6 @@ async def chat(payload: ChatRequest, database: DatabaseSession = Depends(get_db)
         durationMs=duration_ms,
         status=status_value,
         stepCount=result.step_count,
+        cancelled=result.cancelled,
     )
     return response

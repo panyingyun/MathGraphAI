@@ -15,4 +15,11 @@ export interface Session extends SessionSummary {
   graphState: GraphState;
   schemaVersion?: number;
   contextSummary?: string | null;
+  hasMoreMessages?: boolean;
+}
+
+export interface MessagePage {
+  messages: Message[];
+  hasMore: boolean;
+  nextBefore?: string | null;
 }

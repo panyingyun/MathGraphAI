@@ -198,11 +198,24 @@ button { color: inherit; }
 .toast { position: fixed; left: 50%; bottom: 24px; z-index: 120; padding: 10px 15px; color: white; border-radius: 7px; background: #292c35; box-shadow: 0 8px 24px rgba(0,0,0,.2); transform: translateX(-50%); font-size: 11px; animation: toast-in .2s ease-out; }
 @keyframes toast-in { from { opacity:0; transform:translate(-50%,8px) } }
 .agent-progress { margin: 8px 18px 4px; padding: 10px 12px; border: 1px solid #e4e7f2; border-radius: 10px; background: #f8f9fd; }
-.agent-progress-title { margin-bottom: 6px; color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: .04em; }
+.agent-progress-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.agent-progress-title { color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: .04em; }
+.agent-phases { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-bottom: 8px; }
+.agent-phase { padding: 5px 6px; border: 1px solid #e1e4ef; border-radius: 6px; color: #8b90a0; background: #fff; font-size: 10px; text-align: center; }
+.agent-phase.done { color: #007d55; border-color: #b7e0cf; background: #f1fbf6; }
+.agent-phase.current { color: #1f4b99; border-color: #b7c9ef; background: #eef3ff; font-weight: 600; }
+.provider-badge { display: inline-flex; align-items: center; margin-left: 8px; padding: 2px 7px; border-radius: 999px; font-size: 10px; font-weight: 600; letter-spacing: .02em; vertical-align: middle; }
+.provider-deepseek { color: #1f4b99; background: #e8efff; }
+.provider-local { color: #5b4636; background: #f3ece3; }
+.provider-fallback { outline: 1px solid #efb5b1; }
+.fallback-note { margin-bottom: 8px; color: #8a4b12; font-size: 11px; }
 .agent-progress ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
 .agent-step { display: flex; align-items: center; gap: 7px; color: #3d4254; font-size: 12px; }
 .agent-step-success, .agent-step-final { color: #007d55; }
 .agent-step-error { color: var(--danger); }
+.load-more-messages { align-self: center; margin: 4px auto 8px; padding: 6px 12px; border: 1px solid #d7dbe8; border-radius: 999px; background: #fff; color: #5e6272; font-size: 11px; cursor: pointer; }
+.load-more-messages:disabled { opacity: .55; cursor: default; }
+.cancel-button { background: #93000a !important; }
 .mobile-tabs { display: none; }
 
 @media (max-width: 1180px) {

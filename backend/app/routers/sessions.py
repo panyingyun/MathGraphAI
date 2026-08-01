@@ -1,19 +1,21 @@
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session as DatabaseSession
-from typing import List
+from typing import List, Optional
 import uuid
 
 from ..agent.executor import execute_command
 from ..agent.working_state import WorkingGraphState
+from ..config import settings
 from ..database import get_db
 from ..models.session import SessionModel
 from ..schemas.agent import Command, SessionCommandRequest, SessionCommandResponse
-from ..schemas.session import Session, SessionCreate, SessionSummary, SessionUpdate
+from ..schemas.session import MessagePage, Session, SessionCreate, SessionSummary, SessionUpdate
 from ..services.session_service import (
     create_session,
     get_session_row,
     load_graph_state,
+    load_message_page,
     persist_graph_state,
     session_schema,
     summary_schema,
@@ -110,11 +112,28 @@ def new_session(payload: SessionCreate, database: DatabaseSession = Depends(get_
 
 
 @router.get("/{session_id}", response_model=Session)
-def get_session(session_id: str, database: DatabaseSession = Depends(get_db)):
+def get_session(
+    session_id: str,
+    database: DatabaseSession = Depends(get_db),
+    message_limit: Optional[int] = Query(default=None, alias="messageLimit", ge=1, le=200),
+):
     row = get_session_row(database, session_id)
     if not row:
         raise HTTPException(status_code=404, detail="会话不存在")
-    return session_schema(database, row)
+    return session_schema(database, row, message_limit=message_limit or settings.message_page_size)
+
+
+@router.get("/{session_id}/messages", response_model=MessagePage)
+def get_session_messages(
+    session_id: str,
+    database: DatabaseSession = Depends(get_db),
+    before: Optional[str] = Query(default=None),
+    limit: Optional[int] = Query(default=None, ge=1, le=200),
+):
+    row = get_session_row(database, session_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="会话不存在")
+    return load_message_page(database, session_id, before=before, limit=limit or settings.message_page_size)
 
 
 @router.post("/{session_id}/commands", response_model=SessionCommandResponse)

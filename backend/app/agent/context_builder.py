@@ -7,7 +7,9 @@ from typing import Any, Dict, List, Optional
 
 from ..config import settings
 from ..schemas.agent import Observation
+from ..schemas.chat import StepSummary
 from ..schemas.graph import GraphState
+from .context_budget import build_command_history, select_recent_messages
 from .registry import TOOL_REGISTRY
 
 
@@ -21,6 +23,7 @@ REACT_SYSTEM_PROMPT = """你是 MathGraph AI 的决策模块。根据用户请�
 - 复合请求拆成多个 action，全部完成后必须 final。
 - 若无法理解，直接 final 并说明原因。
 - 优先使用已有方程 ID；新方程由工具分配 ID。
+- 优先参考 structuredContext（方程、标记、命令历史、会话摘要），少依赖原始聊天全文。
 - 找交点：先 plot/add 方程，再 calculate_intersections；若需放大，用 Observation.points 调用 fit_viewport_to_points（可带 markers）。
 - 零点/极值：calculate_zeros / calculate_extrema 后可用 set_graph_markers 或 fit_viewport_to_points 写入标记。
 - 比较函数用 compare_functions；判断当前范围是否可绘用 check_sample。
@@ -50,6 +53,10 @@ def graph_summary(state: GraphState) -> Dict[str, Any]:
             }
             for item in state.equations
         ],
+        "markers": [
+            {"id": item.id, "kind": item.kind, "label": item.label, "x": item.x, "y": item.y}
+            for item in (state.markers or [])[: settings.math_max_points]
+        ],
         "viewport": state.viewport.model_dump(by_alias=True),
     }
 
@@ -75,13 +82,25 @@ def build_react_messages(
     graph_state: GraphState,
     recent_messages: List[Dict[str, str]],
     observations: List[Dict[str, Any]],
+    *,
+    context_summary: Optional[str] = None,
+    prior_steps: Optional[List[StepSummary]] = None,
 ) -> List[Dict[str, Any]]:
+    trimmed_messages = select_recent_messages(recent_messages)
     payload = {
         "userMessage": user_message,
-        "currentGraphState": graph_summary(graph_state),
-        "recentMessages": recent_messages[-8:],
+        "structuredContext": {
+            "contextSummary": context_summary or "",
+            "currentGraphState": graph_summary(graph_state),
+            "commandHistory": build_command_history(prior_steps or []),
+            "recentMessages": trimmed_messages,
+        },
         "observations": observations[-8:],
         "availableTools": available_tools_schema(),
+        "budget": {
+            "recentMessageChars": settings.context_recent_message_chars,
+            "maxRecentMessages": settings.context_max_recent_messages,
+        },
     }
     return [
         {"role": "system", "content": REACT_SYSTEM_PROMPT},

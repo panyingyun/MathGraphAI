@@ -1,3 +1,4 @@
+import type { AgentPhase, DecisionProvider } from "./agent";
 import type { GraphAnalysis, EquationItem, GraphState, Viewport } from "./graph";
 
 export type Intent =
@@ -30,7 +31,7 @@ export interface Message {
   status?: "pending" | "success" | "error";
   requestId?: string;
   agentMode?: string;
-  decisionProvider?: "deepseek" | "local";
+  decisionProvider?: DecisionProvider;
 }
 
 export interface StepSummary {
@@ -41,12 +42,21 @@ export interface StepSummary {
   durationMs?: number;
 }
 
+export interface ChatSessionSummary {
+  id: string;
+  title: string;
+  isFavorite: boolean;
+  createdAt: string;
+  updatedAt: string;
+  revision: number;
+}
+
 export interface ChatResponse {
   message: Message;
   graphState: GraphState;
   requestId: string;
   executionMode: string;
-  decisionProvider: "deepseek" | "local";
+  decisionProvider: DecisionProvider;
   fallbackUsed: boolean;
   fallbackReason?: string;
   errorCode?: string;
@@ -54,6 +64,12 @@ export interface ChatResponse {
   stepCount: number;
   durationMs: number;
   steps?: StepSummary[];
+  shadowDiff?: Record<string, unknown>;
+  sessionSummary?: ChatSessionSummary;
+  contextSummary?: string | null;
+  newMessages?: Message[];
+  phase?: AgentPhase;
+  cancelled?: boolean;
 }
 
 export class ApiError extends Error {

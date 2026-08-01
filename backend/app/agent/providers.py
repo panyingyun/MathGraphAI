@@ -25,6 +25,8 @@ class DecisionContext:
     observations: List[Observation] = field(default_factory=list)
     request_id: Optional[str] = None
     step_index: int = 0
+    context_summary: Optional[str] = None
+    prior_steps: List[Any] = field(default_factory=list)
 
 
 class DecisionProvider(Protocol):
@@ -73,6 +75,8 @@ class DeepSeekDecisionProvider:
             context.graph_state,
             context.recent_messages,
             observation_payloads,
+            context_summary=context.context_summary,
+            prior_steps=context.prior_steps,
         )
         tools = openai_tool_definitions() if self.prefer_tool_calls else None
         raw = await call_deepseek_decision(messages, tools=tools)

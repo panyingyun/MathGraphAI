@@ -2,7 +2,7 @@ import type { GraphCommand, SessionCommandResponse } from "../types/agent";
 import type { GraphState } from "../types/graph";
 import type { ChatResponse, Message } from "../types/chat";
 import { ApiError } from "../types/chat";
-import type { Session, SessionSummary } from "../types/session";
+import type { MessagePage, Session, SessionSummary } from "../types/session";
 
 const API_ROOT = "/api";
 
@@ -44,22 +44,45 @@ export const api = {
   listSessions: () => request<SessionSummary[]>("/sessions"),
   createSession: (title = "新会话") =>
     request<Session>("/sessions", { method: "POST", body: JSON.stringify({ title }) }),
-  getSession: (id: string) => request<Session>(`/sessions/${id}`),
+  getSession: (id: string, messageLimit = 30) =>
+    request<Session>(`/sessions/${id}?messageLimit=${messageLimit}`),
+  getMessages: (id: string, before?: string | null, limit = 30) => {
+    const params = new URLSearchParams({ limit: String(limit) });
+    if (before) params.set("before", before);
+    return request<MessagePage>(`/sessions/${id}/messages?${params.toString()}`);
+  },
   updateSession: (
     id: string,
     updates: { title?: string; graphState?: GraphState; isFavorite?: boolean; expectedRevision?: number },
   ) => request<Session>(`/sessions/${id}`, { method: "PATCH", body: JSON.stringify(updates) }),
   deleteSession: (id: string) => request<void>(`/sessions/${id}`, { method: "DELETE" }),
-  sendMessage: (sessionId: string, message: string, expectedRevision: number, requestId = createRequestId()) =>
+  sendMessage: (
+    sessionId: string,
+    message: string,
+    expectedRevision: number,
+    options?: { requestId?: string; signal?: AbortSignal },
+  ) =>
     request<ChatResponse>("/chat", {
       method: "POST",
-      body: JSON.stringify({ sessionId, message, requestId, expectedRevision }),
+      body: JSON.stringify({
+        sessionId,
+        message,
+        requestId: options?.requestId ?? createRequestId(),
+        expectedRevision,
+      }),
+      signal: options?.signal,
+    }),
+  cancelChat: (requestId: string) =>
+    request<{ requestId: string; cancelled: boolean; message: string }>("/chat/cancel", {
+      method: "POST",
+      body: JSON.stringify({ requestId }),
     }),
   executeCommand: (sessionId: string, command: GraphCommand) =>
     request<SessionCommandResponse>(`/sessions/${sessionId}/commands`, {
       method: "POST",
       body: JSON.stringify(command),
     }),
+  createRequestId,
 };
 
 export type { ChatResponse, Message };

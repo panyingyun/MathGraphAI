@@ -327,23 +327,25 @@ Agent 完成全部必要动作后返回：
 
 ### 阶段 5：上下文、前端体验和性能
 
+> 状态：**已完成**（见 `docs/baseline/stage5.md`）
+
 目标：让复杂执行过程对用户可理解，同时控制上下文和请求成本。
 
 任务：
 
-- 上下文优先传递结构化命令历史、方程 ID 和当前状态，减少原始聊天文本。
-- 为较早消息生成会话摘要；最近消息采用可配置 token 预算，而不是固定 8 条。
-- `/api/chat` 直接返回最新会话摘要和消息增量，减少前端随后再次 `GET session`。
-- 会话消息改为分页加载，避免每次读取完整历史。
-- 前端增加阶段状态：理解请求、执行命令、计算结果、保存状态。
-- 明确展示 `deepseek` 或 `local` DecisionProvider 以及 fallback 状态，但不展示内部思维过程。
-- 支持取消长请求；取消后不提交 WorkingGraphState。
+- [x] 上下文优先传递结构化命令历史、方程 ID 和当前状态，减少原始聊天文本。
+- [x] 为较早消息生成会话摘要；最近消息采用可配置 token 预算，而不是固定 8 条。
+- [x] `/api/chat` 直接返回最新会话摘要和消息增量，减少前端随后再次 `GET session`。
+- [x] 会话消息改为分页加载，避免每次读取完整历史。
+- [x] 前端增加阶段状态：理解请求、执行命令、计算结果、保存状态。
+- [x] 明确展示 `deepseek` 或 `local` DecisionProvider 以及 fallback 状态，但不展示内部思维过程。
+- [x] 支持取消长请求；取消后不提交 WorkingGraphState。
 
 验收标准：
 
-- 长会话不会因加载全部消息明显变慢。
-- 用户能够区分正常模型执行和本地降级。
-- 取消、超时或刷新页面不会产生半完成状态。
+- [x] 长会话不会因加载全部消息明显变慢。
+- [x] 用户能够区分正常模型执行和本地降级。
+- [x] 取消、超时或刷新页面不会产生半完成状态。
 
 ## 7. 建议代码结构
 
@@ -537,18 +539,18 @@ MAX_POWER_EXPONENT=100
 
 满足以下条件时，Plan 01 可视为完成：
 
-- 现有单步绘图功能保持兼容。
-- 模型错误具有明确分类、日志和用户可理解提示。
-- 请求具备幂等能力，GraphState 具备版本冲突保护。
-- 所有自然语言请求均通过统一 AgentRunner 执行，不存在独立 Local/Plan/ReAct 业务分支。
-- 简单请求可以在一次工具调用后 `final`，复合请求可以通过多个 Action 原子完成。
-- 至少一个依赖 Observation 的数学场景通过统一 ReAct 完成。
-- ReAct 具备步骤、超时、工具、Observation 和状态写入限制。
-- Agent 执行失败、取消或超时时，数据库不会保存半完成状态。
-- DeepSeek 和 Local DecisionProvider 输出相同 Action 协议并共享同一执行链路。
-- 直接 UI 操作复用相同 Command/Executor，但不调用 LLM。
-- 自动化测试覆盖统一 ReAct、Provider 回退、UI Command 和关闭 Agent 的兼容链路。
-- 可以通过配置在 `off`、`shadow`、`react` 之间切换。
+- [x] 现有单步绘图功能保持兼容。
+- [x] 模型错误具有明确分类、日志和用户可理解提示。
+- [x] 请求具备幂等能力，GraphState 具备版本冲突保护。
+- [x] 所有自然语言请求均通过统一 AgentRunner 执行，不存在独立 Local/Plan/ReAct 业务分支。
+- [x] 简单请求可以在一次工具调用后 `final`，复合请求可以通过多个 Action 原子完成。
+- [x] 至少一个依赖 Observation 的数学场景通过统一 ReAct 完成。
+- [x] ReAct 具备步骤、超时、工具、Observation 和状态写入限制。
+- [x] Agent 执行失败、取消或超时时，数据库不会保存半完成状态。
+- [x] DeepSeek 和 Local DecisionProvider 输出相同 Action 协议并共享同一执行链路。
+- [x] 直接 UI 操作复用相同 Command/Executor，但不调用 LLM。
+- [x] 自动化测试覆盖统一 ReAct、Provider 回退、UI Command 和关闭 Agent 的兼容链路。
+- [x] 可以通过配置在 `off`、`shadow`、`react` 之间切换。
 
 ## 15. 推荐实施顺序摘要
 

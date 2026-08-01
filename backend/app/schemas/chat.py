@@ -9,6 +9,18 @@ from .graph import EquationItem, GraphAnalysis, GraphState
 
 Intent = Literal["plot", "add_equation", "update_equation", "remove_equation", "update_viewport", "analyze", "explain", "unknown"]
 DecisionProvider = Literal["deepseek", "local"]
+AgentPhase = Literal["understand", "execute", "compute", "save"]
+
+
+class ChatSessionSummary(APIModel):
+    """轻量会话摘要，避免与 schemas.session 循环导入。"""
+
+    id: str
+    title: str
+    is_favorite: bool
+    created_at: datetime
+    updated_at: datetime
+    revision: int = 0
 
 
 class StepSummary(APIModel):
@@ -63,3 +75,18 @@ class ChatResponse(APIModel):
     duration_ms: float = 0
     steps: List[StepSummary] = Field(default_factory=list)
     shadow_diff: Optional[Dict[str, Any]] = None
+    session_summary: Optional[ChatSessionSummary] = None
+    context_summary: Optional[str] = None
+    new_messages: List[Message] = Field(default_factory=list)
+    phase: Optional[AgentPhase] = None
+    cancelled: bool = False
+
+
+class CancelRequest(APIModel):
+    request_id: str = Field(min_length=8, max_length=80)
+
+
+class CancelResponse(APIModel):
+    request_id: str
+    cancelled: bool
+    message: str

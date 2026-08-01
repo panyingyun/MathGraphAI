@@ -1,10 +1,11 @@
 import { FormEvent, KeyboardEvent, useEffect, useState } from "react";
-import { Eraser, FunctionSquare, Send } from "lucide-react";
+import { Eraser, FunctionSquare, Send, Square } from "lucide-react";
 import { useAppStore } from "../../stores/appStore";
 
 export function ChatInput({ preset, onPresetUsed }: { preset?: string; onPresetUsed?: () => void }) {
   const [value, setValue] = useState(preset ?? "");
   const sendMessage = useAppStore((state) => state.sendMessage);
+  const cancelMessage = useAppStore((state) => state.cancelMessage);
   const loading = useAppStore((state) => state.isLLMLoading);
 
   useEffect(() => {
@@ -39,10 +40,16 @@ export function ChatInput({ preset, onPresetUsed }: { preset?: string; onPresetU
           placeholder="输入方程式或描述，例如：画 y = x²…"
           aria-label="绘图需求"
         />
-        {value && <button type="button" className="input-tool" aria-label="清空" onClick={() => setValue("")}><Eraser size={17} /></button>}
-        <button type="submit" className="send-button" disabled={!value.trim() || loading} aria-label="发送"><Send size={18} /></button>
+        {value && !loading && <button type="button" className="input-tool" aria-label="清空" onClick={() => setValue("")}><Eraser size={17} /></button>}
+        {loading ? (
+          <button type="button" className="send-button cancel-button" onClick={() => void cancelMessage()} aria-label="取消请求">
+            <Square size={16} />
+          </button>
+        ) : (
+          <button type="submit" className="send-button" disabled={!value.trim()} aria-label="发送"><Send size={18} /></button>
+        )}
       </div>
-      <p>Enter 发送 · Shift + Enter 换行 · MathGraph AI 可能出错，请核对关键结果</p>
+      <p>Enter 发送 · Shift + Enter 换行 · 处理中可取消，取消后不会保存半完成图像</p>
     </form>
   );
 }

@@ -16,7 +16,16 @@ export function MessageItem({ message }: { message: Message }) {
     <article className={`message ${isUser ? "user-message" : "assistant-message"} ${isError ? "message-error" : ""}`}>
       {!isUser && <div className="assistant-avatar">{isError ? <AlertCircle size={16} /> : <Bot size={16} />}</div>}
       <div className="message-content">
-        {!isUser && <div className="message-author">MathGraph AI</div>}
+        {!isUser && (
+          <div className="message-author">
+            MathGraph AI
+            {message.decisionProvider && (
+              <span className={`provider-badge provider-${message.decisionProvider}`}>
+                {message.decisionProvider === "deepseek" ? "DeepSeek" : "Local"}
+              </span>
+            )}
+          </div>
+        )}
         <div className="message-bubble">{withMath(message.content)}</div>
         {!isUser && message.structuredResult?.analysis && (
           <div className="analysis-card">

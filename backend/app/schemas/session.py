@@ -22,6 +22,13 @@ class Session(SessionSummary):
     graph_state: GraphState = Field(default_factory=GraphState)
     schema_version: int = 1
     context_summary: Optional[str] = None
+    has_more_messages: bool = False
+
+
+class MessagePage(APIModel):
+    messages: List[Message] = Field(default_factory=list)
+    has_more: bool = False
+    next_before: Optional[str] = None
 
 
 class SessionCreate(APIModel):
