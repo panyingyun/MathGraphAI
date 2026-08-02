@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import re
 from typing import List, Optional, Tuple, Union
 
@@ -40,6 +41,21 @@ def _viewport_from_text(text: str) -> Optional[dict]:
     if re.search(r"x\s*范围", text, re.I):
         return {"xMin": low, "xMax": high}
     return {"xMin": low, "xMax": high, "yMin": low, "yMax": high}
+
+
+def _tan_textbook_viewport(expressions: List[str]) -> Optional[dict]:
+    """纯 tan 曲线采用教科书视口 [-3π, 3π] × [-5, 5]。"""
+    if not expressions:
+        return None
+    for expr in expressions:
+        if not re.search(r"\btan\s*\(", expr, re.I):
+            return None
+    return {
+        "xMin": -3 * math.pi,
+        "xMax": 3 * math.pi,
+        "yMin": -5.0,
+        "yMax": 5.0,
+    }
 
 
 def _color_from_text(text: str) -> Optional[str]:
@@ -268,9 +284,14 @@ def plan_local_decisions(message: str, graph_state: GraphState) -> Tuple[List[Ag
         notes.append(f"{'添加' if intent_add else '绘制'} {labels}")
         if color:
             notes.append("设置曲线颜色")
-        if viewport:
-            actions.append(AgentAction(tool="set_viewport", arguments={"viewport": viewport}))
-            notes.append(f"坐标范围调整为 {viewport.get('xMin'):g} 到 {viewport.get('xMax'):g}")
+        effective_viewport = viewport
+        if effective_viewport is None and tool == "plot_equations":
+            effective_viewport = _tan_textbook_viewport([item.normalized_expression for item in items])
+        if effective_viewport:
+            actions.append(AgentAction(tool="set_viewport", arguments={"viewport": effective_viewport}))
+            notes.append(
+                f"坐标范围调整为 {effective_viewport.get('xMin'):g} 到 {effective_viewport.get('xMax'):g}"
+            )
         if _wants_analysis(text):
             notes.append("分析函数特征")
         if _wants_explanation(text):

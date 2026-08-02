@@ -2,7 +2,13 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { compileExpression, EquationError, normalizeExpression, sampleFunction } from "./graphSampler";
+import {
+  compileExpression,
+  crossesHalfPiAsymptote,
+  EquationError,
+  normalizeExpression,
+  sampleFunction,
+} from "./graphSampler";
 
 const samples = JSON.parse(
   readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../testdata/expression_samples.json"), "utf-8"),
@@ -25,6 +31,37 @@ describe("expression parity with shared samples", () => {
   it("rejects invalid samples", () => {
     for (const caseItem of samples.invalid) {
       expect(() => compileExpression(caseItem.input), caseItem.id).toThrow(EquationError);
+    }
+  });
+
+  it("detects half-pi asymptote crossings", () => {
+    expect(crossesHalfPiAsymptote(1.5, 1.6)).toBe(true);
+    expect(crossesHalfPiAsymptote(0, 1)).toBe(false);
+    expect(crossesHalfPiAsymptote(-1.6, -1.5)).toBe(true);
+  });
+
+  it("breaks tan(x) across vertical asymptotes instead of drawing poles", () => {
+    for (const sampleCount of [80, 1000]) {
+      const sampled = sampleFunction("tan(x)", { xMin: -10, xMax: 10, yMin: -10, yMax: 10 }, sampleCount);
+      const finite = sampled.y.filter((value): value is number => value !== null);
+      expect(finite.length, `count=${sampleCount}`).toBeGreaterThan(30);
+      expect(Math.max(...finite.map(Math.abs)), `count=${sampleCount}`).toBeLessThanOrEqual(15);
+
+      let brokenAcrossPole = false;
+      for (let index = 1; index < sampled.y.length; index += 1) {
+        const previous = sampled.y[index - 1];
+        const current = sampled.y[index];
+        const x0 = sampled.x[index - 1];
+        const x1 = sampled.x[index];
+        if (crossesHalfPiAsymptote(x0, x1)) {
+          expect(previous === null || current === null, `gap@${x0}->${x1} count=${sampleCount}`).toBe(true);
+          brokenAcrossPole = true;
+        }
+        if (previous !== null && current !== null) {
+          expect(Math.abs(current - previous), `jump@${x0} count=${sampleCount}`).toBeLessThan(12);
+        }
+      }
+      expect(brokenAcrossPole, `count=${sampleCount}`).toBe(true);
     }
   });
 

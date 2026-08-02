@@ -126,24 +126,58 @@ export function compileExpression(source: string): (x: number) => number {
   };
 }
 
+/** tan 的竖直渐近线在 (n + 1/2)π；区间内若跨过则必须断线。 */
+export function crossesHalfPiAsymptote(x0: number, x1: number): boolean {
+  const lo = Math.min(x0, x1);
+  const hi = Math.max(x0, x1);
+  if (!(hi > lo)) return false;
+  const n0 = Math.floor((lo + Math.PI / 2) / Math.PI);
+  const n1 = Math.floor((hi + Math.PI / 2) / Math.PI);
+  return n1 > n0;
+}
+
+function shouldBreakSegment(
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  xSpan: number,
+  ySpan: number,
+  hasTan: boolean,
+): boolean {
+  if (hasTan && crossesHalfPiAsymptote(x0, x1)) return true;
+  const dx = Math.abs(x1 - x0) || Number.EPSILON;
+  const dy = Math.abs(y1 - y0);
+  // 跨极点常见：+5 → -3（幅度不大但异号），仅靠大跳跃阈值会漏断
+  if (y0 * y1 < 0 && dy > ySpan * 0.15) return true;
+  if (dy > ySpan * 0.5) return true;
+  const viewSlope = ySpan / Math.max(xSpan, Number.EPSILON);
+  if (dy / dx > viewSlope * 20) return true;
+  return false;
+}
+
 export function sampleFunction(
   expression: string,
   viewport: Viewport,
   sampleCount: number,
 ): { x: number[]; y: Array<number | null> } {
   const fn = compileExpression(expression);
-  const count = Math.min(5000, Math.max(200, sampleCount));
+  const xSpan = Math.max(Number.EPSILON, viewport.xMax - viewport.xMin);
+  const ySpan = Math.max(1, viewport.yMax - viewport.yMin);
+  // 宽视口时加密采样，避免一步跨过多个渐近线却只留下「竖刺」
+  const adaptiveCount = Math.ceil(xSpan * 100);
+  const count = Math.min(8000, Math.max(200, sampleCount, adaptiveCount));
   const x: number[] = [];
   const y: Array<number | null> = [];
-  const ySpan = Math.max(1, viewport.yMax - viewport.yMin);
-  // 仅保留视口附近的点：离群极大值（如 2^10）会扭曲 spline/折线在可见区内的形状。
+  // 仅保留视口附近的点：离群极大值（如 2^10）会扭曲折线在可见区内的形状。
   const yPad = ySpan * 0.25;
   const yMinAllow = viewport.yMin - yPad;
   const yMaxAllow = viewport.yMax + yPad;
+  const hasTan = /\btan\b/i.test(normalizeExpression(expression));
   let validCount = 0;
 
   for (let index = 0; index <= count; index += 1) {
-    const currentX = viewport.xMin + (index / count) * (viewport.xMax - viewport.xMin);
+    const currentX = viewport.xMin + (index / count) * xSpan;
     let currentY: number | null = null;
     try {
       const calculated = fn(currentX);
@@ -160,12 +194,11 @@ export function sampleFunction(
 
   if (validCount === 0) throw new EquationError("该方程在当前坐标范围内没有可绘制的有限值");
 
-  // 断开 tan(x) 等跨越渐近线的跳跃；阈值按视口高度，避免误伤指数函数陡升段。
-  const jumpThreshold = ySpan * 1.5;
   for (let index = 1; index < y.length; index += 1) {
     const previous = y[index - 1];
     const current = y[index];
-    if (previous !== null && current !== null && Math.abs(current - previous) > jumpThreshold) {
+    if (previous === null || current === null) continue;
+    if (shouldBreakSegment(x[index - 1], previous, x[index], current, xSpan, ySpan, hasTan)) {
       y[index] = null;
     }
   }

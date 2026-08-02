@@ -4,6 +4,14 @@ import { loadPlotly } from "../../lib/plotly";
 import { useAppStore } from "../../stores/appStore";
 import { sampleFunction } from "../../utils/graphSampler";
 import { buildMarkerAnnotations, buildMarkerTrace, listGraphMarkers } from "../../utils/graphMarkers";
+import {
+  buildPiAxisTicks,
+  expressionHasTan,
+  expressionHasTrig,
+  listTanAsymptotes,
+  TAN_TEXTBOOK_VIEWPORT,
+  tanAsymptotePeriod,
+} from "../../utils/trigAxis";
 
 export function GraphViewer() {
   const graphState = useAppStore((state) => state.currentSession?.graphState);
@@ -19,13 +27,30 @@ export function GraphViewer() {
       return {
         traces: [] as Record<string, unknown>[],
         annotations: [] as Record<string, unknown>[],
+        shapes: [] as Record<string, unknown>[],
+        usePiTicks: false,
+        hasTan: false,
         error: null as string | null,
         markerCount: 0,
       };
     }
     const built: Record<string, unknown>[] = [];
     let samplingError: string | null = null;
+    let usePiTicks = false;
+    let hasTan = false;
+    const asymptoteXs = new Set<number>();
     for (const equation of graphState.equations) {
+      if (equation.visible === false) continue;
+      if (expressionHasTrig(equation.normalizedExpression)) usePiTicks = true;
+      if (expressionHasTan(equation.normalizedExpression)) {
+        hasTan = true;
+        const period = tanAsymptotePeriod(equation.normalizedExpression);
+        if (period) {
+          for (const x of listTanAsymptotes(graphState.viewport.xMin, graphState.viewport.xMax, period)) {
+            asymptoteXs.add(x);
+          }
+        }
+      }
       try {
         const sampled = sampleFunction(
           equation.normalizedExpression,
@@ -34,11 +59,12 @@ export function GraphViewer() {
         );
         built.push({
           x: sampled.x,
-          y: sampled.y,
+          // Plotly 对 NaN 断线比 null 更稳；connectgaps:false 避免跨极点连线
+          y: sampled.y.map((value) => (value === null ? Number.NaN : value)),
           type: "scatter",
           mode: "lines",
           name: equation.label,
-          visible: equation.visible !== false,
+          visible: true,
           hovertemplate: "x = %{x:.3f}<br>y = %{y:.3f}<extra>%{fullData.name}</extra>",
           // 使用折线而非 spline，避免离群采样点把指数/高次曲线拉弯。
           line: { color: equation.color, width: equation.lineWidth, shape: "linear" },
@@ -51,9 +77,23 @@ export function GraphViewer() {
     const markers = listGraphMarkers(graphState);
     const markerTrace = buildMarkerTrace(markers);
     if (markerTrace) built.push(markerTrace);
+    const shapes = [...asymptoteXs].sort((a, b) => a - b).map((x) => ({
+      type: "line",
+      xref: "x",
+      yref: "paper",
+      x0: x,
+      x1: x,
+      y0: 0,
+      y1: 1,
+      line: { color: "rgba(100, 108, 132, 0.65)", width: 1.25, dash: "dash" },
+      layer: "below",
+    }));
     return {
       traces: built,
       annotations: buildMarkerAnnotations(markers),
+      shapes,
+      usePiTicks,
+      hasTan,
       error: samplingError,
       markerCount: markers.length,
     };
@@ -76,9 +116,12 @@ export function GraphViewer() {
     let cancelled = false;
     setRenderError(sampledGraph.error);
     const { viewport, settings } = graphState;
+    const piTicks = sampledGraph.usePiTicks ? buildPiAxisTicks(viewport.xMin, viewport.xMax) : null;
+    // tan 等多分支图用独立纵横比例，避免 1:1 锚定把周期压扁
+    const lockAspect = !sampledGraph.hasTan;
     const layout = {
       autosize: true,
-      margin: { l: 44, r: 20, t: 20, b: 38 },
+      margin: { l: 44, r: 20, t: 20, b: piTicks ? 48 : 38 },
       paper_bgcolor: "#ffffff",
       plot_bgcolor: "#ffffff",
       font: { family: "JetBrains Mono, Consolas, monospace", size: 11, color: "#5e6272" },
@@ -89,7 +132,9 @@ export function GraphViewer() {
         zeroline: settings.showAxis,
         zerolinecolor: "#737686",
         zerolinewidth: 1.5,
-        tickmode: "auto",
+        ...(piTicks && piTicks.tickvals.length
+          ? { tickmode: "array" as const, tickvals: piTicks.tickvals, ticktext: piTicks.ticktext }
+          : { tickmode: "auto" as const }),
         fixedrange: false,
       },
       yaxis: {
@@ -99,15 +144,16 @@ export function GraphViewer() {
         zeroline: settings.showAxis,
         zerolinecolor: "#737686",
         zerolinewidth: 1.5,
-        scaleanchor: "x",
-        scaleratio: 1,
+        ...(lockAspect ? { scaleanchor: "x", scaleratio: 1 } : {}),
         fixedrange: false,
+        dtick: sampledGraph.hasTan ? 1 : undefined,
       },
       showlegend: settings.showLegend && traces.length > 0,
       legend: { x: 0.02, y: 0.98, bgcolor: "rgba(255,255,255,.86)", bordercolor: "#c3c6d7", borderwidth: 1 },
       hovermode: "closest",
       dragmode: "pan",
       annotations: sampledGraph.annotations,
+      shapes: sampledGraph.shapes,
       // 标记数量变化时强制重绘，避免 Plotly.react 丢掉交点 trace。
       uirevision: `m${sampledGraph.markerCount}-e${graphState.equations.length}-r${graphState.revision}`,
     };
@@ -127,7 +173,17 @@ export function GraphViewer() {
         }
       });
     };
-  }, [graphState, plotlyReady, sampledGraph.annotations, sampledGraph.error, sampledGraph.markerCount, traces]);
+  }, [
+    graphState,
+    plotlyReady,
+    sampledGraph.annotations,
+    sampledGraph.error,
+    sampledGraph.hasTan,
+    sampledGraph.markerCount,
+    sampledGraph.shapes,
+    sampledGraph.usePiTicks,
+    traces,
+  ]);
 
   useEffect(() => {
     const exportHandler = () => {
@@ -165,7 +221,12 @@ export function GraphViewer() {
     void updateViewport({ xMin: cx - halfX, xMax: cx + halfX, yMin: cy - halfY, yMax: cy + halfY });
   };
 
-  const reset = () => void updateViewport({ xMin: -10, xMax: 10, yMin: -10, yMax: 10 });
+  const reset = () => {
+    const hasTan = graphState.equations.some(
+      (equation) => equation.visible !== false && expressionHasTan(equation.normalizedExpression),
+    );
+    void updateViewport(hasTan ? { ...TAN_TEXTBOOK_VIEWPORT } : { xMin: -10, xMax: 10, yMin: -10, yMax: 10 });
+  };
 
   return (
     <div className={`graph-stage ${isFullscreen ? "graph-fullscreen" : ""}`}>
