@@ -497,7 +497,10 @@ class AgentRunner:
 
                 if action_steps >= max_steps:
                     error_code = "max_steps_exceeded"
-                    final_message = f"已达到最大步骤数 {max_steps}，未收到最终结果，已取消未提交更改。"
+                    final_message = (
+                        f"已达到最大步骤数 {max_steps}，未收到最终结果，已取消未提交更改。"
+                        "可提高 AGENT_MAX_STEPS / AGENT_MAX_MODEL_CALLS，或把请求拆成多轮。"
+                    )
                     working.discard()
                     await _add_step(_public_step(len(steps), decision.tool, "error", final_message))
                     success = False
@@ -605,7 +608,13 @@ class AgentRunner:
                     unavailable_observation = Observation(
                         tool=decision.tool,
                         success=False,
-                        data={"availableTools": context.available_tool_names},
+                        data={
+                            "availableTools": context.available_tool_names,
+                            "hint": (
+                                "只能调用 availableTools 中的工具；"
+                                "若交点/极值已算过，改用 set_graph_markers 标注或补齐其他 missing 后 final。"
+                            ),
+                        },
                         error_code="tool_not_available",
                         error_message="该工具不满足当前前置条件或已在本轮完成。",
                     )

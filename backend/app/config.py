@@ -29,14 +29,15 @@ class Settings:
     deepseek_timeout_seconds: float = _env_float("DEEPSEEK_TIMEOUT_SECONDS", 30.0)
     deepseek_max_retries: int = _env_int("DEEPSEEK_MAX_RETRIES", 2)
     agent_mode: str = os.getenv("AGENT_MODE", "react")
-    agent_max_steps: int = _env_int("AGENT_MAX_STEPS", 6)
-    agent_timeout_seconds: float = _env_float("AGENT_TIMEOUT_SECONDS", 45.0)
+    # 复合指令（多方程+分析+视口）默认放宽，避免中途回滚
+    agent_max_steps: int = _env_int("AGENT_MAX_STEPS", 30)
+    agent_timeout_seconds: float = _env_float("AGENT_TIMEOUT_SECONDS", 90.0)
     agent_tool_timeout_seconds: float = _env_float("AGENT_TOOL_TIMEOUT_SECONDS", 10.0)
     # 连续相同 Action 的软阻止次数；超过后失败回滚，绝不因重复调用自动提交。
     agent_max_repeated_actions: int = _env_int("AGENT_MAX_REPEATED_ACTIONS", 1)
-    agent_goal_repair_attempts: int = _env_int("AGENT_GOAL_REPAIR_ATTEMPTS", 1)
-    agent_tool_repair_attempts: int = _env_int("AGENT_TOOL_REPAIR_ATTEMPTS", 1)
-    agent_max_model_calls: int = _env_int("AGENT_MAX_MODEL_CALLS", 6)
+    agent_goal_repair_attempts: int = _env_int("AGENT_GOAL_REPAIR_ATTEMPTS", 3)
+    agent_tool_repair_attempts: int = _env_int("AGENT_TOOL_REPAIR_ATTEMPTS", 3)
+    agent_max_model_calls: int = _env_int("AGENT_MAX_MODEL_CALLS", 30)
     agent_max_observation_chars: int = _env_int("AGENT_MAX_OBSERVATION_CHARS", 2000)
     agent_trace_enabled: bool = os.getenv("AGENT_TRACE_ENABLED", "true").lower() in {"1", "true", "yes"}
     agent_prefer_tool_calls: bool = os.getenv("AGENT_PREFER_TOOL_CALLS", "false").lower() in {"1", "true", "yes"}

@@ -9,12 +9,10 @@ from ..schemas.graph import GraphState
 from .registry import TOOL_REGISTRY
 
 
+# 仅隐藏廉价/易空转的只读工具。交点/零点/极值/比较允许同轮多次调用
+# （复合请求常要算多组交点）；重复调用仍由 runner 的 duplicate_action 防护。
 _READ_ONCE_TOOLS = {
     "get_graph_state",
-    "calculate_intersections",
-    "calculate_zeros",
-    "calculate_extrema",
-    "compare_functions",
     "check_sample",
 }
 
@@ -96,11 +94,18 @@ def select_available_tools(
         "analyze": "analyze_function",
         "explain": "explain_graph",
         "fit_viewport": "fit_viewport_to_points",
+        "intersections": "calculate_intersections",
+        "zeros": "calculate_zeros",
+        "extrema": "calculate_extrema",
+        "compare": "compare_functions",
     }
     for effect in missing_effects:
         tool = repair_mapping.get(effect)
         if tool:
             allowed.add(tool)
+            # 标记类依赖点集：修复交点/极值后需能写 markers / 拟合
+            if effect in {"intersections", "zeros", "extrema"}:
+                allowed.update({"fit_viewport_to_points", "set_graph_markers"})
 
     # 单请求只允许成功删除一个明确目标，不允许 Goal 修复再次开放破坏性工具。
     if "remove_equation" in executed:

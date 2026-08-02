@@ -14,7 +14,8 @@ _PLOT_WORDS = ("画", "绘制", "作图", "画出", "绘出")
 _ADD_WORDS = ("再加", "添加", "增加", "追加")
 _REMOVE_WORDS = ("删除", "移除", "去掉", "删掉")
 _ANALYZE_WORDS = ("分析", "单调", "对称", "性质", "定义域", "值域")
-_EXPLAIN_WORDS = ("解释", "说明", "解读")
+# 不用单独的「说明」：避免「用一句话说明比较结果」误触发 explain_graph
+_EXPLAIN_WORDS = ("解释图像", "解释函数", "解释一下", "解读", "解释其特征", "解释图像特征")
 _INTERSECTION_WORDS = ("交点", "相交", "交汇")
 _ZERO_WORDS = ("零点", "根", "x 截距", "x截距")
 _EXTREMA_WORDS = ("极值", "极大", "极小", "顶点")
@@ -111,13 +112,29 @@ def _append_once(items: List[GoalEffect], effect: GoalEffect) -> None:
 def _viewport_from_text(text: str) -> Optional[dict]:
     if "范围" not in text:
         return None
+    # 优先匹配 x∈[-6,6]、y∈[-4,4] / x:-6~6 y:-4~4 等四端点写法
+    paired = re.search(
+        r"x\s*(?:∈|in|=|从|:)?\s*[\[(]?\s*(-?\d+(?:\.\d+)?)\s*[,，~到至]\s*(-?\d+(?:\.\d+)?)"
+        r".{0,24}?"
+        r"y\s*(?:∈|in|=|从|:)?\s*[\[(]?\s*(-?\d+(?:\.\d+)?)\s*[,，~到至]\s*(-?\d+(?:\.\d+)?)",
+        text,
+        re.IGNORECASE | re.DOTALL,
+    )
+    if paired:
+        x_min, x_max, y_min, y_max = (float(paired.group(i)) for i in range(1, 5))
+        if x_min < x_max and y_min < y_max:
+            return {"xMin": x_min, "xMax": x_max, "yMin": y_min, "yMax": y_max}
     values = re.findall(r"-?\d+(?:\.\d+)?", text)
     if len(values) < 2:
         return None
-    low, high = float(values[-2]), float(values[-1])
+    # 文末「设为 -6 到 6」优先于前文 tan 的 -5/5 等数字
+    tail = text[max(0, text.rfind("范围")) :]
+    tail_values = re.findall(r"-?\d+(?:\.\d+)?", tail)
+    pool = tail_values if len(tail_values) >= 2 else values
+    low, high = float(pool[-2]), float(pool[-1])
     if low >= high:
         return None
-    if re.search(r"x\s*范围", text, re.IGNORECASE):
+    if re.search(r"x\s*范围", text, re.IGNORECASE) and not re.search(r"y\s*范围", text, re.IGNORECASE):
         return {"xMin": low, "xMax": high}
     return {"xMin": low, "xMax": high, "yMin": low, "yMax": high}
 
@@ -195,6 +212,14 @@ def build_request_spec(user_message: str, graph_state: GraphState) -> RequestSpe
     if (
         any(value is not None for value in (expected_color, expected_visible, expected_line_width))
         and not expressions
+        and not wants_remove
+        and "update" not in effects
+    ):
+        _append_once(effects, "update")
+    # 同轮既有 y=... 又有改线宽/隐藏时，仍需 update 门禁（否则模型改完也不算完成）
+    if (
+        (expected_visible is not None or expected_line_width is not None)
+        and expressions
         and not wants_remove
         and "update" not in effects
     ):

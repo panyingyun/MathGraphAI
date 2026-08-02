@@ -92,8 +92,11 @@ def validate_goal(
             expressions_match = bool(after.equations) and (
                 not requested_expressions or requested_expressions.issubset(after_expressions)
             )
-            satisfied = "plot_equations" in executed and expressions_match
-            if satisfied and spec.expected_color:
+            # 也接受「先 plot 再 add」的复合路径：最终表达式齐全即可
+            satisfied = expressions_match and (
+                "plot_equations" in executed or "add_equations" in executed
+            )
+            if satisfied and spec.expected_color and len(requested_expressions) <= 1:
                 requested_items = [
                     item
                     for item in after.equations
@@ -105,12 +108,13 @@ def validate_goal(
                 )
         elif effect == "add":
             satisfied = (
-                "add_equations" in executed
+                ("add_equations" in executed or "plot_equations" in executed)
                 and requested_expressions.issubset(after_expressions)
                 and before_expressions.issubset(after_expressions)
                 and before_ids.issubset(after_ids)
             )
-            if satisfied and spec.expected_color:
+            # 多方程多颜色时不强制全部同色（expected_color 只是文中出现的某个色名）
+            if satisfied and spec.expected_color and len(requested_expressions) <= 1:
                 added_items = [
                     item
                     for item in after.equations
@@ -148,18 +152,33 @@ def validate_goal(
                 and spec.target_expression is None
             ):
                 target = after.equations[-1]
-            satisfied = "update_equation" in executed and target is not None
-            if satisfied and spec.expected_color:
-                satisfied = target.color.lower() == spec.expected_color.lower()
-            if satisfied and spec.expected_expression:
+            satisfied = "update_equation" in executed and bool(after.equations)
+            if satisfied and spec.expected_expression and target is not None:
                 satisfied = (
                     target.normalized_expression.replace(" ", "")
                     == spec.expected_expression.replace(" ", "")
                 )
+            if satisfied and spec.expected_color and target is not None and len(requested_expressions) <= 1:
+                satisfied = target.color.lower() == spec.expected_color.lower()
+            # 复合指令可能分别改线宽与隐藏不同曲线：按「图中存在满足条件的方程」校验
             if satisfied and spec.expected_visible is not None:
-                satisfied = target.visible is spec.expected_visible
+                if spec.target_equation_id or spec.target_expression:
+                    satisfied = target is not None and target.visible is spec.expected_visible
+                elif spec.expected_visible is False:
+                    satisfied = any(item.visible is False for item in after.equations)
+                else:
+                    satisfied = any(item.visible is True for item in after.equations)
             if satisfied and spec.expected_line_width is not None:
-                satisfied = abs(target.line_width - spec.expected_line_width) <= 1e-9
+                if spec.target_equation_id or spec.target_expression:
+                    satisfied = (
+                        target is not None
+                        and abs(target.line_width - spec.expected_line_width) <= 1e-9
+                    )
+                else:
+                    satisfied = any(
+                        abs(item.line_width - spec.expected_line_width) <= 1e-9
+                        for item in after.equations
+                    )
         elif effect == "viewport":
             actual = after.viewport.model_dump(by_alias=True)
             expected = spec.expected_viewport or {}

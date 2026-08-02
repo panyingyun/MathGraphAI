@@ -75,9 +75,16 @@ def test_dynamic_tools_respect_preconditions_and_completed_calculation():
         data={"points": [{"x": -1, "y": 1}], "markers": [{"x": -1, "y": 1}]},
     )
     after = select_available_tools(spec, state, [observation], ["calculate_intersections"])
-    assert "calculate_intersections" not in after
+    # 复合请求可能要算多组交点，交点工具成功后仍保持可用
+    assert "calculate_intersections" in after
     assert "fit_viewport_to_points" in after
     assert "set_graph_markers" in after
+
+    read_obs = Observation(tool="get_graph_state", success=True, data={"ok": True})
+    after_read = select_available_tools(
+        spec, state, [observation, read_obs], ["calculate_intersections", "get_graph_state"]
+    )
+    assert "get_graph_state" not in after_read
 
 
 def test_runner_repairs_invalid_arguments_once(monkeypatch):
