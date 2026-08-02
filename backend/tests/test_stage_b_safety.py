@@ -31,7 +31,18 @@ def test_request_spec_marks_out_of_scope_chat_and_keeps_math():
         assert spec.unsupported_reason
     plot_spec = build_request_spec("画 y=x^2", empty)
     assert plot_spec.unsupported_request is False
+    assert plot_spec.expression_invalid is False
     assert "plot" in plot_spec.required_effects
+
+
+def test_request_spec_rejects_empty_rhs_and_dangerous_expression():
+    empty = GraphState()
+    empty_rhs = build_request_spec("画 y=", empty)
+    assert empty_rhs.expression_invalid is True
+    assert empty_rhs.required_effects == []
+    dangerous = build_request_spec("画 y=__import__('os').system('ls')", empty)
+    assert dangerous.expression_invalid is True
+    assert dangerous.required_effects == []
 
 
 def test_dynamic_tools_respect_preconditions_and_completed_calculation():

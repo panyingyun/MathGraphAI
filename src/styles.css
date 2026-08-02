@@ -96,6 +96,11 @@ button { color: inherit; }
 .prompt-suggestions button { min-height: 52px; padding: 8px 12px; display: flex; align-items: center; gap: 12px; color: var(--ink); border: 1px solid var(--outline); border-radius: 9px; background: rgba(255,255,255,.5); cursor: pointer; text-align: left; font-size: 13px; transition: .16s ease; }
 .prompt-suggestions button > span { width: 31px; height: 31px; display: grid; place-items: center; color: var(--primary); border-radius: 7px; background: var(--surface-mid); }
 .prompt-suggestions button:hover { border-color: var(--primary-bright); background: white; transform: translateY(-1px); }
+.prompt-suggestions.compact { gap: 7px; margin-top: 2px; }
+.prompt-suggestions.compact button { min-height: 42px; padding: 7px 10px; font-size: 12px; background: #fff; }
+.prompt-suggestions.compact button > span { width: 26px; height: 26px; }
+.error-suggestions { margin-top: 10px; display: grid; gap: 8px; }
+.error-suggestions-label { font-size: 12px; color: #8a4b4b; }
 .day-chip { width: max-content; margin: 0 auto 26px; padding: 4px 10px; color: #707483; border-radius: 999px; background: var(--surface-mid); font-size: 9px; letter-spacing: .08em; text-transform: uppercase; font-weight: 650; }
 .message { margin-bottom: 24px; display: flex; gap: 9px; }
 .user-message { justify-content: flex-end; }

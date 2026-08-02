@@ -260,7 +260,10 @@ export const useAppStore = create<AppState>((set, get) => ({
         fallbackUsed: Boolean(result.fallbackUsed),
         fallbackReason: result.fallbackReason ?? null,
         activeRequestId: null,
-        error: result.message.status === "error" || result.cancelled ? result.message.content : null,
+        error:
+          result.message.status === "error" || result.cancelled
+            ? (result.message.content.split("\n").find((line) => line.trim()) || result.message.content)
+            : null,
         toast: result.fallbackUsed ? (result.fallbackReason ?? "已切换到本地解析") : null,
         mobileTab: window.innerWidth < 768 && result.message.status !== "error" ? "graph" : state.mobileTab,
       }));

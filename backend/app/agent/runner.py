@@ -22,6 +22,7 @@ from .context_builder import truncate_observation
 from .executor import execute_command
 from .final_response import build_grounded_final_message
 from .goal_validator import validate_goal
+from .helpful_error import build_helpful_error_message
 from .providers import DecisionContext, DecisionProvider, LocalDecisionProvider, select_primary_provider
 from .request_spec import build_request_spec
 from .shadow import diff_graph_states, run_local_baseline
@@ -218,6 +219,8 @@ class AgentRunner:
             else None
         )
 
+        upfront_blocked = bool(request_spec.unsupported_request or request_spec.expression_invalid)
+
         try:
             if request_spec.unsupported_request:
                 error_code = "unsupported_request"
@@ -225,7 +228,13 @@ class AgentRunner:
                 working.discard()
                 steps.append(_public_step(0, None, "error", final_message))
                 success = False
-            while not request_spec.unsupported_request:
+            elif request_spec.expression_invalid:
+                error_code = "expression_error"
+                final_message = request_spec.expression_invalid_reason or "方程无效，已拒绝执行。"
+                working.discard()
+                steps.append(_public_step(0, None, "error", final_message))
+                success = False
+            while not upfront_blocked:
                 if cancel_registry.is_cancelled(request_id):
                     cancelled = True
                     error_code = "cancelled"
@@ -315,9 +324,17 @@ class AgentRunner:
                 if isinstance(decision, AgentFinal):
                     phase = "save"
                     final_message = decision.message
-                    if request_spec.unsupported_request:
-                        error_code = "unsupported_request"
-                        final_message = request_spec.unsupported_reason or final_message
+                    if request_spec.unsupported_request or request_spec.expression_invalid:
+                        error_code = (
+                            "unsupported_request"
+                            if request_spec.unsupported_request
+                            else "expression_error"
+                        )
+                        final_message = (
+                            request_spec.unsupported_reason
+                            or request_spec.expression_invalid_reason
+                            or final_message
+                        )
                         working.discard()
                         success = False
                         steps.append(_public_step(len(steps), None, "error", final_message))
@@ -668,6 +685,16 @@ class AgentRunner:
             )
             for index in range(len(steps) - 1, -1, -1):
                 if steps[index].status == "final":
+                    steps[index] = steps[index].model_copy(update={"summary": final_message})
+                    break
+        else:
+            final_message = build_helpful_error_message(
+                final_message,
+                error_code,
+                cancelled=cancelled,
+            )
+            for index in range(len(steps) - 1, -1, -1):
+                if steps[index].status == "error":
                     steps[index] = steps[index].model_copy(update={"summary": final_message})
                     break
 

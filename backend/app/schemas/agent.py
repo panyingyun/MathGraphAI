@@ -63,6 +63,8 @@ class RequestSpec(APIModel):
     requires_observation: List[str] = Field(default_factory=list)
     unsupported_request: bool = False
     unsupported_reason: Optional[str] = None
+    expression_invalid: bool = False
+    expression_invalid_reason: Optional[str] = None
 
 
 class GoalValidationResult(APIModel):

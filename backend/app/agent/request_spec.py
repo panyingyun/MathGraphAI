@@ -51,6 +51,14 @@ _OUT_OF_SCOPE_PATTERNS = (
     re.compile(r"\bdrop\s+table\b", re.IGNORECASE),
     re.compile(r"爬虫"),
 )
+_DANGEROUS_EXPR_PATTERNS = (
+    re.compile(r"__import__"),
+    re.compile(r"\bos\.system\b"),
+    re.compile(r"\b(?:eval|exec|compile)\s*\("),
+    re.compile(r"\bsubprocess\b"),
+    re.compile(r"\bopen\s*\("),
+)
+_EMPTY_RHS_PATTERN = re.compile(r"y\s*=\s*(?:$|[,，。；;！？?\s])", re.IGNORECASE)
 
 
 def _contains_any(text: str, words) -> bool:
@@ -65,6 +73,16 @@ def _detect_unsupported_request(text: str, *, has_graph_intent: bool) -> Optiona
     for pattern in _OUT_OF_SCOPE_PATTERNS:
         if pattern.search(text):
             return "当前只支持函数图像相关请求，无法处理该问题。"
+    return None
+
+
+def _detect_invalid_expression(text: str, expressions: List[str]) -> Optional[str]:
+    """空右侧或危险载荷：在进模型前直接拒绝，避免被当成可任意 plot 的目标。"""
+
+    if any(pattern.search(text) for pattern in _DANGEROUS_EXPR_PATTERNS):
+        return "表达式包含不允许的内容，已拒绝执行。"
+    if _EMPTY_RHS_PATTERN.search(text) and not expressions:
+        return "方程右侧为空，请写成例如 y = x^2。"
     return None
 
 
@@ -197,11 +215,12 @@ def build_request_spec(user_message: str, graph_state: GraphState) -> RequestSpe
     write_effects = {"plot", "add", "remove", "update", "viewport", "analyze", "explain", "fit_viewport"}
     has_graph_intent = bool(effects or expressions or viewport) or _contains_any(text, _GRAPH_INTENT_WORDS)
     unsupported_reason = _detect_unsupported_request(text, has_graph_intent=has_graph_intent)
+    expression_invalid_reason = None if unsupported_reason else _detect_invalid_expression(text, expressions)
 
     return RequestSpec(
-        mutation_expected=any(effect in write_effects for effect in effects),
+        mutation_expected=any(effect in write_effects for effect in effects) and not expression_invalid_reason,
         explicit_expressions=expressions,
-        required_effects=effects,
+        required_effects=[] if expression_invalid_reason else effects,
         target_expression=target_expression,
         target_equation_id=target_id,
         expected_expression=expected_expression,
@@ -212,4 +231,6 @@ def build_request_spec(user_message: str, graph_state: GraphState) -> RequestSpe
         requires_observation=observations,
         unsupported_request=bool(unsupported_reason),
         unsupported_reason=unsupported_reason,
+        expression_invalid=bool(expression_invalid_reason),
+        expression_invalid_reason=expression_invalid_reason,
     )

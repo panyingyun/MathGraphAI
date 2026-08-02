@@ -60,7 +60,17 @@ export function ChatPanel() {
               </button>
             )}
             <div className="day-chip">今天</div>
-            {session.messages.map((message) => <MessageItem message={message} key={message.id} />)}
+            {session.messages.map((message, index) => {
+              const isLast = index === session.messages.length - 1;
+              const canSuggest = isLast && message.role === "assistant" && message.status === "error";
+              return (
+                <MessageItem
+                  message={message}
+                  key={message.id}
+                  onSelectPrompt={canSuggest ? setPreset : undefined}
+                />
+              );
+            })}
             {(loading || agentSteps.length > 0 || decisionProvider) && (
               <AgentProgress
                 steps={agentSteps}
