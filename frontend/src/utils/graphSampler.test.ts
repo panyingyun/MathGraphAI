@@ -11,7 +11,7 @@ import {
 } from "./graphSampler";
 
 const samples = JSON.parse(
-  readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../testdata/expression_samples.json"), "utf-8"),
+  readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../../testdata/expression_samples.json"), "utf-8"),
 ) as {
   valid: Array<{ id: string; input: string; normalized: string; samples: Array<{ x: number; y: number }> }>;
   invalid: Array<{ id: string; input: string }>;

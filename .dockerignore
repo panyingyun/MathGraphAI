@@ -1,4 +1,7 @@
+# 根目录 compose 若误用 context: . 时的忽略清单；web 构建请用 frontend/
 node_modules
+frontend/node_modules
+frontend/dist
 dist
 .git
 .github
@@ -21,5 +24,3 @@ agent-transcripts
 coverage
 .vscode
 .idea
-**/*.test.ts
-vitest.config.ts

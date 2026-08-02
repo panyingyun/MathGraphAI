@@ -2,6 +2,8 @@
 
 一个根据自然语言或数学公式绘制函数图像的三栏式 AI 工作台。前端采用 React、Vite、TypeScript、Tailwind CSS、Zustand、Plotly.js 与 KaTeX；后端采用 FastAPI、Pydantic、SQLAlchemy 与 SQLite，并支持 DeepSeek API。
 
+目录：`frontend/`（Vite 前端）、`backend/`（FastAPI）、`testdata/`（前后端共用样本）、`docs/`。
+
 ## 启动
 
 ### 后端
@@ -15,12 +17,12 @@ Copy-Item .env.example .env
 uvicorn app.main:app --host 127.0.0.1 --port 6108 --reload
 ```
 
-`DEEPSEEK_API_KEY` 可以留空。留空时系统使用安全白名单本地解析器，常用绘图、追加方程、改色、删除、坐标范围和基础分析仍可使用。  
-（仓库根目录也可用 `npm run dev:backend`，等价于上述 uvicorn 命令。）
+`DEEPSEEK_API_KEY` 可以留空。留空时系统使用安全白名单本地解析器，常用绘图、追加方程、改色、删除、坐标范围和基础分析仍可使用。
 
 ### 前端
 
 ```powershell
+cd frontend
 npm install
 npm run dev
 ```
@@ -54,9 +56,10 @@ docker compose down
 ## 测试（约定命令）
 
 ```powershell
+cd frontend
 npm run build
 npm test
-cd backend
+cd ../backend
 python -m pytest -q
 python -m scripts.measure_baseline
 python -m scripts.aggregate_metrics --hours 24
@@ -98,6 +101,20 @@ python -m scripts.evaluate_react --provider deepseek --repeats 3
 
 ## 从一个复杂的案例开始
 
+后端运行
+```txt
+cd backend
+uvicorn app.main:app --host 127.0.0.1 --port 6108 --reload
+```
+
+
+前端运行
+```txt
+cd frontend
+npm install
+```
+
+Web测试一下
 ```txt
 1. 画出 y = x^3 - 3*x、y = sin(x)、y = 0.5*x + 1，三条曲线分别设为蓝色、红色、绿色；
 2. 再追加 y = cos(x)（橙色）和 y = tan(x)（紫色）；其中 tan 请用适合观察多周期的坐标范围（大约 -3π 到 3π，y 约 -5 到 5），并保证渐近线处不断成竖线；

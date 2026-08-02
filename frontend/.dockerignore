@@ -1,0 +1,7 @@
+node_modules
+dist
+**/*.test.ts
+vitest.config.ts
+*.tsbuildinfo
+.git
+.DS_Store

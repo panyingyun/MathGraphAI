@@ -11,8 +11,10 @@ __pycache__/
 build/
 develop-eggs/
 dist/
+frontend/dist/
 *.tsbuildinfo
 node_modules/
+frontend/node_modules/
 backend/uvmath/
 downloads/
 eggs/

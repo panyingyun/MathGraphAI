@@ -9,7 +9,7 @@
 | 表达式共用样本 | `testdata/expression_samples.json` | Python AST 与 math.js 对齐 |
 | 对话用例目录 | `testdata/chat_cases.json` | 成功 / 解析失败 / DeepSeek 回退 / 会话隔离 |
 | 后端集成测试 | `backend/tests/` | `/api/chat`、会话 CRUD、解析、GraphState、契约 |
-| 前端一致性测试 | `src/utils/graphSampler.test.ts` | 共用样本在 math.js 侧复验 |
+| 前端一致性测试 | `frontend/src/utils/graphSampler.test.ts` | 共用样本在 math.js 侧复验 |
 | 耗时基线 | `docs/baseline/metrics.json` | 本地解析路径延迟快照 |
 
 ## 用例分类
@@ -32,6 +32,7 @@ cd backend
 python -m pytest -q
 
 # 前端表达式一致性
+cd frontend
 npm test
 
 # 刷新本地解析耗时基线

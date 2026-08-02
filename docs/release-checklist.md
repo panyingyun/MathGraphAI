@@ -4,12 +4,11 @@
 
 ## 1. 自动化测试（约定命令）
 
-在仓库根目录执行：
-
 ```powershell
+cd frontend
 npm run build
 npm test
-cd backend
+cd ../backend
 python -m pytest -q
 python -m scripts.measure_baseline
 python -m scripts.aggregate_metrics --hours 24
@@ -48,7 +47,7 @@ python -m scripts.evaluate_react --provider deepseek --repeats 3
 
 ## 4. 运行时抽检
 
-本地默认：`npm run dev` → `http://127.0.0.1:6106`；后端 `uvicorn app.main:app --host 127.0.0.1 --port 6108 --reload`（或 `npm run dev:backend`）。  
+本地默认：`cd frontend; npm run dev` → `http://127.0.0.1:6106`；后端 `cd backend; uvicorn app.main:app --host 127.0.0.1 --port 6108 --reload`。  
 Docker：`docker compose up -d --build` 后同样为前端 `6106`、后端 `6108`（见 `README.md` / `docker-compose.yml`）。
 
 - [ ] `GET /api/health` 在 `6108` 返回 ok
@@ -73,6 +72,6 @@ AGENT_MODE=off
 ## 6. 文档同步
 
 - [ ] `README.md` 启动（含 Docker 端口 6106/6108）/ 测试 / Agent 说明与本清单一致
-- [ ] `docker-compose.yml` / `backend/Dockerfile` / `deploy/nginx.conf` 后端监听 6108
+- [ ] `docker-compose.yml` / `backend/Dockerfile` / `frontend/Dockerfile` / `frontend/deploy/nginx.conf` 后端监听 6108
 - [ ] `docs/baseline/README.md` 指向 local/deepseek 分文件报告
 - [ ] 本清单与 Plan02 阶段 D 完成记录一致

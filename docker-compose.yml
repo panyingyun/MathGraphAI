@@ -30,7 +30,7 @@ services:
 
   web:
     build:
-      context: .
+      context: ./frontend
       dockerfile: Dockerfile
     ports:
       - "${MATHGRAPH_PORT:-6106}:80"
