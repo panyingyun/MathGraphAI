@@ -7,10 +7,16 @@ import {
 } from "./graphMarkers";
 
 describe("graphMarkers", () => {
-  it("formats intersection labels as (x, y)", () => {
+  it("formats marker labels as (x, y), never generic names", () => {
     expect(
       markerLabel({ id: "a", kind: "intersection", label: "交点1", x: -1, y: -1 }),
     ).toBe("(-1, -1)");
+    expect(
+      markerLabel({ id: "b", kind: "extremum", label: "vertex", x: 0, y: 0 }),
+    ).toBe("(0, 0)");
+    expect(
+      markerLabel({ id: "c", kind: "point", label: "顶点", x: 2, y: 4 }),
+    ).toBe("(2, 4)");
   });
 
   it("builds scatter trace and annotations from markers", () => {

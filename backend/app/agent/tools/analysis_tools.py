@@ -92,7 +92,7 @@ def calculate_zeros(
         {
             "id": f"zero_{index}",
             "kind": "zero",
-            "label": f"零点{index + 1}",
+            "label": format_point_label(point["x"], point["y"]),
             "x": point["x"],
             "y": point["y"],
             "equationIds": [equation.id],
@@ -119,7 +119,7 @@ def calculate_extrema(
         {
             "id": f"extremum_{index}",
             "kind": "extremum",
-            "label": ("极大" if point["kind"] == "max" else "极小") + f"{index + 1}",
+            "label": format_point_label(float(point["x"]), float(point["y"])),
             "x": float(point["x"]),
             "y": float(point["y"]),
             "equationIds": [equation.id],

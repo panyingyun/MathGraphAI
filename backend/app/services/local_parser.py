@@ -20,7 +20,7 @@ def analyze_expression(expression: str) -> GraphAnalysis:
     if compact in {"x^2", "x**2"}:
         return GraphAnalysis(
             function_type="二次函数",
-            key_points=[KeyPoint(label="顶点", x=0, y=0)],
+            key_points=[KeyPoint(label="(0, 0)", x=0, y=0)],
             zeros=[0], symmetry="关于 y 轴对称",
             monotonicity=["(-∞, 0) 递减；(0, +∞) 递增"],
             description="图像是开口向上的抛物线，顶点位于原点。",

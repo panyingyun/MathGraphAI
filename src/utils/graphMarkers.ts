@@ -6,11 +6,9 @@ export function formatMarkerCoord(value: number): string {
   return String(Number(value.toPrecision(4)));
 }
 
+/** 图上标注一律用坐标；「交点」「vertex」等类别名对用户无信息量。 */
 export function markerLabel(item: GraphMarker): string {
-  if (item.kind === "intersection" || !item.label || /^交点/.test(item.label)) {
-    return `(${formatMarkerCoord(item.x)}, ${formatMarkerCoord(item.y)})`;
-  }
-  return item.label;
+  return `(${formatMarkerCoord(item.x)}, ${formatMarkerCoord(item.y)})`;
 }
 
 export function listGraphMarkers(graphState: Pick<GraphState, "markers" | "analysis">): GraphMarker[] {
@@ -26,7 +24,7 @@ export function listGraphMarkers(graphState: Pick<GraphState, "markers" | "analy
     .map((item, index) => ({
       id: `keypoint_${index}`,
       kind: "point" as const,
-      label: item.label || `(${formatMarkerCoord(item.x)}, ${formatMarkerCoord(item.y)})`,
+      label: `(${formatMarkerCoord(item.x)}, ${formatMarkerCoord(item.y)})`,
       x: item.x,
       y: item.y,
     }));

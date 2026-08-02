@@ -290,7 +290,7 @@ def plan_local_decisions(message: str, graph_state: GraphState) -> Tuple[List[Ag
                                 {
                                     "id": f"zero_{index}",
                                     "kind": "zero",
-                                    "label": f"零点{index + 1}",
+                                    "label": format_point_label(float(point["x"]), float(point["y"])),
                                     "x": point["x"],
                                     "y": point["y"],
                                 }
@@ -312,7 +312,7 @@ def plan_local_decisions(message: str, graph_state: GraphState) -> Tuple[List[Ag
                                 {
                                     "id": f"extremum_{index}",
                                     "kind": "extremum",
-                                    "label": ("极大" if point["kind"] == "max" else "极小") + f"{index + 1}",
+                                    "label": format_point_label(float(point["x"]), float(point["y"])),
                                     "x": float(point["x"]),
                                     "y": float(point["y"]),
                                 }
@@ -420,7 +420,7 @@ def plan_local_decisions(message: str, graph_state: GraphState) -> Tuple[List[Ag
                 {
                     "id": f"zero_{index}",
                     "kind": "zero",
-                    "label": f"零点{index + 1}",
+                    "label": format_point_label(float(point["x"]), float(point["y"])),
                     "x": point["x"],
                     "y": point["y"],
                     "equationIds": [target.id],
@@ -446,7 +446,7 @@ def plan_local_decisions(message: str, graph_state: GraphState) -> Tuple[List[Ag
             {
                 "id": f"extremum_{index}",
                 "kind": "extremum",
-                "label": ("极大" if point["kind"] == "max" else "极小") + f"{index + 1}",
+                "label": format_point_label(float(point["x"]), float(point["y"])),
                 "x": float(point["x"]),
                 "y": float(point["y"]),
                 "equationIds": [target.id],
