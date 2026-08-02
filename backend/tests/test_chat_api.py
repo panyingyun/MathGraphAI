@@ -87,7 +87,8 @@ def test_deepseek_failure_falls_back_to_local(client_with_deepseek, monkeypatch)
         raise RuntimeError("simulated deepseek outage")
 
     monkeypatch.setattr("app.agent.providers.call_deepseek_decision", boom)
-    response = _chat(client_with_deepseek, session["id"], "画 y = cos(x)")
+    # 显式方程可由 bootstrap 完成；附加「分析」迫使至少一次模型调用，从而覆盖 fallback。
+    response = _chat(client_with_deepseek, session["id"], "画 y = cos(x) 并分析")
     assert response.status_code == 200
     body = response.json()
     assert body["message"]["status"] == "success"

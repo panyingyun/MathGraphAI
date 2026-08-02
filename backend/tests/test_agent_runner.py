@@ -258,7 +258,47 @@ def test_runner_bootstraps_plot_before_model_for_empty_graph(monkeypatch):
     )
     assert result.success is True
     assert [item.normalized_expression for item in result.graph_state.equations] == ["x^2", "x+2"]
-    assert result.model_calls == 3
+    # plot 由 bootstrap 完成；交点与视口拟合各 1 次模型调用后目标满足即自动 final
+    assert result.model_calls == 2
+
+
+def test_runner_bootstraps_add_and_viewport_then_auto_final(monkeypatch):
+    from dataclasses import replace
+
+    from app.config import settings
+    from app.schemas.graph import EquationItem
+
+    class MustNotDecide:
+        name = "deepseek"
+
+        def reset(self):
+            return
+
+        async def decide(self, _context: DecisionContext):
+            raise AssertionError("add+viewport 应由 bootstrap 完成，不应再调用模型")
+
+    monkeypatch.setattr(
+        "app.agent.runner.settings",
+        replace(settings, agent_mode="react", deepseek_api_key="sk-test", agent_max_steps=6),
+    )
+    result = asyncio.run(
+        AgentRunner(provider=MustNotDecide()).run(
+            user_message="再加 y=cos(x)，范围设为 -6 到 6",
+            graph_state=GraphState(
+                equations=[
+                    EquationItem(id="eq_1", expression="y = x", normalized_expression="x", label="y = x")
+                ]
+            ),
+            recent_messages=[],
+            request_id="req_bootstrap_add_vp",
+            session_id="session_test",
+        )
+    )
+    assert result.success is True
+    assert result.model_calls == 0
+    assert [item.normalized_expression for item in result.graph_state.equations] == ["x", "cos(x)"]
+    assert result.graph_state.viewport.x_min == -6
+    assert result.graph_state.viewport.x_max == 6
 
 
 def test_runner_blocks_incomplete_repeat_then_continues(monkeypatch):

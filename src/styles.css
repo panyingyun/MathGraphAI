@@ -204,7 +204,7 @@ button { color: inherit; }
 .agent-progress { margin: 8px 18px 4px; padding: 10px 12px; border: 1px solid #e4e7f2; border-radius: 10px; background: #f8f9fd; }
 .agent-progress-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
 .agent-progress-title { color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: .04em; }
-.agent-phases { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-bottom: 8px; }
+.agent-phases { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-bottom: 8px; }
 .agent-phase { padding: 5px 6px; border: 1px solid #e1e4ef; border-radius: 6px; color: #8b90a0; background: #fff; font-size: 10px; text-align: center; }
 .agent-phase.done { color: #007d55; border-color: #b7e0cf; background: #f1fbf6; }
 .agent-phase.current { color: #1f4b99; border-color: #b7c9ef; background: #eef3ff; font-weight: 600; }

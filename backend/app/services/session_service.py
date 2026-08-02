@@ -270,8 +270,8 @@ def persist_agent_steps(
                 run_id=run_id,
                 step_index=step.step_index,
                 tool_name=step.tool_name,
-                arguments_summary=None,
-                observation_summary=(step.summary or "")[:500],
+                arguments_summary=(step.arguments_summary or None),
+                observation_summary=(step.observation_summary or step.summary or "")[:500],
                 status=step.status,
                 duration_ms=int(step.duration_ms or 0),
             )

@@ -50,6 +50,18 @@ python -m scripts.evaluate_react --provider deepseek --repeats 3
 
 `publishReactAllowed=true` 仅在完整 DeepSeek 评测（全量用例、`repeats≥3`、无 fallback、§4.2 全达标）时成立。
 
+```powershell
+# 近 24h 运行指标（SQLite agent_runs / agent_steps）
+cd backend
+python -m scripts.aggregate_metrics --hours 24
+```
+
+| 产物 | 路径 |
+| --- | --- |
+| 本地解析耗时基线 | `docs/baseline/metrics.json` / `metrics.md` |
+| 近窗运行指标 | `docs/baseline/metrics-live.json` / `metrics-live.md` |
+| 发布清单 | `docs/release-checklist.md` |
+
 ## 已知约定
 
 - `log(x)` 前后端统一为 **lg（以 10 为底）**。

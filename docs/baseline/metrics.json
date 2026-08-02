@@ -1,5 +1,5 @@
 {
-  "capturedAt": "2026-07-31T15:49:05.257635+00:00",
+  "capturedAt": "2026-08-02T01:40:31.777365+00:00",
   "stage": "plan01-stage0",
   "decisionProvider": "local",
   "notes": [
@@ -9,7 +9,7 @@
   ],
   "summary": {
     "caseCount": 10,
-    "meanLatencyMs": 0.038,
+    "meanLatencyMs": 0.046,
     "localFallbackCount": "n/a (provider forced local)",
     "deepseekFailureSimulatedInTests": true
   },
@@ -19,10 +19,10 @@
       "category": "success",
       "rounds": 20,
       "latencyMs": {
-        "mean": 0.105,
-        "p50": 0.067,
-        "p95": 0.108,
-        "max": 0.766
+        "mean": 0.162,
+        "p50": 0.066,
+        "p95": 0.806,
+        "max": 1.171
       }
     },
     {
@@ -30,10 +30,10 @@
       "category": "success",
       "rounds": 20,
       "latencyMs": {
-        "mean": 0.071,
-        "p50": 0.069,
-        "p95": 0.079,
-        "max": 0.09
+        "mean": 0.07,
+        "p50": 0.067,
+        "p95": 0.086,
+        "max": 0.087
       }
     },
     {
@@ -41,10 +41,10 @@
       "category": "success",
       "rounds": 20,
       "latencyMs": {
-        "mean": 0.075,
-        "p50": 0.072,
-        "p95": 0.093,
-        "max": 0.112
+        "mean": 0.097,
+        "p50": 0.085,
+        "p95": 0.144,
+        "max": 0.179
       }
     },
     {
@@ -52,10 +52,10 @@
       "category": "success",
       "rounds": 20,
       "latencyMs": {
-        "mean": 0.014,
-        "p50": 0.011,
-        "p95": 0.025,
-        "max": 0.025
+        "mean": 0.028,
+        "p50": 0.027,
+        "p95": 0.043,
+        "max": 0.054
       }
     },
     {
@@ -63,10 +63,10 @@
       "category": "success",
       "rounds": 20,
       "latencyMs": {
-        "mean": 0.011,
-        "p50": 0.005,
-        "p95": 0.019,
-        "max": 0.113
+        "mean": 0.012,
+        "p50": 0.006,
+        "p95": 0.009,
+        "max": 0.117
       }
     },
     {
@@ -74,10 +74,10 @@
       "category": "success",
       "rounds": 20,
       "latencyMs": {
-        "mean": 0.02,
-        "p50": 0.019,
-        "p95": 0.026,
-        "max": 0.028
+        "mean": 0.012,
+        "p50": 0.011,
+        "p95": 0.015,
+        "max": 0.02
       }
     },
     {
@@ -85,10 +85,10 @@
       "category": "success",
       "rounds": 20,
       "latencyMs": {
-        "mean": 0.019,
-        "p50": 0.015,
-        "p95": 0.035,
-        "max": 0.043
+        "mean": 0.026,
+        "p50": 0.019,
+        "p95": 0.034,
+        "max": 0.119
       }
     },
     {
@@ -96,10 +96,10 @@
       "category": "parse_failure",
       "rounds": 20,
       "latencyMs": {
-        "mean": 0.029,
+        "mean": 0.026,
         "p50": 0.025,
-        "p95": 0.048,
-        "max": 0.053
+        "p95": 0.035,
+        "max": 0.041
       }
     },
     {
@@ -107,10 +107,10 @@
       "category": "parse_failure",
       "rounds": 20,
       "latencyMs": {
-        "mean": 0.009,
-        "p50": 0.007,
-        "p95": 0.019,
-        "max": 0.021
+        "mean": 0.007,
+        "p50": 0.006,
+        "p95": 0.01,
+        "max": 0.027
       }
     },
     {
@@ -118,10 +118,10 @@
       "category": "parse_failure",
       "rounds": 20,
       "latencyMs": {
-        "mean": 0.032,
-        "p50": 0.027,
-        "p95": 0.05,
-        "max": 0.053
+        "mean": 0.025,
+        "p50": 0.021,
+        "p95": 0.04,
+        "max": 0.044
       }
     }
   ]

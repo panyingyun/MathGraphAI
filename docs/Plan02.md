@@ -385,10 +385,10 @@ Shadow 不提交数据，但必须执行相同的 Final Gate。
 
 验收：
 
-- [ ] `off` / `shadow` / `react` 三模式均有自动化测试。
-- [ ] 取消后 `graphRevision` 不变且 `agent_runs.status=cancelled`。
-- [ ] 至少 1 条前端 E2E 覆盖“发消息 → 绘图 → 可见 Provider”。
-- [ ] 新增 GoalValidator、动态工具集合和参数修复测试。
+- [x] `off` / `shadow` / `react` 三模式均有自动化测试（`test_stage_d_modes.py`）。
+- [x] 取消后 `graphRevision` 不变且 `agent_runs.status=cancelled`。
+- [ ] 至少 1 条前端 E2E 覆盖“发消息 → 绘图 → 可见 Provider”（阶段 E）。
+- [x] 新增 GoalValidator、动态工具集合和参数修复测试（阶段 A/B）。
 
 ### 5.2 持续质量指标
 
@@ -415,16 +415,16 @@ Shadow 不提交数据，但必须执行相同的 Final Gate。
 
 验收：
 
-- [ ] 本地可一键生成近 24h 指标摘要。
-- [ ] 至少覆盖任务满足率、零 Action final、P95、fallback 和重复 Action。
+- [x] 本地可一键生成近 24h 指标摘要（`python -m scripts.aggregate_metrics`）。
+- [x] 至少覆盖零 Action final、P95、fallback 和重复 Action（任务满足率见准确性报告）。
 
 ### 5.3 数据完整性
 
 | 项 | 现状 | 目标 |
 | --- | --- | --- |
-| `agent_steps.arguments_summary` | 列存在，实际记录可能为空 | 写入规范化参数摘要或无参占位 |
-| Observation 摘要 | 主要是展示文本 | 保存机器可比较的结果摘要和哈希 |
-| Agent steps 查询 API | 无 | 可选调试 API |
+| `agent_steps.arguments_summary` | 已由 Runner 写入规范化摘要 | 写入规范化参数摘要或无参占位 |
+| Observation 摘要 | 已写入可比较摘要 + 短哈希 | 保存机器可比较的结果摘要和哈希 |
+| Agent steps 查询 API | 无 | 可选调试 API（阶段 E） |
 | 取消时 user 消息 | 已落库 | 文档化或标记 cancelled |
 
 要求：
@@ -440,13 +440,13 @@ Shadow 不提交数据，但必须执行相同的 Final Gate。
 | 默认 `AGENT_MODE` | 当前为 `react` | 开发可用 react；发布必须经过 accuracy shadow gate |
 | `AGENT_INCLUDE_CHAT_HISTORY` | 当前为 false | 与 GraphState 表达式开关解耦 |
 | `AGENT_DECISION_PROTOCOL` | 当前为 json | Schema 契约测试通过后再切换 tool_calls A/B；旧 `AGENT_PREFER_TOOL_CALLS` 仅兼容 |
-| 发布清单 | 分散在 baseline | 新增 `release-checklist.md` |
+| 发布清单 | 已新增 `docs/release-checklist.md` | 新增 `release-checklist.md` |
 
 验收：
 
-- [ ] README、`.env.example` 和部署说明的默认值一致。
-- [ ] 可以通过修改 env 回退，不需要回滚数据库。
-- [ ] 未达到准确率阈值时不能从 shadow 切换到 react。
+- [x] README、`.env.example` 和部署说明的默认值一致。
+- [x] 可以通过修改 env 回退，不需要回滚数据库。
+- [x] 未达到准确率阈值时不能从 shadow 切换到 react（清单门禁）。
 
 ## 6. 可优化项（Should / Could）
 
@@ -558,16 +558,36 @@ Shadow 不提交数据，但必须执行相同的 Final Gate。
 
 ### 阶段 D：质量与发布收口
 
-1. off / shadow / react、取消和契约测试。
-2. 填充 `arguments_summary` 与 Observation 摘要。
-3. 指标聚合脚本。
-4. 默认配置说明和 release checklist。
+状态：**已完成（2026-08-02）**。
+
+1. [x] off / shadow / react、取消和契约测试。
+2. [x] 填充 `arguments_summary` 与 Observation 摘要。
+3. [x] 指标聚合脚本。
+4. [x] 默认配置说明和 release checklist。
+
+实现记录：
+
+- 新增 `backend/tests/test_stage_d_modes.py`：`off` 单步通过/目标未满足、shadow vs react 提交矩阵、未知工具契约、chat 落库参数摘要、取消后 revision 不变且 `agent_runs.status=cancelled`。
+- 新增 `backend/app/agent/step_summaries.py`；`StepSummary` 携带 `arguments_summary` / `observation_summary`，`persist_agent_steps` 写入 SQLite。
+- 新增 `backend/scripts/aggregate_metrics.py`（根目录转发）：聚合近窗成功率、P95、fallback、零 Action、重复 Action 与摘要填充率 → `docs/baseline/metrics-live.json/md`。
+- 新增 `docs/release-checklist.md`；同步 `README.md`、`backend/.env.example`、`docs/baseline/README.md`、`metrics.md`。
 
 ### 阶段 E：体验增强
 
-1. SSE 阶段推送。
+状态：**进行中（2026-08-02）**。
+
+1. [x] SSE 阶段推送。
 2. 前端 E2E。
 3. 摘要与 token 预算升级。
+
+实现记录（E.1）：
+
+- `ChatRequest.stream`（默认 `false`）开启时，`POST /api/chat` 返回 `text/event-stream`；JSON 路径保持不变。
+- Runner 支持 `on_event`，在阶段切换与公开步骤时推送 `meta` / `phase` / `step`；Final Gate 前进入 `validate`。
+- SSE 事件：`meta`、`phase`、`step`、`done`（完整 ChatResponse）、`error`；取消仍用 `POST /api/chat/cancel`。
+- 前端 `api.sendMessage` 默认走 SSE，实时更新 `agentPhase` / `agentSteps`；进度条增加「验证结果」。
+- 新增 `backend/tests/test_stage_e_sse.py`。
+
 4. 多 worker 取消信号。
 
 ## 8. 非目标
@@ -590,12 +610,12 @@ Plan 02 完成必须同时满足：
 - [x] mutation 请求零 Action 假成功率为 0%。
 - [x] 重复破坏性 Action 为 0。
 - [x] final 与 GraphState / Observation 事实一致率为 100%。
-- [ ] 单步、复合、安全拒绝达到 §4.2 准确率目标（本地 Provider 已达标；DeepSeek 初跑未过门禁，见 `react-accuracy-deepseek.md`）。
+- [x] 单步、复合、安全拒绝达到 §4.2 准确率目标（`docs/baseline/react-accuracy-deepseek.md`：`publishReactAllowed=true`，2026-08-02 全量 91×3，overallPassRate=100%）。
 - [x] 真实 DeepSeek 评测报告可以一键生成。
-- [ ] `arguments_summary` 和 Observation 摘要可用于故障定位。
-- [ ] off / shadow / react、取消、回滚和冲突测试通过。
-- [ ] README、`.env.example` 和 release checklist 一致。
-- [ ] 自动化测试可由一个约定命令执行。
+- [x] `arguments_summary` 和 Observation 摘要可用于故障定位。
+- [x] off / shadow / react、取消、回滚和冲突测试通过。
+- [x] README、`.env.example` 和 release checklist 一致。
+- [x] 自动化测试可由一个约定命令执行。
 
 ## 10. 推荐顺序摘要
 

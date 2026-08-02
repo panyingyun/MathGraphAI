@@ -1,0 +1,13 @@
+.venv
+venv
+__pycache__
+**/__pycache__
+.pytest_cache
+*.pyc
+.math_graph_ai.db
+math_graph_ai.db
+.env
+tests
+scripts
+*.md
+.pytest_cache

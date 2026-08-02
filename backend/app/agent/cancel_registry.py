@@ -1,16 +1,20 @@
-"""按 request_id 注册协作式取消事件。"""
+"""按 request_id 注册协作式取消事件。
+
+使用 threading.Event，避免 Python 3.8 在无 running loop 时创建 asyncio.Event() 失败。
+取消信号仅作布尔标志读取，不需要 await。
+"""
 
 from __future__ import annotations
 
-import asyncio
+import threading
 from typing import Dict, Optional
 
 
-_EVENTS: Dict[str, asyncio.Event] = {}
+_EVENTS: Dict[str, threading.Event] = {}
 
 
-def register(request_id: str) -> asyncio.Event:
-    event = asyncio.Event()
+def register(request_id: str) -> threading.Event:
+    event = threading.Event()
     _EVENTS[request_id] = event
     return event
 
@@ -32,5 +36,5 @@ def unregister(request_id: str) -> None:
     _EVENTS.pop(request_id, None)
 
 
-def get_event(request_id: str) -> Optional[asyncio.Event]:
+def get_event(request_id: str) -> Optional[threading.Event]:
     return _EVENTS.get(request_id)

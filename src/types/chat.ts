@@ -40,6 +40,8 @@ export interface StepSummary {
   status: "success" | "notice" | "warning" | "error" | "final";
   summary: string;
   durationMs?: number;
+  argumentsSummary?: string | null;
+  observationSummary?: string | null;
 }
 
 export interface ChatSessionSummary {

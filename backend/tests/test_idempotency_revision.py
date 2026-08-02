@@ -90,7 +90,7 @@ def test_fallback_metadata_exposed(client_with_deepseek, monkeypatch):
     body = _chat(
         client_with_deepseek,
         session["id"],
-        "画 y = cos(x)",
+        "画 y = cos(x) 并分析",
         request_id="req_stage1_fallback_1",
         expected_revision=0,
     ).json()

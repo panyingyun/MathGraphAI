@@ -298,16 +298,18 @@ def test_final_cannot_claim_plot_without_execution(monkeypatch):
     )
     result = asyncio.run(
         AgentRunner(provider=FalseClaimProvider()).run(
-            user_message="你好",
+            user_message="画 y=x",
             graph_state=GraphState(),
             recent_messages=[],
             request_id="req_stage_b_false_claim",
             session_id="session_test",
         )
     )
-    assert result.success is True
+    # 未执行 plot 不得提交；Final Gate 拒绝假完成。
+    assert result.success is False
     assert result.should_commit is False
-    assert result.final_message == "本轮未执行可验证的图像操作。"
+    assert result.error_code == "goal_not_satisfied"
+    assert result.graph_state.equations == []
 
 
 def test_json_few_shots_and_tool_call_protocol_are_switchable(monkeypatch):

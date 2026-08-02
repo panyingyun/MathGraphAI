@@ -20,6 +20,7 @@ class EmptyArgs(ToolArgsModel):
 
 
 class EquationInput(ToolArgsModel):
+    id: Optional[str] = Field(default=None, min_length=1, max_length=80)
     expression: str = Field(min_length=1, max_length=settings.max_expression_length, examples=["y = x^2"])
     normalized_expression: Optional[str] = Field(
         default=None,

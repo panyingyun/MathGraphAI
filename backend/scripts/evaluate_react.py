@@ -364,6 +364,10 @@ def main() -> None:
     paths = default_report_paths(args.provider, REPO_ROOT)
     out_json = args.out_json or paths["json"]
     out_md = args.out_md or paths["md"]
+    # 子集评测默认写 *-subset.*，避免覆盖可用于发布门禁的全量报告。
+    if (ids or args.limit is not None) and args.out_json is None and args.out_md is None:
+        out_json = paths["json"].with_name(paths["json"].stem + "-subset.json")
+        out_md = paths["md"].with_name(paths["md"].stem + "-subset.md")
 
     report = asyncio.run(
         evaluate_catalog(

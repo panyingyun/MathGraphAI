@@ -1,4 +1,4 @@
-export type AgentPhase = "understand" | "execute" | "compute" | "save";
+export type AgentPhase = "understand" | "execute" | "compute" | "validate" | "save";
 
 export type DecisionProvider = "deepseek" | "local";
 
@@ -6,6 +6,7 @@ export const AGENT_PHASE_LABELS: Record<AgentPhase, string> = {
   understand: "理解请求",
   execute: "执行命令",
   compute: "计算结果",
+  validate: "验证结果",
   save: "保存状态",
 };
 

@@ -8,7 +8,7 @@ import json
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 from ..config import settings
 from ..schemas.agent import AgentAction, AgentFinal, Command, GoalValidationResult, Observation
@@ -26,14 +26,31 @@ from .helpful_error import build_helpful_error_message
 from .providers import DecisionContext, DecisionProvider, LocalDecisionProvider, select_primary_provider
 from .request_spec import build_request_spec
 from .shadow import diff_graph_states, run_local_baseline
+from .step_summaries import summarize_arguments, summarize_observation
 from .tool_policy import select_available_tools
 from .working_state import WorkingGraphState
+
+AgentEventHandler = Callable[[str, Dict[str, Any]], Awaitable[None]]
 
 
 _TOOL_POOL = ThreadPoolExecutor(max_workers=4)
 
 _ERROR_PREFIXES = ("方程解析失败", "无法理解", "无法确定", "请先绘制", "坐标范围无效", "我还无法")
 _RECOVERABLE_TOOL_ERRORS = {"invalid_arguments", "equation_not_found", "precondition_failed"}
+
+
+def _expression_payload(expr: str) -> Dict[str, str]:
+    text = str(expr).strip()
+    if text.lower().startswith("y="):
+        return {"expression": text}
+    return {"expression": f"y={text}"}
+
+
+def _normalized_key(expr: str) -> str:
+    text = str(expr).strip()
+    if text.lower().startswith("y="):
+        text = text.split("=", 1)[1].strip()
+    return text.replace(" ", "")
 
 
 def _bootstrap_plot_action(request_spec, graph_state: GraphState) -> Optional[AgentAction]:
@@ -43,18 +60,53 @@ def _bootstrap_plot_action(request_spec, graph_state: GraphState) -> Optional[Ag
         return None
     if graph_state.equations or not request_spec.explicit_expressions:
         return None
-    equations = []
-    for expr in request_spec.explicit_expressions:
-        text = str(expr).strip()
-        if not text:
-            continue
-        if text.lower().startswith("y="):
-            equations.append({"expression": text})
-        else:
-            equations.append({"expression": f"y={text}"})
+    equations = [_expression_payload(expr) for expr in request_spec.explicit_expressions if str(expr).strip()]
     if not equations:
         return None
     return AgentAction(tool="plot_equations", arguments={"equations": equations})
+
+
+def _bootstrap_add_action(request_spec, graph_state: GraphState) -> Optional[AgentAction]:
+    """已有图且需要追加明确表达式时，先确定性 add，避免模型空转耗尽调用。"""
+
+    if "add" not in request_spec.required_effects:
+        return None
+    if not graph_state.equations or not request_spec.explicit_expressions:
+        return None
+    existing = {_normalized_key(item.normalized_expression) for item in graph_state.equations}
+    equations = []
+    for expr in request_spec.explicit_expressions:
+        key = _normalized_key(expr)
+        if not key or key in existing:
+            continue
+        equations.append(_expression_payload(expr))
+    if not equations:
+        return None
+    return AgentAction(tool="add_equations", arguments={"equations": equations})
+
+
+def _bootstrap_viewport_action(request_spec) -> Optional[AgentAction]:
+    """RequestSpec 已抽出明确视口时，先确定性设置，减少复合任务模型轮次。"""
+
+    if "viewport" not in request_spec.required_effects:
+        return None
+    viewport = request_spec.expected_viewport
+    if not isinstance(viewport, dict) or not viewport:
+        return None
+    return AgentAction(tool="set_viewport", arguments={"viewport": dict(viewport)})
+
+
+def _deepseek_bootstrap_actions(request_spec, graph_state: GraphState) -> List[AgentAction]:
+    actions: List[AgentAction] = []
+    for builder in (
+        lambda: _bootstrap_plot_action(request_spec, graph_state),
+        lambda: _bootstrap_add_action(request_spec, graph_state),
+        lambda: _bootstrap_viewport_action(request_spec),
+    ):
+        action = builder()
+        if action is not None:
+            actions.append(action)
+    return actions
 
 
 @dataclass
@@ -88,8 +140,25 @@ def _action_fingerprint(action: AgentAction) -> str:
     return hashlib.sha1(material.encode("utf-8")).hexdigest()
 
 
-def _public_step(index: int, tool: Optional[str], status: str, summary: str, duration_ms: float = 0) -> StepSummary:
-    return StepSummary(step_index=index, tool_name=tool, status=status, summary=summary, duration_ms=duration_ms)
+def _public_step(
+    index: int,
+    tool: Optional[str],
+    status: str,
+    summary: str,
+    duration_ms: float = 0,
+    *,
+    arguments_summary: Optional[str] = None,
+    observation_summary: Optional[str] = None,
+) -> StepSummary:
+    return StepSummary(
+        step_index=index,
+        tool_name=tool,
+        status=status,  # type: ignore[arg-type]
+        summary=summary,
+        duration_ms=duration_ms,
+        arguments_summary=arguments_summary,
+        observation_summary=observation_summary,
+    )
 
 
 def _looks_like_error_message(message: str) -> bool:
@@ -167,6 +236,7 @@ class AgentRunner:
         request_id: str,
         session_id: str,
         context_summary: Optional[str] = None,
+        on_event: Optional[AgentEventHandler] = None,
     ) -> RunnerResult:
         started = time.perf_counter()
         working = WorkingGraphState.from_graph(graph_state)
@@ -197,6 +267,32 @@ class AgentRunner:
         shadow_candidate: Optional[GraphState] = None
         cancelled = False
         phase = "understand"
+        last_emitted_phase: Optional[str] = None
+
+        async def _emit(event_type: str, payload: Dict[str, Any]) -> None:
+            if on_event is not None:
+                await on_event(event_type, payload)
+
+        async def _set_phase(next_phase: str) -> None:
+            nonlocal phase, last_emitted_phase
+            phase = next_phase
+            if next_phase != last_emitted_phase:
+                last_emitted_phase = next_phase
+                await _emit("phase", {"phase": next_phase})
+
+        async def _add_step(step: StepSummary) -> None:
+            steps.append(step)
+            await _emit("step", step.model_dump(by_alias=True))
+
+        await _emit(
+            "meta",
+            {
+                "requestId": request_id,
+                "sessionId": session_id,
+                "agentMode": settings.agent_mode,
+            },
+        )
+        await _set_phase("understand")
 
         context = DecisionContext(
             user_message=user_message,
@@ -212,11 +308,11 @@ class AgentRunner:
         final_message = ""
         success = False
         blocked_fingerprints: set[str] = set()
-        # Local 规划器已会主动 plot；仅 DeepSeek 需要确定性首步，避免空图空转。
-        bootstrap_action = (
-            _bootstrap_plot_action(request_spec, working.current)
+        # Local 规划器已会主动规划；仅 DeepSeek 需要确定性引导步，避免空转耗尽调用。
+        bootstrap_actions: List[AgentAction] = (
+            _deepseek_bootstrap_actions(request_spec, working.current)
             if provider.name == "deepseek"
-            else None
+            else []
         )
 
         upfront_blocked = bool(request_spec.unsupported_request or request_spec.expression_invalid)
@@ -226,13 +322,13 @@ class AgentRunner:
                 error_code = "unsupported_request"
                 final_message = request_spec.unsupported_reason or "当前只支持函数图像相关请求。"
                 working.discard()
-                steps.append(_public_step(0, None, "error", final_message))
+                await _add_step(_public_step(0, None, "error", final_message))
                 success = False
             elif request_spec.expression_invalid:
                 error_code = "expression_error"
                 final_message = request_spec.expression_invalid_reason or "方程无效，已拒绝执行。"
                 working.discard()
-                steps.append(_public_step(0, None, "error", final_message))
+                await _add_step(_public_step(0, None, "error", final_message))
                 success = False
             while not upfront_blocked:
                 if cancel_registry.is_cancelled(request_id):
@@ -240,7 +336,7 @@ class AgentRunner:
                     error_code = "cancelled"
                     final_message = "请求已取消，未提交任何图像更改。"
                     working.discard()
-                    steps.append(_public_step(len(steps), None, "error", final_message))
+                    await _add_step(_public_step(len(steps), None, "error", final_message))
                     success = False
                     break
 
@@ -249,7 +345,7 @@ class AgentRunner:
                     error_code = "agent_timeout"
                     final_message = "处理超时，已取消本次未提交的更改。"
                     working.discard()
-                    steps.append(_public_step(len(steps), None, "error", final_message))
+                    await _add_step(_public_step(len(steps), None, "error", final_message))
                     success = False
                     break
 
@@ -257,7 +353,7 @@ class AgentRunner:
                     error_code = "model_call_limit"
                     final_message = "模型调用次数过多，已停止并保留原图。"
                     working.discard()
-                    steps.append(_public_step(len(steps), None, "error", final_message))
+                    await _add_step(_public_step(len(steps), None, "error", final_message))
                     success = False
                     break
 
@@ -277,11 +373,10 @@ class AgentRunner:
                     )
                 else:
                     context.available_tool_names = None
-                phase = "understand" if action_steps == 0 else "execute"
+                await _set_phase("understand" if action_steps == 0 else "execute")
 
-                if bootstrap_action is not None:
-                    decision = bootstrap_action
-                    bootstrap_action = None
+                if bootstrap_actions:
+                    decision = bootstrap_actions.pop(0)
                 else:
                     try:
                         if provider.name == "deepseek":
@@ -317,12 +412,11 @@ class AgentRunner:
                     error_code = "cancelled"
                     final_message = "请求已取消，未提交任何图像更改。"
                     working.discard()
-                    steps.append(_public_step(len(steps), None, "error", final_message))
+                    await _add_step(_public_step(len(steps), None, "error", final_message))
                     success = False
                     break
 
                 if isinstance(decision, AgentFinal):
-                    phase = "save"
                     final_message = decision.message
                     if request_spec.unsupported_request or request_spec.expression_invalid:
                         error_code = (
@@ -337,8 +431,9 @@ class AgentRunner:
                         )
                         working.discard()
                         success = False
-                        steps.append(_public_step(len(steps), None, "error", final_message))
+                        await _add_step(_public_step(len(steps), None, "error", final_message))
                         break
+                    await _set_phase("validate")
                     validation = validate_goal(
                         request_spec,
                         working.base,
@@ -351,7 +446,7 @@ class AgentRunner:
                         observations.append(gate_observation)
                         if goal_repair_attempts < settings.agent_goal_repair_attempts:
                             goal_repair_attempts += 1
-                            steps.append(
+                            await _add_step(
                                 _public_step(
                                     len(steps),
                                     "goal_validator",
@@ -359,7 +454,7 @@ class AgentRunner:
                                     f"完成校验未通过，允许修复：{', '.join(validation.missing)}",
                                 )
                             )
-                            phase = "execute"
+                            await _set_phase("execute")
                             continue
                         error_code = "goal_not_satisfied"
                         final_message = f"未能完成全部请求（缺少：{', '.join(validation.missing)}），已保留原图。"
@@ -388,14 +483,15 @@ class AgentRunner:
                     if success:
                         if not fallback_used:
                             error_code = None
-                    steps.append(_public_step(len(steps), None, "final" if success else "error", final_message))
+                        await _set_phase("save")
+                    await _add_step(_public_step(len(steps), None, "final" if success else "error", final_message))
                     break
 
                 if not isinstance(decision, AgentAction):
                     error_code = "invalid_decision"
                     final_message = "决策格式无效。"
                     working.discard()
-                    steps.append(_public_step(len(steps), None, "error", final_message))
+                    await _add_step(_public_step(len(steps), None, "error", final_message))
                     success = False
                     break
 
@@ -403,7 +499,7 @@ class AgentRunner:
                     error_code = "max_steps_exceeded"
                     final_message = f"已达到最大步骤数 {max_steps}，未收到最终结果，已取消未提交更改。"
                     working.discard()
-                    steps.append(_public_step(len(steps), decision.tool, "error", final_message))
+                    await _add_step(_public_step(len(steps), decision.tool, "error", final_message))
                     success = False
                     break
 
@@ -414,6 +510,7 @@ class AgentRunner:
 
                 # 重复 Action：目标已满足则自动收尾；未满足则跳过/拉黑该调用并继续，避免回滚已完成进度。
                 if is_repeat:
+                    await _set_phase("validate")
                     validation = validate_goal(
                         request_spec,
                         working.base,
@@ -422,12 +519,12 @@ class AgentRunner:
                         executed_tools,
                     )
                     if validation.satisfied:
-                        phase = "save"
+                        await _set_phase("save")
                         final_message = "已完成图像更新。"
                         success = True
                         if not fallback_used:
                             error_code = None
-                        steps.append(
+                        await _add_step(
                             _public_step(
                                 len(steps),
                                 decision.tool,
@@ -456,12 +553,16 @@ class AgentRunner:
                             error_message="相同工具和参数已经成功执行过，本次未再次执行。",
                         )
                         observations.append(skip_obs)
-                        steps.append(
+                        await _add_step(
                             _public_step(
                                 len(steps),
                                 decision.tool,
                                 "notice",
                                 "检测到重复调用，已安全跳过，不影响当前结果",
+                                arguments_summary=summarize_arguments(
+                                    decision.tool, decision.arguments, decision.target
+                                ),
+                                observation_summary=summarize_observation(skip_obs),
                             )
                         )
                         action_steps += 1
@@ -482,12 +583,16 @@ class AgentRunner:
                         error_message="相同工具和参数重复过多，已禁止再次执行该调用。",
                     )
                     observations.append(block_obs)
-                    steps.append(
+                    await _add_step(
                         _public_step(
                             len(steps),
                             decision.tool,
                             "warning",
                             "重复调用已禁止，请改用其他工具继续",
+                            arguments_summary=summarize_arguments(
+                                decision.tool, decision.arguments, decision.target
+                            ),
+                            observation_summary=summarize_observation(block_obs),
                         )
                     )
                     action_steps += 1
@@ -508,7 +613,7 @@ class AgentRunner:
                     action_steps += 1
                     if tool_repair_attempts < settings.agent_tool_repair_attempts:
                         tool_repair_attempts += 1
-                        steps.append(
+                        await _add_step(
                             _public_step(
                                 len(steps),
                                 decision.tool,
@@ -520,18 +625,20 @@ class AgentRunner:
                     error_code = "tool_repair_exhausted"
                     final_message = "模型重复选择当前不可用的工具，已停止并保留原图。"
                     working.discard()
-                    steps.append(_public_step(len(steps), decision.tool, "error", final_message))
+                    await _add_step(_public_step(len(steps), decision.tool, "error", final_message))
                     success = False
                     break
 
-                phase = "compute" if decision.tool.startswith(("calculate_", "compare_", "check_")) else "execute"
+                await _set_phase(
+                    "compute" if decision.tool.startswith(("calculate_", "compare_", "check_")) else "execute"
+                )
                 if decision.tool == "remove_equation":
                     target_id = (decision.target or {}).get("equationId")
                     if target_id and target_id in removed_targets:
                         error_code = "duplicate_destructive_action"
                         final_message = f"方程 {target_id} 已在本轮删除，已阻止重复删除并保留原图。"
                         working.discard()
-                        steps.append(_public_step(len(steps), decision.tool, "error", final_message))
+                        await _add_step(_public_step(len(steps), decision.tool, "error", final_message))
                         success = False
                         break
                 try:
@@ -544,7 +651,7 @@ class AgentRunner:
                     error_code = "invalid_decision"
                     final_message = f"模型返回了无效工具 {decision.tool}，已停止并保留原图。"
                     working.discard()
-                    steps.append(_public_step(len(steps), decision.tool, "error", final_message))
+                    await _add_step(_public_step(len(steps), decision.tool, "error", final_message))
                     success = False
                     break
                 tool_started = time.perf_counter()
@@ -554,7 +661,7 @@ class AgentRunner:
                     error_code = "tool_timeout"
                     final_message = f"工具 {decision.tool} 执行超时。"
                     working.discard()
-                    steps.append(_public_step(len(steps), decision.tool, "error", final_message))
+                    await _add_step(_public_step(len(steps), decision.tool, "error", final_message))
                     success = False
                     break
 
@@ -563,7 +670,7 @@ class AgentRunner:
                     error_code = "cancelled"
                     final_message = "请求已取消，未提交任何图像更改。"
                     working.discard()
-                    steps.append(_public_step(len(steps), decision.tool, "error", final_message))
+                    await _add_step(_public_step(len(steps), decision.tool, "error", final_message))
                     success = False
                     break
 
@@ -572,6 +679,9 @@ class AgentRunner:
                 compact = truncate_observation(execution.observation)
                 observations.append(Observation.model_validate(compact))
                 action_steps += 1
+
+                arg_summary = summarize_arguments(decision.tool, decision.arguments, decision.target)
+                obs_summary = summarize_observation(execution.observation)
 
                 if not execution.success:
                     current_error = execution.error_code or "execution_error"
@@ -586,13 +696,15 @@ class AgentRunner:
                         recoverable_failures.add(repair_key)
                         tool_repair_attempts += 1
                         error_code = current_error
-                        steps.append(
+                        await _add_step(
                             _public_step(
                                 len(steps),
                                 decision.tool,
                                 "warning",
                                 f"工具参数可修复，已回填 Observation（{tool_repair_attempts}/{settings.agent_tool_repair_attempts}）",
                                 duration_ms,
+                                arguments_summary=arg_summary,
+                                observation_summary=obs_summary,
                             )
                         )
                         continue
@@ -606,7 +718,17 @@ class AgentRunner:
                     if execution.error_code == "expression_error":
                         final_message = f"方程解析失败：{execution.error_message}。例如可以输入 y = x^2 或 y = sin(x)。"
                     working.discard()
-                    steps.append(_public_step(len(steps), decision.tool, "error", final_message, duration_ms))
+                    await _add_step(
+                        _public_step(
+                            len(steps),
+                            decision.tool,
+                            "error",
+                            final_message,
+                            duration_ms,
+                            arguments_summary=arg_summary,
+                            observation_summary=obs_summary,
+                        )
+                    )
                     success = False
                     break
 
@@ -616,28 +738,48 @@ class AgentRunner:
                     removed_id = execution.observation.data.get("removedEquationId")
                     if removed_id:
                         removed_targets.add(str(removed_id))
-                steps.append(_public_step(len(steps), decision.tool, "success", _tool_summary(decision.tool), duration_ms))
-
-                if settings.agent_mode == "off":
-                    phase = "save"
-                    validation = validate_goal(
-                        request_spec,
-                        working.base,
-                        working.current,
-                        fact_observations,
-                        executed_tools,
+                await _add_step(
+                    _public_step(
+                        len(steps),
+                        decision.tool,
+                        "success",
+                        _tool_summary(decision.tool),
+                        duration_ms,
+                        arguments_summary=arg_summary,
+                        observation_summary=obs_summary,
                     )
+                )
+
+                await _set_phase("validate")
+                validation = validate_goal(
+                    request_spec,
+                    working.base,
+                    working.current,
+                    fact_observations,
+                    executed_tools,
+                )
+                if settings.agent_mode == "off":
                     if validation.satisfied:
+                        await _set_phase("save")
                         final_message = "已完成图像更新。"
                         success = True
-                        steps.append(_public_step(len(steps), None, "final", final_message))
+                        await _add_step(_public_step(len(steps), None, "final", final_message))
                     else:
                         error_code = "goal_not_satisfied"
                         final_message = f"未能完成全部请求（缺少：{', '.join(validation.missing)}），已保留原图。"
                         observations.append(_goal_observation(validation))
                         working.discard()
                         success = False
-                        steps.append(_public_step(len(steps), "goal_validator", "error", final_message))
+                        await _add_step(_public_step(len(steps), "goal_validator", "error", final_message))
+                    break
+                if validation.satisfied and not bootstrap_actions:
+                    # 目标已满足则确定性收尾，避免模型继续空转撞上 call limit。
+                    await _set_phase("save")
+                    final_message = "已完成图像更新。"
+                    success = True
+                    if not fallback_used:
+                        error_code = None
+                    await _add_step(_public_step(len(steps), None, "final", final_message))
                     break
         finally:
             cancel_registry.unregister(request_id)
@@ -652,7 +794,7 @@ class AgentRunner:
             should_commit = False
             working.discard()
             result_state = working.base.model_copy(deep=True)
-            phase = "save"
+            await _set_phase("save")
         elif mode == "shadow":
             should_commit = False
             if success:
@@ -661,6 +803,7 @@ class AgentRunner:
             shadow_diff = diff_graph_states(shadow_candidate, baseline_state)
             result_state = working.base.model_copy(deep=True)
             working.discard()
+            await _set_phase("save")
             if settings.agent_trace_enabled:
                 log_event(
                     "agent_shadow_diff",
@@ -671,11 +814,12 @@ class AgentRunner:
                     diffs=shadow_diff.get("diffs"),
                 )
         elif should_commit:
-            phase = "save"
+            await _set_phase("save")
             result_state = working.commit()
         else:
             working.discard()
             result_state = working.base.model_copy(deep=True)
+            await _set_phase("save")
 
         if not final_message:
             final_message = "已完成图像更新。" if success else "未能完成请求，已保留原图。"
@@ -763,6 +907,7 @@ async def run_agent(
     request_id: str,
     session_id: str,
     context_summary: Optional[str] = None,
+    on_event: Optional[AgentEventHandler] = None,
 ) -> RunnerResult:
     return await AgentRunner().run(
         user_message=user_message,
@@ -771,4 +916,5 @@ async def run_agent(
         request_id=request_id,
         session_id=session_id,
         context_summary=context_summary,
+        on_event=on_event,
     )

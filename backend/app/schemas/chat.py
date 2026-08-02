@@ -9,7 +9,7 @@ from .graph import EquationItem, GraphAnalysis, GraphState
 
 Intent = Literal["plot", "add_equation", "update_equation", "remove_equation", "update_viewport", "analyze", "explain", "unknown"]
 DecisionProvider = Literal["deepseek", "local"]
-AgentPhase = Literal["understand", "execute", "compute", "save"]
+AgentPhase = Literal["understand", "execute", "compute", "validate", "save"]
 
 
 class ChatSessionSummary(APIModel):
@@ -29,6 +29,8 @@ class StepSummary(APIModel):
     status: Literal["success", "notice", "warning", "error", "final"] = "success"
     summary: str
     duration_ms: float = 0
+    arguments_summary: Optional[str] = None
+    observation_summary: Optional[str] = None
 
 
 class StructuredResult(APIModel):
@@ -59,6 +61,7 @@ class ChatRequest(APIModel):
     message: str = Field(min_length=1, max_length=4000)
     request_id: Optional[str] = Field(default=None, min_length=8, max_length=80)
     expected_revision: Optional[int] = Field(default=None, ge=0)
+    stream: bool = False
 
 
 class ChatResponse(APIModel):

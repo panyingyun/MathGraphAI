@@ -1,4 +1,8 @@
+from __future__ import annotations
+
+import os
 from contextlib import asynccontextmanager
+from typing import List
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -7,7 +11,17 @@ from . import models  # noqa: F401
 from .database import Base, engine
 from .migrations import run_migrations
 from .routers import chat, sessions
-from .utils.logging_utils import configure_logging
+from .utils.logging_utils import configure_logging, install_request_timing
+
+
+def _cors_origins() -> List[str]:
+    raw = os.getenv("CORS_ORIGINS", "").strip()
+    if raw:
+        return [item.strip() for item in raw.split(",") if item.strip()]
+    return [
+        "http://localhost:6106",
+        "http://127.0.0.1:6106",
+    ]
 
 
 @asynccontextmanager
@@ -26,11 +40,12 @@ app = FastAPI(
 )
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+install_request_timing(app)
 app.include_router(sessions.router, prefix="/api")
 app.include_router(chat.router, prefix="/api")
 

@@ -23,7 +23,18 @@
 ```powershell
 cd backend
 python -m scripts.measure_baseline
+python -m scripts.aggregate_metrics --hours 24
 python -m pytest -q
 cd ..
 npm test
 ```
+
+## 近窗运行指标（Plan02 阶段 D）
+
+`python -m scripts.aggregate_metrics` 从 SQLite `agent_runs` / `agent_steps` 聚合近 N 小时：
+
+- 成功率、`fallbackRate`、零 Action 成功数、`repeated_action` 次数
+- 耗时 avg / P95 / max
+- `arguments_summary` / `observation_summary` 填充率
+
+产物：`metrics-live.json` / `metrics-live.md`。

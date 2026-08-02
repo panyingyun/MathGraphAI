@@ -237,7 +237,13 @@ export const useAppStore = create<AppState>((set, get) => ({
         current.id,
         content.trim(),
         current.graphState.revision ?? current.revision ?? 0,
-        { requestId, signal: controller.signal },
+        {
+          requestId,
+          signal: controller.signal,
+          stream: true,
+          onPhase: (phase) => set({ agentPhase: phase }),
+          onStep: (step) => set((state) => ({ agentSteps: [...state.agentSteps, step] })),
+        },
       );
       const withoutPending = (get().currentSession?.messages ?? []).filter((item) => item.id !== optimistic.id);
       const merged = mergeMessages(withoutPending, result.newMessages?.length ? result.newMessages : [result.message]);

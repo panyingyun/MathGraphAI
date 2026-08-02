@@ -12,7 +12,7 @@ python -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 Copy-Item .env.example .env
-uvicorn app.main:app --reload
+uvicorn app.main:app --host 127.0.0.1 --port 6108 --reload
 ```
 
 `DEEPSEEK_API_KEY` 可以留空。留空时系统使用安全白名单本地解析器，常用绘图、追加方程、改色、删除、坐标范围和基础分析仍可使用。
@@ -24,19 +24,57 @@ npm install
 npm run dev
 ```
 
-访问 `http://127.0.0.1:5173`。Vite 会把 `/api` 代理到 `http://127.0.0.1:8000`。
+访问 `http://127.0.0.1:6106`。Vite 会把 `/api` 代理到 `http://127.0.0.1:6108`。
 
-## 测试
+### Docker Compose（上线试跑）
+
+先准备 `backend/.env`（可由 `.env.example` 复制并填入 `DEEPSEEK_API_KEY`），然后在仓库根目录：
+
+```powershell
+docker compose up -d --build
+```
+
+- 前端：`http://127.0.0.1:6106`（`MATHGRAPH_PORT` 可覆盖）
+- 后端：`http://127.0.0.1:6108`（`MATHGRAPH_BACKEND_PORT` 可覆盖；容器内仍为 8000）
+
+架构：`web`（nginx 静态前端 + `/api` 反代）→ `backend`（uvicorn）；SQLite 落在命名卷 `mathgraph-data`。
+
+```powershell
+docker compose logs -f backend
+docker compose down
+```
+
+## 测试（约定命令）
 
 ```powershell
 npm run build
 npm test
 cd backend
-python -m pytest
+python -m pytest -q
 python -m scripts.measure_baseline
+python -m scripts.aggregate_metrics --hours 24
 ```
 
-阶段 0 基线说明见 `docs/baseline/README.md`。
+准确性评测（Plan02 发布门禁）：
+
+```powershell
+cd backend
+python -m scripts.evaluate_react --provider local
+python -m scripts.evaluate_react --provider deepseek --repeats 3
+```
+
+- 基线与报告：`docs/baseline/README.md`
+- 发布清单：`docs/release-checklist.md`（`publishReactAllowed=true` 前勿将生产默认定为信任提交的 react）
+
+## Agent 模式
+
+| `AGENT_MODE` | 行为 |
+| --- | --- |
+| `react` | 目标通过 Final Gate 后提交 GraphState |
+| `shadow` | 完整执行但不提交，与本地基线对比 |
+| `off` | 最多一步工具，立即 Goal Gate |
+
+关键环境变量见 `backend/.env.example`（决策协议、温度、动态工具、图表达式注入等）。
 
 ## 安全边界
 
@@ -44,8 +82,9 @@ python -m scripts.measure_baseline
 - 仅允许变量 `x` 以及 `sin`、`cos`、`tan`、`log`、`sqrt`、`abs`、`exp`、`pow`。
 - 后端会再次校验 DeepSeek 返回的结构化方程，再写入会话状态。
 - 表达式有长度 / AST 节点数 / 嵌套深度 / 指数与常量上限；GraphState 有方程数量与 viewport 范围限制。
-- `/api/chat` 支持 `requestId` 幂等与 `expectedRevision` 乐观锁；DeepSeek 失败会明确标记 `fallbackUsed` 与错误码，不再静默降级。
+- `/api/chat` 支持 `requestId` 幂等与 `expectedRevision` 乐观锁；`stream: true` 时以 SSE 推送 `meta` / `phase` / `step` / `done`（默认 JSON 不变）；DeepSeek 失败会明确标记 `fallbackUsed` 与错误码，不再静默降级。
 - 模型只负责决策；状态变更统一经 Command + 确定性 Executor，在 `WorkingGraphState` 上执行，失败不落库。UI 通过 `/api/sessions/{id}/commands` 复用同一执行边界。
-- 自然语言请求统一进入有界 ReAct `AgentRunner`（`AGENT_MODE=react|shadow|off`）；复合指令可多步执行，仅在 `final` 后一次性提交。
+- 自然语言请求统一进入有界 ReAct `AgentRunner`；复合指令可多步执行，仅在 Final Gate 通过后一次性提交。
 - 支持交点 / 零点 / 极值 / 函数比较 / 采样检查与视口拟合；`shadow` 模式会对比本地基线且不提交。
+- `agent_steps` 落库 `arguments_summary` / `observation_summary`，可用 `aggregate_metrics` 聚合近窗成功率、P95、fallback 与重复 Action。
 - 会话消息分页加载；Chat 返回增量消息与摘要；支持取消长请求；前端展示执行阶段与 DeepSeek/Local 降级状态。

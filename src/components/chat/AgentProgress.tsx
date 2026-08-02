@@ -2,7 +2,7 @@ import { AlertCircle, CheckCircle2, CircleDashed, Info, XCircle } from "lucide-r
 import { AGENT_PHASE_LABELS, type AgentPhase, type DecisionProvider } from "../../types/agent";
 import type { StepSummary } from "../../types/chat";
 
-const PHASES: AgentPhase[] = ["understand", "execute", "compute", "save"];
+const PHASES: AgentPhase[] = ["understand", "execute", "compute", "validate", "save"];
 
 export function AgentProgress({
   steps,
