@@ -131,11 +131,41 @@ button { color: inherit; }
 .inline-error { margin: 0 14px 8px; padding: 9px 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--muted); border: 1px solid var(--outline); border-radius: 7px; background: #fff; font-size: 11px; }
 .inline-error button { border: 0; color: var(--primary); background: transparent; cursor: pointer; text-decoration: underline; }
 .chat-input-wrap { padding: 13px 16px 10px; flex: none; border-top: 1px solid var(--outline); background: rgba(255,255,255,.86); }
+.chat-input-shell { position: relative; }
+.example-popover {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 8px);
+  z-index: 20;
+  max-height: min(52vh, 420px);
+  overflow: auto;
+  padding: 12px;
+  border: 1px solid var(--outline);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 12px 32px rgba(28, 35, 64, 0.12);
+  animation: example-pop .16s ease;
+}
+.example-popover-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 0 2px;
+}
+.example-popover-head strong { font-size: 13px; color: var(--ink); }
+.example-popover-head span { color: var(--muted); font-size: 11px; }
+@keyframes example-pop {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 .chat-input { min-height: 52px; padding: 6px; display: flex; align-items: flex-end; gap: 4px; border: 1px solid var(--outline); border-radius: 13px; background: var(--surface-low); transition: .16s ease; }
 .chat-input:focus-within { border-color: var(--primary-bright); box-shadow: 0 0 0 3px rgba(37,99,235,.08); background: #fff; }
 .chat-input textarea { min-height: 36px; max-height: 110px; padding: 8px 4px; flex: 1; resize: none; border: 0; outline: 0; color: var(--ink); background: transparent; font-size: 13px; line-height: 20px; }
 .input-tool { width: 34px; height: 36px; display: grid; place-items: center; flex: none; border: 0; border-radius: 7px; color: var(--muted); background: transparent; cursor: pointer; }
-.input-tool:hover { color: var(--primary); background: var(--surface-mid); }
+.input-tool:hover, .input-tool.active { color: var(--primary); background: var(--surface-mid); }
 .send-button { width: 38px; height: 38px; display: grid; place-items: center; flex: none; color: white; border: 0; border-radius: 9px; background: var(--primary); cursor: pointer; }
 .send-button:hover { background: #003ea8; }
 .send-button:disabled { color: #8f93a1; background: #d6d8e5; cursor: not-allowed; }
@@ -148,6 +178,57 @@ button { color: inherit; }
 .result-heading > button:hover { color: var(--primary); border-color: var(--primary-bright); }
 .graph-stage { position: relative; min-height: 300px; flex: 7 1 0; overflow: hidden; background: white; }
 .plotly-canvas { width: 100%; height: 100%; }
+.graph-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--muted);
+  font-size: 12px;
+  pointer-events: none;
+}
+.graph-loading .spin { animation: spin .8s linear infinite; }
+.result-panel-fallback {
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  background: white;
+}
+.result-panel-fallback .spin { animation: spin .8s linear infinite; }
+.graph-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--muted);
+  font-size: 12px;
+  pointer-events: none;
+}
+.graph-loading .spin { animation: spin .8s linear infinite; }
+.result-fallback {
+  min-height: 300px;
+  flex: 7 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  background: white;
+}
+.result-fallback .spin { animation: spin .8s linear infinite; }
 .graph-fullscreen { position: fixed; inset: 64px 0 0; z-index: 90; background: white; }
 .graph-tools { position: absolute; top: 14px; right: 14px; z-index: 5; padding: 3px; display: flex; flex-direction: column; gap: 2px; border: 1px solid var(--outline); border-radius: 8px; background: rgba(255,255,255,.9); box-shadow: 0 5px 18px rgba(25,27,35,.07); backdrop-filter: blur(6px); }
 .graph-tools button { width: 29px; height: 29px; display: grid; place-items: center; border: 0; border-radius: 5px; color: var(--muted); background: transparent; cursor: pointer; }

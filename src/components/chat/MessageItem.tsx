@@ -1,10 +1,13 @@
 import { Bot, CheckCircle2 } from "lucide-react";
 import { InlineMath } from "react-katex";
+import { ensureKatexCss } from "../../lib/katexCss";
 import type { Message } from "../../types/chat";
 import { PromptSuggestions, suggestionKindFromError } from "./PromptSuggestions";
 
 function withMath(content: string) {
   const parts = content.split(/(y\s*=\s*[a-zA-Z0-9^*+\-/().]+)/g);
+  const hasMath = parts.some((part) => /^y\s*=/.test(part));
+  if (hasMath) ensureKatexCss();
   return parts.map((part, index) => /^y\s*=/.test(part) ? (
     <span className="inline-formula" key={`${part}-${index}`}><InlineMath math={part.replace(/\*/g, "\\cdot ")} /></span>
   ) : part);

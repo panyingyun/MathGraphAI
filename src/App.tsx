@@ -1,11 +1,15 @@
-import { useEffect } from "react";
-import { History, MessageSquareText, RefreshCw, Shapes } from "lucide-react";
+import { lazy, Suspense, useEffect } from "react";
+import { History, Loader2, MessageSquareText, RefreshCw, Shapes } from "lucide-react";
 import { TopBar } from "./components/layout/TopBar";
 import { SidebarSessions } from "./components/layout/SidebarSessions";
 import { ChatPanel } from "./components/chat/ChatPanel";
-import { ResultPanel } from "./components/graph/ResultPanel";
 import { BrandMark } from "./components/layout/BrandMark";
 import { useAppStore } from "./stores/appStore";
+
+const ResultPanel = lazy(async () => {
+  const mod = await import("./components/graph/ResultPanel");
+  return { default: mod.ResultPanel };
+});
 
 export default function App() {
   const loadSessions = useAppStore((state) => state.loadSessions);
@@ -18,7 +22,7 @@ export default function App() {
 
   useEffect(() => { void loadSessions(); }, [loadSessions]);
 
-  if (isBooting) {
+  if (isBooting && !currentSession) {
     return <div className="app-loading"><BrandMark /><div className="loading-ring" /><span>正在载入工作台…</span></div>;
   }
 
@@ -40,7 +44,18 @@ export default function App() {
       <div className="workspace-layout">
         <div className={`mobile-pane ${mobileTab === "sessions" ? "mobile-active" : ""}`}><SidebarSessions /></div>
         <div className={`mobile-pane chat-pane ${mobileTab === "chat" ? "mobile-active" : ""}`}><ChatPanel /></div>
-        <div className={`mobile-pane result-pane ${mobileTab === "graph" ? "mobile-active" : ""}`}><ResultPanel /></div>
+        <div className={`mobile-pane result-pane ${mobileTab === "graph" ? "mobile-active" : ""}`}>
+          <Suspense
+            fallback={(
+              <div className="result-panel-fallback">
+                <Loader2 size={18} className="spin" />
+                <span>正在准备图像面板…</span>
+              </div>
+            )}
+          >
+            <ResultPanel />
+          </Suspense>
+        </div>
       </div>
       <nav className="mobile-tabs" aria-label="移动端导航">
         <button className={mobileTab === "sessions" ? "active" : ""} onClick={() => setMobileTab("sessions")}><History size={18} />会话</button>

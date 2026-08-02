@@ -10,4 +10,17 @@ export default defineConfig({
       "/api": "http://127.0.0.1:6108",
     },
   },
+  optimizeDeps: {
+    include: ["plotly.js-dist-min", "katex", "react-katex", "mathjs", "lucide-react"],
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          plotly: ["plotly.js-dist-min"],
+          katex: ["katex", "react-katex"],
+        },
+      },
+    },
+  },
 });

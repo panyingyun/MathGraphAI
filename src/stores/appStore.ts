@@ -1,10 +1,12 @@
 import { create } from "zustand";
+import { prefetchPlotly } from "../lib/plotly";
 import { api } from "../services/api";
 import type { AgentPhase, DecisionProvider } from "../types/agent";
 import { ApiError } from "../types/chat";
 import type { Message, StepSummary } from "../types/chat";
 import type { Session, SessionSummary } from "../types/session";
 import type { GraphState, EquationItem, Viewport } from "../types/graph";
+import { EMPTY_GRAPH_STATE } from "../types/graph";
 
 type MobileTab = "sessions" | "chat" | "graph";
 
@@ -14,6 +16,8 @@ interface AppState {
   sidebarCollapsed: boolean;
   mobileTab: MobileTab;
   isBooting: boolean;
+  /** 列表已出壳，正在拉取当前会话详情 */
+  isHydratingSession: boolean;
   isLLMLoading: boolean;
   error: string | null;
   toast: string | null;
@@ -78,12 +82,21 @@ function applyGraphLocally(current: Session, graphState: GraphState, revision?: 
   };
 }
 
+function placeholderSession(summary: SessionSummary): Session {
+  return {
+    ...summary,
+    messages: [],
+    graphState: { ...EMPTY_GRAPH_STATE, revision: summary.revision },
+  };
+}
+
 export const useAppStore = create<AppState>((set, get) => ({
   sessions: [],
   currentSession: null,
   sidebarCollapsed: false,
   mobileTab: "chat",
   isBooting: true,
+  isHydratingSession: false,
   isLLMLoading: false,
   error: null,
   toast: null,
@@ -97,16 +110,30 @@ export const useAppStore = create<AppState>((set, get) => ({
   isLoadingMoreMessages: false,
 
   loadSessions: async () => {
-    set({ isBooting: true, error: null });
+    set({ isBooting: true, isHydratingSession: false, error: null });
     try {
       const sessions = await api.listSessions();
+      // 会话详情与 Plotly 并行预取，先出工作台壳再补全消息/图状态
+      prefetchPlotly();
       if (sessions.length) {
-        const currentSession = await api.getSession(sessions[0].id);
+        const summary = sessions[0];
         set({
           sessions,
+          currentSession: placeholderSession(summary),
+          hasMoreMessages: false,
+          isBooting: false,
+          isHydratingSession: true,
+        });
+        const currentSession = await api.getSession(summary.id);
+        // 用户可能已在水合期间切换会话
+        if (get().currentSession?.id !== summary.id) {
+          set({ isHydratingSession: false });
+          return;
+        }
+        set({
           currentSession,
           hasMoreMessages: Boolean(currentSession.hasMoreMessages),
-          isBooting: false,
+          isHydratingSession: false,
         });
       } else {
         const currentSession = await api.createSession();
@@ -115,11 +142,13 @@ export const useAppStore = create<AppState>((set, get) => ({
           currentSession,
           hasMoreMessages: false,
           isBooting: false,
+          isHydratingSession: false,
         });
       }
     } catch (error) {
       set({
         isBooting: false,
+        isHydratingSession: false,
         error: error instanceof Error ? error.message : "无法连接服务",
       });
     }
@@ -145,11 +174,31 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   switchSession: async (id) => {
+    const summary = get().sessions.find((item) => item.id === id);
     try {
+      if (summary) {
+        set({
+          currentSession: placeholderSession(summary),
+          hasMoreMessages: false,
+          isHydratingSession: true,
+          agentSteps: [],
+          agentPhase: null,
+          decisionProvider: null,
+          fallbackUsed: false,
+          error: null,
+          mobileTab: "chat",
+        });
+      }
+      prefetchPlotly();
       const currentSession = await api.getSession(id);
+      if (get().currentSession?.id !== id) {
+        set({ isHydratingSession: false });
+        return;
+      }
       set({
         currentSession,
         hasMoreMessages: Boolean(currentSession.hasMoreMessages),
+        isHydratingSession: false,
         agentSteps: [],
         agentPhase: null,
         decisionProvider: null,
@@ -158,7 +207,10 @@ export const useAppStore = create<AppState>((set, get) => ({
         mobileTab: "chat",
       });
     } catch (error) {
-      set({ error: error instanceof Error ? error.message : "读取会话失败" });
+      set({
+        isHydratingSession: false,
+        error: error instanceof Error ? error.message : "读取会话失败",
+      });
     }
   },
 
@@ -209,7 +261,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   sendMessage: async (content) => {
     const current = get().currentSession;
-    if (!current || !content.trim() || get().isLLMLoading) return;
+    if (!current || !content.trim() || get().isLLMLoading || get().isHydratingSession) return;
     const requestId = api.createRequestId();
     const controller = new AbortController();
     activeAbort = controller;

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import Plotly from "plotly.js-dist-min";
-import { Expand, LocateFixed, Minus, Plus } from "lucide-react";
+import { Expand, LocateFixed, Loader2, Minus, Plus } from "lucide-react";
+import { loadPlotly } from "../../lib/plotly";
 import { useAppStore } from "../../stores/appStore";
 import { sampleFunction } from "../../utils/graphSampler";
 import { buildMarkerAnnotations, buildMarkerTrace, listGraphMarkers } from "../../utils/graphMarkers";
@@ -12,6 +12,7 @@ export function GraphViewer() {
   const elementRef = useRef<HTMLDivElement>(null);
   const [renderError, setRenderError] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [plotlyReady, setPlotlyReady] = useState(false);
 
   const sampledGraph = useMemo(() => {
     if (!graphState) {
@@ -60,8 +61,19 @@ export function GraphViewer() {
   const traces = sampledGraph.traces;
 
   useEffect(() => {
+    let cancelled = false;
+    void loadPlotly().then(() => {
+      if (!cancelled) setPlotlyReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     const element = elementRef.current;
-    if (!element || !graphState) return;
+    if (!element || !graphState || !plotlyReady) return;
+    let cancelled = false;
     setRenderError(sampledGraph.error);
     const { viewport, settings } = graphState;
     const layout = {
@@ -101,15 +113,21 @@ export function GraphViewer() {
     };
     const config = { responsive: true, displayModeBar: false, scrollZoom: true };
     // newPlot 比 react 更可靠地替换 annotations / 额外 scatter 层。
-    void Plotly.newPlot(element, traces as never, layout as never, config as never);
+    void loadPlotly().then((Plotly) => {
+      if (cancelled || elementRef.current !== element) return;
+      void Plotly.newPlot(element, traces as never, layout as never, config as never);
+    });
     return () => {
-      try {
-        Plotly.purge(element);
-      } catch {
-        /* ignore */
-      }
+      cancelled = true;
+      void loadPlotly().then((Plotly) => {
+        try {
+          Plotly.purge(element);
+        } catch {
+          /* ignore */
+        }
+      });
     };
-  }, [graphState, sampledGraph.annotations, sampledGraph.error, sampledGraph.markerCount, traces]);
+  }, [graphState, plotlyReady, sampledGraph.annotations, sampledGraph.error, sampledGraph.markerCount, traces]);
 
   useEffect(() => {
     const exportHandler = () => {
@@ -118,12 +136,14 @@ export function GraphViewer() {
         showToast("请先绘制方程再导出");
         return;
       }
-      void Plotly.downloadImage(element, {
-        format: "png",
-        filename: "mathgraph-ai",
-        width: 1600,
-        height: 1000,
-        scale: 1,
+      void loadPlotly().then((Plotly) => {
+        void Plotly.downloadImage(element, {
+          format: "png",
+          filename: "mathgraph-ai",
+          width: 1600,
+          height: 1000,
+          scale: 1,
+        });
       });
     };
     window.addEventListener("mathgraph:export", exportHandler);
@@ -150,6 +170,12 @@ export function GraphViewer() {
   return (
     <div className={`graph-stage ${isFullscreen ? "graph-fullscreen" : ""}`}>
       <div ref={elementRef} className="plotly-canvas" aria-label="函数图像" />
+      {!plotlyReady && (
+        <div className="graph-loading" aria-live="polite">
+          <Loader2 size={18} className="spin" />
+          <span>正在加载绘图引擎…</span>
+        </div>
+      )}
       {graphState.equations.length === 0 && (
         <div className="equations-float">
           <div className="float-title"><span>Equations</span><span>◉</span></div>
