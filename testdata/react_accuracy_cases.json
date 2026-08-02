@@ -1740,11 +1740,11 @@
     },
     {
       "complexity": "single",
-      "category": "repair",
+      "category": "single_step",
       "expectSuccess": true,
       "expectSafeReject": false,
       "expressionsExact": true,
-      "id": "repairish_plot_typo_spaces",
+      "id": "format_plot_typo_spaces",
       "message": "画y = x^2",
       "expectedEffects": [
         "plot"
@@ -1755,11 +1755,11 @@
     },
     {
       "complexity": "single",
-      "category": "repair",
+      "category": "single_step",
       "expectSuccess": true,
       "expectSafeReject": false,
       "expressionsExact": true,
-      "id": "repairish_viewport_cn",
+      "id": "format_viewport_cn",
       "message": "坐标范围设置为-5到5",
       "initialGraph": {
         "equations": [
@@ -1782,6 +1782,23 @@
       "expectedExpressions": [
         "x"
       ]
+    },
+    {
+      "complexity": "single",
+      "category": "repair",
+      "expectSuccess": true,
+      "expectSafeReject": false,
+      "expressionsExact": true,
+      "id": "repair_invalid_plot_args",
+      "message": "画 y=x",
+      "expectedEffects": [
+        "plot"
+      ],
+      "expectedExpressions": [
+        "x"
+      ],
+      "scriptedProvider": "repair_invalid_plot",
+      "expectToolRepair": true
     },
     {
       "complexity": "single",

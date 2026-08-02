@@ -31,8 +31,8 @@ REACT_SYSTEM_PROMPT = """你是 MathGraph AI 的决策模块。根据用户请�
 - 若无法理解，直接 final 并说明原因。
 - 修改已有曲线时优先使用方程 ID；新方程由工具分配 ID。
 - remove_equation 必须提供 target.equationId；不得重复删除同一 ID。
-- 画两条及以上曲线时，plot_equations 会自动标注交点；通常一步 plot 后即可 final，无需重复 plot。
-- 找交点：若图上尚无标记，可 calculate_intersections；若需放大，用 Observation.points 调用 fit_viewport_to_points（可带 markers）。
+- 空图时若用户写出了 y=...，必须先 plot_equations；不要在没有方程时调用交点/零点/放大工具。
+- 求交点：plot（或已有 ≥2 条方程）后调用 calculate_intersections；若还需放大到附近，用 Observation.points 调用 fit_viewport_to_points（可带 markers），不要重复 plot。
 - 零点/极值：calculate_zeros / calculate_extrema 后可用 set_graph_markers 或 fit_viewport_to_points 写入标记。
 - 比较函数用 compare_functions；判断当前范围是否可绘用 check_sample。
 """
@@ -74,6 +74,18 @@ REACT_FEW_SHOTS = [
             "observations": [],
         },
         {"type": "action", "tool": "calculate_intersections", "arguments": {"equationIds": ["eq_1", "eq_2"]}},
+    ),
+    (
+        {
+            "userMessage": "画 y=x^2 和 y=x+2，求交点并放大到附近",
+            "structuredContext": {"currentGraphState": {"equations": []}},
+            "observations": [],
+        },
+        {
+            "type": "action",
+            "tool": "plot_equations",
+            "arguments": {"equations": [{"expression": "y=x^2"}, {"expression": "y=x+2"}]},
+        },
     ),
     (
         {

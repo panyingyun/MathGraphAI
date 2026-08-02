@@ -35,6 +35,27 @@ _ERROR_PREFIXES = ("方程解析失败", "无法理解", "无法确定", "请先
 _RECOVERABLE_TOOL_ERRORS = {"invalid_arguments", "equation_not_found", "precondition_failed"}
 
 
+def _bootstrap_plot_action(request_spec, graph_state: GraphState) -> Optional[AgentAction]:
+    """空图且 RequestSpec 已抽出明确表达式时，先确定性绘制，避免模型空转耗尽调用。"""
+
+    if "plot" not in request_spec.required_effects:
+        return None
+    if graph_state.equations or not request_spec.explicit_expressions:
+        return None
+    equations = []
+    for expr in request_spec.explicit_expressions:
+        text = str(expr).strip()
+        if not text:
+            continue
+        if text.lower().startswith("y="):
+            equations.append({"expression": text})
+        else:
+            equations.append({"expression": f"y={text}"})
+    if not equations:
+        return None
+    return AgentAction(tool="plot_equations", arguments={"equations": equations})
+
+
 @dataclass
 class RunnerResult:
     success: bool
@@ -53,6 +74,8 @@ class RunnerResult:
     shadow_candidate: Optional[GraphState] = None
     cancelled: bool = False
     phase: str = "understand"
+    fact_observations: List[Observation] = field(default_factory=list)
+    executed_tools: List[str] = field(default_factory=list)
 
 
 def _action_fingerprint(action: AgentAction) -> str:
@@ -187,9 +210,22 @@ class AgentRunner:
 
         final_message = ""
         success = False
+        blocked_fingerprints: set[str] = set()
+        # Local 规划器已会主动 plot；仅 DeepSeek 需要确定性首步，避免空图空转。
+        bootstrap_action = (
+            _bootstrap_plot_action(request_spec, working.current)
+            if provider.name == "deepseek"
+            else None
+        )
 
         try:
-            while True:
+            if request_spec.unsupported_request:
+                error_code = "unsupported_request"
+                final_message = request_spec.unsupported_reason or "当前只支持函数图像相关请求。"
+                working.discard()
+                steps.append(_public_step(0, None, "error", final_message))
+                success = False
+            while not request_spec.unsupported_request:
                 if cancel_registry.is_cancelled(request_id):
                     cancelled = True
                     error_code = "cancelled"
@@ -234,34 +270,38 @@ class AgentRunner:
                     context.available_tool_names = None
                 phase = "understand" if action_steps == 0 else "execute"
 
-                try:
-                    if provider.name == "deepseek":
-                        model_calls += 1
-                    decision = await provider.decide(context)
-                except Exception as exc:  # noqa: BLE001
-                    if provider.name != "deepseek":
-                        raise
-                    mapped = (
-                        exc
-                        if isinstance(exc, ModelServiceError)
-                        else ModelServiceError(ModelErrorCode.UNKNOWN, str(exc))
-                    )
-                    fallback_used = True
-                    fallback_reason = mapped.user_message
-                    error_code = mapped.code.value
-                    log_event(
-                        "decision_provider_fallback",
-                        requestId=request_id,
-                        sessionId=session_id,
-                        decisionProvider="local",
-                        fallbackUsed=True,
-                        errorCode=error_code,
-                        reason=fallback_reason,
-                    )
-                    provider = LocalDecisionProvider()
-                    provider.reset()
-                    decision_provider = "local"
-                    decision = await provider.decide(context)
+                if bootstrap_action is not None:
+                    decision = bootstrap_action
+                    bootstrap_action = None
+                else:
+                    try:
+                        if provider.name == "deepseek":
+                            model_calls += 1
+                        decision = await provider.decide(context)
+                    except Exception as exc:  # noqa: BLE001
+                        if provider.name != "deepseek":
+                            raise
+                        mapped = (
+                            exc
+                            if isinstance(exc, ModelServiceError)
+                            else ModelServiceError(ModelErrorCode.UNKNOWN, str(exc))
+                        )
+                        fallback_used = True
+                        fallback_reason = mapped.user_message
+                        error_code = mapped.code.value
+                        log_event(
+                            "decision_provider_fallback",
+                            requestId=request_id,
+                            sessionId=session_id,
+                            decisionProvider="local",
+                            fallbackUsed=True,
+                            errorCode=error_code,
+                            reason=fallback_reason,
+                        )
+                        provider = LocalDecisionProvider()
+                        provider.reset()
+                        decision_provider = "local"
+                        decision = await provider.decide(context)
 
                 if cancel_registry.is_cancelled(request_id):
                     cancelled = True
@@ -275,6 +315,13 @@ class AgentRunner:
                 if isinstance(decision, AgentFinal):
                     phase = "save"
                     final_message = decision.message
+                    if request_spec.unsupported_request:
+                        error_code = "unsupported_request"
+                        final_message = request_spec.unsupported_reason or final_message
+                        working.discard()
+                        success = False
+                        steps.append(_public_step(len(steps), None, "error", final_message))
+                        break
                     validation = validate_goal(
                         request_spec,
                         working.base,
@@ -333,11 +380,11 @@ class AgentRunner:
                     break
 
                 fingerprint = _action_fingerprint(decision)
-                is_repeat = fingerprint in fingerprints
-                if is_repeat:
+                is_repeat = fingerprint in fingerprints or fingerprint in blocked_fingerprints
+                if fingerprint in fingerprints:
                     duplicate_counts[fingerprint] = duplicate_counts.get(fingerprint, 0) + 1
 
-                # 重复 Action 永不触发提交：第一次回填纠错 Observation，再次重复则失败回滚。
+                # 重复 Action：目标已满足则自动收尾；未满足则跳过/拉黑该调用并继续，避免回滚已完成进度。
                 if is_repeat:
                     validation = validate_goal(
                         request_spec,
@@ -346,20 +393,36 @@ class AgentRunner:
                         fact_observations,
                         executed_tools,
                     )
-                    if duplicate_counts[fingerprint] <= settings.agent_max_repeated_actions:
+                    if validation.satisfied:
+                        phase = "save"
+                        final_message = "已完成图像更新。"
+                        success = True
+                        if not fallback_used:
+                            error_code = None
+                        steps.append(
+                            _public_step(
+                                len(steps),
+                                decision.tool,
+                                "final",
+                                "检测到重复调用且目标已满足，自动结束",
+                            )
+                        )
+                        break
+
+                    soft_skip = (
+                        fingerprint not in blocked_fingerprints
+                        and duplicate_counts.get(fingerprint, 0) <= settings.agent_max_repeated_actions
+                    )
+                    if soft_skip:
                         skip_obs = Observation(
                             tool=decision.tool,
                             success=False,
                             data={
                                 "skipped": True,
                                 "reason": "duplicate_action",
-                                "goalSatisfied": validation.satisfied,
+                                "goalSatisfied": False,
                                 "missing": validation.missing,
-                                "hint": (
-                                    "目标已满足，请直接输出 type=final。"
-                                    if validation.satisfied
-                                    else "该调用已经执行过，请改用其他工具补齐 missing 目标。"
-                                ),
+                                "hint": "该调用已经执行过，请改用其他工具补齐 missing 目标，不要重复相同参数。",
                             },
                             error_code="duplicate_action",
                             error_message="相同工具和参数已经成功执行过，本次未再次执行。",
@@ -376,12 +439,31 @@ class AgentRunner:
                         action_steps += 1
                         continue
 
-                    error_code = "repeated_action"
-                    final_message = "模型仍在重复相同工具调用，已停止并保留原图。"
-                    working.discard()
-                    steps.append(_public_step(len(steps), decision.tool, "error", final_message))
-                    success = False
-                    break
+                    blocked_fingerprints.add(fingerprint)
+                    block_obs = Observation(
+                        tool=decision.tool,
+                        success=False,
+                        data={
+                            "skipped": True,
+                            "reason": "duplicate_action_blocked",
+                            "goalSatisfied": False,
+                            "missing": validation.missing,
+                            "hint": "相同调用已被禁止再次执行，请改用其他工具补齐 missing 目标后输出 type=final。",
+                        },
+                        error_code="duplicate_action",
+                        error_message="相同工具和参数重复过多，已禁止再次执行该调用。",
+                    )
+                    observations.append(block_obs)
+                    steps.append(
+                        _public_step(
+                            len(steps),
+                            decision.tool,
+                            "warning",
+                            "重复调用已禁止，请改用其他工具继续",
+                        )
+                    )
+                    action_steps += 1
+                    continue
 
                 if (
                     context.available_tool_names is not None
@@ -630,6 +712,8 @@ class AgentRunner:
             shadow_candidate=shadow_candidate,
             cancelled=cancelled,
             phase=phase,
+            fact_observations=list(fact_observations),
+            executed_tools=list(executed_tools),
         )
 
 

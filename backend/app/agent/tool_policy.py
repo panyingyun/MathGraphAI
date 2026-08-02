@@ -47,6 +47,10 @@ def select_available_tools(
     successful = _successful_tools(observations)
     equation_count = len(graph_state.equations)
 
+    # 空图且必须先绘制：只开放 plot，避免模型空转 get_graph_state / set_viewport / 不可用计算工具。
+    if "plot" in request_spec.required_effects and equation_count == 0:
+        return [name for name in TOOL_REGISTRY if name == "plot_equations"]
+
     allowed: Set[str] = {
         "get_graph_state",
         "plot_equations",

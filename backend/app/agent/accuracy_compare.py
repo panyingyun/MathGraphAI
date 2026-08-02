@@ -2,12 +2,29 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional, Sequence
 
 from ..schemas.agent import Observation, RequestSpec
 from ..schemas.graph import EquationItem, GraphState, Viewport
 from .goal_validator import validate_goal
 from .request_spec import build_request_spec
+
+REQUIRED_CATEGORIES = {
+    "single_step",
+    "compound",
+    "analysis",
+    "safety",
+    "multi_turn",
+    "repair",
+    "zero_action",
+}
+
+_SCHEMA_ERROR_CODES = {"invalid_arguments", "model_schema_error"}
+_CALC_LABELS = {
+    "calculate_intersections": "交点",
+    "calculate_zeros": "零点",
+    "calculate_extrema": "极值",
+}
 
 
 def graph_from_case_initial(initial: Optional[Dict[str, Any]]) -> GraphState:
@@ -50,14 +67,15 @@ def _expressions(state: GraphState) -> List[str]:
     return [_normalize_expr(item.normalized_expression) for item in state.equations]
 
 
-def observations_from_tools(executed_tools: Iterable[str]) -> List[Observation]:
-    """评测侧用成功工具名合成 Observation，供 validate_goal 检查读效果。"""
+def _number_token(value: Any) -> str:
+    try:
+        return f"{float(value):.9g}"
+    except (TypeError, ValueError):
+        return str(value)
 
-    return [
-        Observation(tool=name, success=True, data={"synthesized": True})
-        for name in executed_tools
-        if name
-    ]
+
+def count_schema_errors(observations: Sequence[Observation]) -> int:
+    return sum(1 for item in observations if item.error_code in _SCHEMA_ERROR_CODES)
 
 
 def compare_case_result(
@@ -70,22 +88,29 @@ def compare_case_result(
     executed_tools: List[str],
     step_count: int,
     final_message: str,
+    observations: Optional[Sequence[Observation]] = None,
+    fallback_used: bool = False,
 ) -> Dict[str, Any]:
     """
     与用例期望对比，返回结构化判分结果。
 
-    判定以 GraphState / 工具轨迹 / GoalSpec 为准，不只看 final 文本。
+    判定以 GraphState / 真实 Observation / GoalSpec 为准，不只看 final 文本。
     """
 
     diffs: List[str] = []
+    obs_list = list(observations or [])
+    schema_error_events = count_schema_errors(obs_list)
     metrics = {
         "stateCorrect": True,
         "goalSatisfied": True,
         "zeroActionFalseSuccess": False,
         "repeatedDestructive": False,
-        "schemaError": False,
+        "schemaError": schema_error_events > 0,
+        "schemaErrorEvents": schema_error_events,
+        "toolInvocations": len(obs_list),
         "safeRejectCorrect": True,
         "finalConsistent": True,
+        "fallbackUsed": fallback_used,
         "terminatedNormally": error_code
         not in {"agent_timeout", "max_steps_exceeded", "model_call_limit", "cancelled"},
     }
@@ -156,7 +181,6 @@ def compare_case_result(
 
     request_spec = build_request_spec(case["message"], before)
     if expected_effects:
-        # 用例显式契约优先；否则退回从 message 抽取的 RequestSpec。
         check_spec = RequestSpec(
             mutation_expected=request_spec.mutation_expected
             or any(
@@ -184,7 +208,7 @@ def compare_case_result(
             check_spec,
             before,
             after,
-            observations_from_tools(executed_tools),
+            obs_list,
             executed_tools,
         )
         metrics["goalSatisfied"] = validation.satisfied
@@ -201,20 +225,44 @@ def compare_case_result(
         metrics["repeatedDestructive"] = True
         diffs.append("repeated_destructive_remove")
 
-    if error_code in {"invalid_arguments", "model_schema_error"}:
-        metrics["schemaError"] = True
-
-    if success and expected_expressions:
+    if success:
         compact_msg = _normalize_expr(final_message)
-        if "没有曲线" in final_message:
-            metrics["finalConsistent"] = False
-            diffs.append("final_claims_empty_graph")
-        elif "条曲线" in final_message:
-            for expression in expected_expressions:
-                if expression and expression not in compact_msg:
-                    metrics["finalConsistent"] = False
-                    diffs.append(f"final_missing_expression:{expression}")
-                    break
+        if expected_expressions:
+            if "没有曲线" in final_message:
+                metrics["finalConsistent"] = False
+                diffs.append("final_claims_empty_graph")
+            elif "条曲线" in final_message:
+                for expression in expected_expressions:
+                    if expression and expression not in compact_msg:
+                        metrics["finalConsistent"] = False
+                        diffs.append(f"final_missing_expression:{expression}")
+                        break
+        # 真实 Observation 数值须出现在 final（与 grounded final 对齐）。
+        for observation in obs_list:
+            if not observation.success or observation.tool not in _CALC_LABELS:
+                continue
+            label = _CALC_LABELS[observation.tool]
+            points = observation.data.get("points") or []
+            if label not in final_message and ("未找到" + label) not in final_message:
+                metrics["finalConsistent"] = False
+                diffs.append(f"final_missing_calc_label:{label}")
+                break
+            if points:
+                first = points[0]
+                if isinstance(first, dict) and "x" in first:
+                    token = _number_token(first["x"])
+                    if token not in compact_msg and token not in final_message.replace(" ", ""):
+                        metrics["finalConsistent"] = False
+                        diffs.append(f"final_missing_calc_point:{observation.tool}")
+                        break
+
+    if case.get("expectToolRepair"):
+        repaired = any(
+            item.error_code in _SCHEMA_ERROR_CODES and not item.success for item in obs_list
+        ) and success
+        if not repaired:
+            diffs.append("expected_tool_repair_trajectory")
+            metrics["stateCorrect"] = False
 
     passed = (
         metrics["stateCorrect"]
@@ -242,50 +290,22 @@ def compare_case_result(
 
 
 def summarize_metrics(case_results: List[Dict[str, Any]]) -> Dict[str, Any]:
-    """按 §4.2 聚合用例级结果（每个 case 取多次 repeats 的通过率后再汇总）。"""
+    """聚合 trial 级与 case 级指标。"""
 
-    if not case_results:
-        return {
-            "caseCount": 0,
-            "singleStepAccuracy": None,
-            "compoundAccuracy": None,
-            "zeroActionFalseSuccessRate": None,
-            "repeatedDestructiveCount": 0,
-            "schemaErrorRate": None,
-            "finalConsistencyRate": None,
-            "normalTerminationRate": None,
-            "safeRejectAccuracy": None,
-            "overallPassRate": None,
-        }
-
-    def _avg(values: List[float]) -> Optional[float]:
-        return round(sum(values) / len(values), 4) if values else None
-
-    single = [item for item in case_results if item.get("complexity") == "single"]
-    compound = [item for item in case_results if item.get("complexity") == "compound"]
-    rejects = [item for item in case_results if item.get("expectSafeReject")]
-
-    return {
-        "caseCount": len(case_results),
-        "singleStepAccuracy": _avg([item["passRate"] for item in single]),
-        "compoundAccuracy": _avg([item["passRate"] for item in compound]),
-        "zeroActionFalseSuccessRate": _avg(
-            [1.0 if item["metrics"].get("zeroActionFalseSuccess") else 0.0 for item in case_results]
-        ),
-        "repeatedDestructiveCount": sum(
-            1 for item in case_results if item["metrics"].get("repeatedDestructive")
-        ),
-        "schemaErrorRate": _avg(
-            [1.0 if item["metrics"].get("schemaError") else 0.0 for item in case_results]
-        ),
-        "finalConsistencyRate": _avg(
-            [1.0 if item["metrics"].get("finalConsistent") else 0.0 for item in case_results]
-        ),
-        "normalTerminationRate": _avg(
-            [1.0 if item["metrics"].get("terminatedNormally") else 0.0 for item in case_results]
-        ),
-        "safeRejectAccuracy": _avg([item["passRate"] for item in rejects]),
-        "overallPassRate": _avg([item["passRate"] for item in case_results]),
+    empty = {
+        "caseCount": 0,
+        "trialCount": 0,
+        "singleStepAccuracy": None,
+        "compoundAccuracy": None,
+        "zeroActionFalseSuccessRate": None,
+        "repeatedDestructiveCount": 0,
+        "schemaErrorRate": None,
+        "finalConsistencyRate": None,
+        "normalTerminationRate": None,
+        "safeRejectAccuracy": None,
+        "overallPassRate": None,
+        "stablePassRate": None,
+        "fallbackTrialRate": None,
         "targets": {
             "singleStepAccuracy": 0.98,
             "compoundAccuracy": 0.92,
@@ -296,6 +316,78 @@ def summarize_metrics(case_results: List[Dict[str, Any]]) -> Dict[str, Any]:
             "normalTerminationRate": 0.98,
             "safeRejectAccuracy": 1.0,
         },
+    }
+    if not case_results:
+        return empty
+
+    def _avg(values: List[float]) -> Optional[float]:
+        return round(sum(values) / len(values), 4) if values else None
+
+    trials: List[Dict[str, Any]] = []
+    for case in case_results:
+        for trial in case.get("trials") or []:
+            row = dict(trial)
+            row["complexity"] = case.get("complexity", "single")
+            row["expectSafeReject"] = bool(case.get("expectSafeReject"))
+            trials.append(row)
+
+    if not trials:
+        # 兼容旧测试：只有 case.metrics / passRate
+        single = [item for item in case_results if item.get("complexity") == "single"]
+        compound = [item for item in case_results if item.get("complexity") == "compound"]
+        rejects = [item for item in case_results if item.get("expectSafeReject")]
+        return {
+            **empty,
+            "caseCount": len(case_results),
+            "singleStepAccuracy": _avg([item["passRate"] for item in single]),
+            "compoundAccuracy": _avg([item["passRate"] for item in compound]),
+            "zeroActionFalseSuccessRate": _avg(
+                [1.0 if item.get("metrics", {}).get("zeroActionFalseSuccess") else 0.0 for item in case_results]
+            ),
+            "repeatedDestructiveCount": sum(
+                1 for item in case_results if item.get("metrics", {}).get("repeatedDestructive")
+            ),
+            "schemaErrorRate": _avg(
+                [1.0 if item.get("metrics", {}).get("schemaError") else 0.0 for item in case_results]
+            ),
+            "finalConsistencyRate": _avg(
+                [1.0 if item.get("metrics", {}).get("finalConsistent") else 0.0 for item in case_results]
+            ),
+            "normalTerminationRate": _avg(
+                [1.0 if item.get("metrics", {}).get("terminatedNormally") else 0.0 for item in case_results]
+            ),
+            "safeRejectAccuracy": _avg([item["passRate"] for item in rejects]),
+            "overallPassRate": _avg([item["passRate"] for item in case_results]),
+            "stablePassRate": _avg([1.0 if item.get("passRate", 0) >= 1.0 else 0.0 for item in case_results]),
+        }
+
+    single = [item for item in trials if item.get("complexity") == "single"]
+    compound = [item for item in trials if item.get("complexity") == "compound"]
+    rejects = [item for item in trials if item.get("expectSafeReject")]
+
+    schema_events = sum(int(item.get("schemaErrorEvents") or 0) for item in trials)
+    tool_invocations = sum(int(item.get("toolInvocations") or 0) for item in trials)
+    schema_rate = round(schema_events / tool_invocations, 4) if tool_invocations else 0.0
+
+    return {
+        "caseCount": len(case_results),
+        "trialCount": len(trials),
+        "singleStepAccuracy": _avg([1.0 if item.get("passed") else 0.0 for item in single]),
+        "compoundAccuracy": _avg([1.0 if item.get("passed") else 0.0 for item in compound]),
+        "zeroActionFalseSuccessRate": _avg(
+            [1.0 if item.get("zeroActionFalseSuccess") else 0.0 for item in trials]
+        ),
+        "repeatedDestructiveCount": sum(1 for item in trials if item.get("repeatedDestructive")),
+        "schemaErrorRate": schema_rate,
+        "schemaErrorEvents": schema_events,
+        "toolInvocations": tool_invocations,
+        "finalConsistencyRate": _avg([1.0 if item.get("finalConsistent") else 0.0 for item in trials]),
+        "normalTerminationRate": _avg([1.0 if item.get("terminatedNormally") else 0.0 for item in trials]),
+        "safeRejectAccuracy": _avg([1.0 if item.get("passed") else 0.0 for item in rejects]),
+        "overallPassRate": _avg([1.0 if item.get("passed") else 0.0 for item in trials]),
+        "stablePassRate": _avg([1.0 if item.get("passRate", 0) >= 1.0 else 0.0 for item in case_results]),
+        "fallbackTrialRate": _avg([1.0 if item.get("fallbackUsed") else 0.0 for item in trials]),
+        "targets": empty["targets"],
     }
 
 
@@ -329,4 +421,49 @@ def targets_met(summary: Dict[str, Any]) -> Dict[str, bool]:
             summary.get("normalTerminationRate"), targets.get("normalTerminationRate", 0.98)
         ),
         "safeRejectAccuracy": _ge(summary.get("safeRejectAccuracy"), targets.get("safeRejectAccuracy", 1.0)),
+    }
+
+
+def publish_gate(
+    *,
+    provider: str,
+    repeats: int,
+    catalog_case_count: int,
+    evaluated_case_count: int,
+    subset: bool,
+    categories: Iterable[str],
+    summary: Dict[str, Any],
+    metrics_ok: Dict[str, bool],
+    allow_fallback: bool = False,
+) -> Dict[str, Any]:
+    """发布 react 的硬门禁；任一条件不满足则不允许。"""
+
+    present = set(categories)
+    checks = {
+        "providerIsDeepseek": provider == "deepseek",
+        "fullCatalog": (not subset) and evaluated_case_count >= catalog_case_count and catalog_case_count >= 80,
+        "repeatsAtLeast3": repeats >= 3,
+        "requiredCategories": REQUIRED_CATEGORIES.issubset(present),
+        "noFallback" if not allow_fallback else "fallbackAllowed": (
+            True if allow_fallback else (summary.get("fallbackTrialRate") or 0) <= 1e-12
+        ),
+        "metricsPass": all(metrics_ok.values()),
+    }
+    return {
+        "allowed": all(checks.values()),
+        "checks": checks,
+    }
+
+
+def default_report_paths(provider: str, repo_root) -> Dict[str, Any]:
+    from pathlib import Path
+
+    root = Path(repo_root)
+    if provider == "deepseek":
+        stem = "react-accuracy-deepseek"
+    else:
+        stem = "react-accuracy-local"
+    return {
+        "json": root / "docs" / "baseline" / f"{stem}.json",
+        "md": root / "docs" / "baseline" / f"{stem}.md",
     }

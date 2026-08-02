@@ -23,13 +23,25 @@ def _equation(equation_id: str, expression: str) -> EquationItem:
     )
 
 
+def test_request_spec_marks_out_of_scope_chat_and_keeps_math():
+    empty = GraphState()
+    for message in ("今天天气怎么样", "你是谁", "帮我写一段 Python 爬虫", "帮我执行 DROP TABLE users"):
+        spec = build_request_spec(message, empty)
+        assert spec.unsupported_request is True
+        assert spec.unsupported_reason
+    plot_spec = build_request_spec("画 y=x^2", empty)
+    assert plot_spec.unsupported_request is False
+    assert "plot" in plot_spec.required_effects
+
+
 def test_dynamic_tools_respect_preconditions_and_completed_calculation():
     empty = GraphState()
     plot_spec = build_request_spec("画 y=x", empty)
     empty_tools = select_available_tools(plot_spec, empty, [], [])
-    assert "plot_equations" in empty_tools
+    assert empty_tools == ["plot_equations"]
     assert "remove_equation" not in empty_tools
     assert "calculate_intersections" not in empty_tools
+    assert "get_graph_state" not in empty_tools
 
     state = GraphState(equations=[_equation("eq_1", "x^2"), _equation("eq_2", "2*x+3")])
     spec = build_request_spec("求两条曲线交点并放大到附近", state)
@@ -181,10 +193,36 @@ def test_repeated_remove_never_deletes_or_commits_twice(monkeypatch):
             session_id="session_test",
         )
     )
+    # 第一次删除成功后若模型重复同一删除，目标已满足则自动收尾并提交一次。
+    assert result.success is True
+    assert result.should_commit is True
+    assert [item.id for item in result.graph_state.equations] == ["eq_2"]
+
+
+def test_unsupported_request_rejected_without_model_loop(monkeypatch):
+    class ShouldNotDecide:
+        name = "local"
+
+        def reset(self):
+            return
+
+        async def decide(self, _context: DecisionContext):
+            raise AssertionError("unsupported request should not call decide")
+
+    monkeypatch.setattr("app.agent.runner.settings", replace(settings, agent_mode="react"))
+    result = asyncio.run(
+        AgentRunner(provider=ShouldNotDecide()).run(
+            user_message="今天天气怎么样",
+            graph_state=GraphState(equations=[_equation("eq_1", "x")]),
+            recent_messages=[],
+            request_id="req_stage_b_unsupported",
+            session_id="session_test",
+        )
+    )
     assert result.success is False
-    assert result.error_code == "repeated_action"
+    assert result.error_code == "unsupported_request"
     assert result.should_commit is False
-    assert [item.id for item in result.graph_state.equations] == ["eq_1", "eq_2"]
+    assert [item.normalized_expression for item in result.graph_state.equations] == ["x"]
 
 
 def test_grounded_final_uses_numeric_observation_not_model_claim(monkeypatch):

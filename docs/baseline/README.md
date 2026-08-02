@@ -36,7 +36,7 @@ npm test
 cd backend
 python -m scripts.measure_baseline
 
-# Plan02 阶段 C：ReAct 准确性评测（默认 shadow，写 react-accuracy.json/md）
+# Plan02 阶段 C：ReAct 准确性评测（默认 shadow；按 provider 分文件）
 cd backend
 python -m scripts.evaluate_react --provider local
 python -m scripts.evaluate_react --provider deepseek --repeats 3
@@ -45,8 +45,10 @@ python -m scripts.evaluate_react --provider deepseek --repeats 3
 | 产物 | 路径 |
 | --- | --- |
 | 准确性用例 | `testdata/react_accuracy_cases.json` |
-| 本地 Provider 评测报告 | `docs/baseline/react-accuracy.json` / `react-accuracy.md` |
+| 本地 Provider 评测报告 | `docs/baseline/react-accuracy-local.json` / `react-accuracy-local.md` |
 | DeepSeek 评测报告 | `docs/baseline/react-accuracy-deepseek.json` / `react-accuracy-deepseek.md` |
+
+`publishReactAllowed=true` 仅在完整 DeepSeek 评测（全量用例、`repeats≥3`、无 fallback、§4.2 全达标）时成立。
 
 ## 已知约定
 

@@ -21,10 +21,51 @@ _EXTREMA_WORDS = ("极值", "极大", "极小", "顶点")
 _COMPARE_WORDS = ("比较", "对比", "谁更大", "哪个大")
 _ZOOM_WORDS = ("放大", "聚焦", "缩放到", "附近")
 _UPDATE_WORDS = ("改成", "改为", "修改", "更新", "替换为", "设为", "设置为")
+_GRAPH_INTENT_WORDS = (
+    *_PLOT_WORDS,
+    *_ADD_WORDS,
+    *_REMOVE_WORDS,
+    *_ANALYZE_WORDS,
+    *_EXPLAIN_WORDS,
+    *_INTERSECTION_WORDS,
+    *_ZERO_WORDS,
+    *_EXTREMA_WORDS,
+    *_COMPARE_WORDS,
+    *_ZOOM_WORDS,
+    *_UPDATE_WORDS,
+    "范围",
+    "颜色",
+    "隐藏",
+    "可见",
+    "线宽",
+    "方程",
+    "函数",
+    "曲线",
+    "图像",
+)
+_OUT_OF_SCOPE_PATTERNS = (
+    re.compile(r"天气"),
+    re.compile(r"你是谁"),
+    re.compile(r"(?:写|编写).{0,12}(?:python|爬虫|代码|程序)", re.IGNORECASE),
+    re.compile(r"(?:执行|运行).{0,16}(?:sql|drop\s+table|select\s+)", re.IGNORECASE),
+    re.compile(r"\bdrop\s+table\b", re.IGNORECASE),
+    re.compile(r"爬虫"),
+)
 
 
 def _contains_any(text: str, words) -> bool:
     return any(word in text for word in words)
+
+
+def _detect_unsupported_request(text: str, *, has_graph_intent: bool) -> Optional[str]:
+    """识别明显越界请求；有绘图/改图意图时不误杀。"""
+
+    if has_graph_intent:
+        return None
+    for pattern in _OUT_OF_SCOPE_PATTERNS:
+        if pattern.search(text):
+            return "当前只支持函数图像相关请求，无法处理该问题。"
+    return None
 
 
 def _append_once(items: List[GoalEffect], effect: GoalEffect) -> None:
@@ -154,6 +195,8 @@ def build_request_spec(user_message: str, graph_state: GraphState) -> RequestSpe
     expected_expression = expressions[-1] if expression_update and expressions else None
     target_id = _resolve_target(graph_state, text, target_expression)
     write_effects = {"plot", "add", "remove", "update", "viewport", "analyze", "explain", "fit_viewport"}
+    has_graph_intent = bool(effects or expressions or viewport) or _contains_any(text, _GRAPH_INTENT_WORDS)
+    unsupported_reason = _detect_unsupported_request(text, has_graph_intent=has_graph_intent)
 
     return RequestSpec(
         mutation_expected=any(effect in write_effects for effect in effects),
@@ -167,4 +210,6 @@ def build_request_spec(user_message: str, graph_state: GraphState) -> RequestSpe
         expected_line_width=expected_line_width,
         expected_viewport=viewport,
         requires_observation=observations,
+        unsupported_request=bool(unsupported_reason),
+        unsupported_reason=unsupported_reason,
     )

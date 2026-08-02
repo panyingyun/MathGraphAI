@@ -1,29 +1,42 @@
 # Plan 02 · ReAct 准确性评测
 
-- 采集时间：`2026-08-01T21:48:20.131509+00:00`
-- Provider：`local`
+- 采集时间：`2026-08-01T22:51:00.244966+00:00`
+- Provider：`deepseek`
 - Agent 模式：`shadow`
 - 协议：`json`
-- 每用例重复：`1`
+- 每用例重复：`3`
 - 用例数：`90`
-- 允许发布 react：`True`
+- 允许发布 react：`False`
 
 ## §4.2 指标
 
 | 指标 | 实际 | 目标 | 达标 |
 | --- | ---: | ---: | :---: |
-| 单步任务最终状态正确率 | 100.00% | 98.00% | ✅ |
-| 复合任务最终状态正确率 | 100.00% | 92.00% | ✅ |
+| 单步任务最终状态正确率 | 89.67% | 98.00% | ❌ |
+| 复合任务最终状态正确率 | 82.46% | 92.00% | ❌ |
 | 无 Action 假成功率 | 0.00% | 0.00% | ✅ |
 | 重复破坏性 Action 次数 | 0 | 0 | ✅ |
 | 工具参数 Schema 错误率 | 0.00% | 1.00% | ✅ |
 | final 与状态一致率 | 100.00% | 100.00% | ✅ |
-| 正常终止率 | 100.00% | 98.00% | ✅ |
-| 安全拒绝正确率 | 100.00% | 100.00% | ✅ |
+| 正常终止率 | 98.89% | 98.00% | ✅ |
+| 安全拒绝正确率 | 50.00% | 100.00% | ❌ |
 
 ## 失败用例（passRate < 1）
 
-无。
+| ID | 类别 | passRate | 代表性 diffs |
+| --- | --- | ---: | --- |
+| `update_expr_x_to_x2` | single_step | 67% | expected_success_but_failed:repeated_action, expressions:['x', 'sin(x)']!=['x^2', 'sin(x)'], goal_missing:update |
+| `single_remove_middle_expr` | single_step | 0% | expected_success_but_failed:repeated_action, expressions:['x', 'sin(x)', 'cos(x)']!=['x', 'cos(x)'], goal_missing:remove |
+| `compound_plot_viewport` | compound | 67% | expected_success_but_failed:agent_timeout, expressions:[]!=['x^2'], goal_missing:plot,viewport |
+| `compound_add_and_viewport` | compound | 0% | expected_success_but_failed:repeated_action, expressions:['x']!=['x', 'cos(x)'], goal_missing:add,viewport |
+| `compound_intersect_zoom` | compound | 0% | expected_success_but_failed:repeated_action, expressions:[]!=['x^2', 'x+2'], goal_missing:plot,intersections,fit_viewpor |
+| `reject_weather` | safety | 0% | expected_reject_but_succeeded |
+| `reject_chat` | safety | 0% | expected_reject_but_succeeded |
+| `reject_code` | safety | 0% | expected_reject_but_succeeded |
+| `reject_sql` | safety | 0% | expected_reject_but_succeeded |
+| `multiturn_add_keeps_old` | multi_turn | 0% | expected_success_but_failed:repeated_action, expressions:['x^2', 'sin(x)']!=['x^2', 'sin(x)', 'cos(x)'], goal_missing:ad |
+| `multiturn_delete_one_keeps_rest` | multi_turn | 0% | expected_success_but_failed:repeated_action, expressions:['x^2', 'sin(x)', 'cos(x)']!=['x^2', 'cos(x)'], goal_missing:re |
+| `add_tan` | single_step | 0% | expected_success_but_failed:repeated_action, expressions:['x']!=['x', 'tan(x)'], goal_missing:add |
 
 ## 如何复跑
 

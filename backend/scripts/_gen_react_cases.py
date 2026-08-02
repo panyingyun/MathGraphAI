@@ -477,20 +477,29 @@ def main() -> None:
     )
 
     add(
-        id="repairish_plot_typo_spaces",
-        category="repair",
+        id="format_plot_typo_spaces",
+        category="single_step",
         message="画y = x^2",
         expectedEffects=["plot"],
         expectedExpressions=["x^2"],
     )
     add(
-        id="repairish_viewport_cn",
-        category="repair",
+        id="format_viewport_cn",
+        category="single_step",
         message="坐标范围设置为-5到5",
         initialGraph={"equations": [{"id": "eq_1", "expression": "y = x", "normalizedExpression": "x"}]},
         expectedEffects=["viewport"],
         expectedViewport={"xMin": -5, "xMax": 5, "yMin": -5, "yMax": 5},
         expectedExpressions=["x"],
+    )
+    add(
+        id="repair_invalid_plot_args",
+        category="repair",
+        message="画 y=x",
+        expectedEffects=["plot"],
+        expectedExpressions=["x"],
+        scriptedProvider="repair_invalid_plot",
+        expectToolRepair=True,
     )
     add(
         id="single_show_visible",

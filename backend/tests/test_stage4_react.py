@@ -173,9 +173,8 @@ def test_repeated_action_guard(monkeypatch):
         "app.agent.runner.settings",
         replace(settings, agent_mode="react", deepseek_api_key="", agent_max_steps=6, agent_max_repeated_actions=1),
     )
-    # 第 1 次执行，第 2 次软忽略，第 3 次超限且无 dirty → 错误
+    # 第 1 次执行，第 2 次重复且空目标已满足 → 自动 final
     script = [
-        AgentAction(tool="get_graph_state", arguments={}),
         AgentAction(tool="get_graph_state", arguments={}),
         AgentAction(tool="get_graph_state", arguments={}),
         AgentFinal(message="不应到达"),
@@ -190,9 +189,9 @@ def test_repeated_action_guard(monkeypatch):
             session_id="session_test",
         )
     )
-    assert result.success is False
-    assert result.error_code == "repeated_action"
+    assert result.success is True
     assert result.should_commit is False
+    assert any(step.status == "final" for step in result.steps)
 
 
 def test_tool_timeout_rolls_back(monkeypatch):

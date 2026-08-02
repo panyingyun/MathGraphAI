@@ -323,8 +323,10 @@ AGENT_INCLUDE_CHAT_HISTORY=false
 ```text
 testdata/react_accuracy_cases.json
 scripts/evaluate_react.py
-docs/baseline/react-accuracy.json
-docs/baseline/react-accuracy.md
+docs/baseline/react-accuracy-local.json
+docs/baseline/react-accuracy-local.md
+docs/baseline/react-accuracy-deepseek.json
+docs/baseline/react-accuracy-deepseek.md
 ```
 
 用例至少扩展到 80～100 条：
@@ -409,7 +411,7 @@ Shadow 不提交数据，但必须执行相同的 Final Gate。
 
 1. 从 SQLite 和日志聚合到 `docs/baseline/metrics-live.json`。
 2. 可选管理端 `GET /api/metrics/summary?since=`。
-3. 定期更新 `docs/baseline/metrics.md` 和 `react-accuracy.md`。
+3. 定期更新 `docs/baseline/metrics.md` 和 `react-accuracy-local.md` / `react-accuracy-deepseek.md`。
 
 验收：
 
@@ -538,20 +540,21 @@ Shadow 不提交数据，但必须执行相同的 Final Gate。
 1. [x] 建立 80～100 条准确性用例。
 2. [x] 每条真实 DeepSeek 用例支持重复 3～5 次（`--provider deepseek --repeats 3`）。
 3. [x] Shadow 与用例 `expectedEffects` / 期望 GraphState 字段对比。
-4. [x] 输出 `react-accuracy.json/md`。
+4. [x] 按 provider 输出 `react-accuracy-local.*` / `react-accuracy-deepseek.*`。
 
-退出条件：达到 §4.2 指标后才允许发布 react 模式（报告字段 `publishReactAllowed`）。
+退出条件：完整 DeepSeek 评测达到 §4.2 指标后才允许发布 react 模式（报告字段 `publishReactAllowed`；local/子集不可放行）。
 
 实现记录：
 
-- 新增 `testdata/react_accuracy_cases.json`（90 条）：单步绘图/增删改/视口、中文变体、引用、复合任务、交点零点极值比较、安全拒绝、多轮状态隔离与修复向用例。
-- 新增 `backend/app/agent/accuracy_compare.py`：按最终 GraphState、工具轨迹与 GoalGate 判分，聚合 §4.2 指标。
+- 新增 `testdata/react_accuracy_cases.json`（91 条）：单步绘图/增删改/视口、中文变体、引用、复合任务、交点零点极值比较、安全拒绝、多轮状态隔离与脚本化自修复。
+- 新增 `backend/app/agent/accuracy_compare.py`：按最终 GraphState、真实 Observation 与 GoalGate 判分，trial 级聚合 §4.2 指标。
 - 新增 `backend/scripts/evaluate_react.py`（根目录 `scripts/evaluate_react.py` 转发）：默认 `shadow` 模式，支持 `--provider local|deepseek`、`--repeats`、`--ids`、`--limit`。
-- 本地 Provider 全量基线：`docs/baseline/react-accuracy.json/md`，`publishReactAllowed=true`。
-- DeepSeek 全量初跑：`docs/baseline/react-accuracy-deepseek.json/md`（repeats=1，overall ≈88.9%，安全拒绝与部分复合/添加仍未达标，`publishReactAllowed=false`）。
-- 新增 `backend/tests/test_stage_c_accuracy_eval.py` 覆盖用例规模与对比逻辑。
+- 报告按 provider 分文件：`react-accuracy-local.*` / `react-accuracy-deepseek.*`，避免互相覆盖。
+- `publishReactAllowed` 硬门禁：必须 `provider=deepseek`、全量目录、`repeats>=3`、覆盖必要类别、无 fallback，且 §4.2 指标全部达标。
+- 判分使用 `RunnerResult.fact_observations`；Schema 错误按轨迹事件/工具调用计；附 `stablePassRate`。
+- 新增脚本化自修复用例 `repair_invalid_plot_args`（`invalid_arguments → 修复 → success`）。
+- 新增 `backend/tests/test_stage_c_accuracy_eval.py` 覆盖门禁、Observation 一致、Schema 轨迹、trial 聚合与自修复。
 - 用例生成器：`backend/scripts/_gen_react_cases.py`。
-- 判分规则：Agent 最终候选状态（shadow 用 `shadow_candidate`）对照 `expectedExpressions` / `expectedViewport` / 颜色可见性等字段，并用 `expectedEffects` + GoalValidator 检查目标满足；零 Action 假成功与重复破坏性删除单独计数。
 
 ### 阶段 D：质量与发布收口
 

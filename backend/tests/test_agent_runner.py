@@ -9,7 +9,7 @@ from app.agent.local_planner import plan_local_decisions
 from app.agent.providers import DecisionContext, LocalDecisionProvider
 from app.agent.runner import AgentRunner
 from app.schemas.agent import AgentAction, AgentFinal
-from app.schemas.graph import GraphState
+from app.schemas.graph import EquationItem, GraphState
 
 
 @pytest.mark.state
@@ -173,13 +173,12 @@ def test_runner_detects_repeated_action(monkeypatch):
             session_id="session_test",
         )
     )
-    # 只读重复且无 dirty：软忽略一次后仍重复 → 报错且不提交
-    assert result.success is False
-    assert result.error_code == "repeated_action"
+    # 只读重复且目标已空满足：自动 final，不提交
+    assert result.success is True
     assert result.should_commit is False
 
 
-def test_runner_never_auto_commits_on_repeated_write(monkeypatch):
+def test_runner_auto_finalizes_when_repeat_satisfies_goal(monkeypatch):
     from dataclasses import replace
 
     from app.config import settings
@@ -204,18 +203,111 @@ def test_runner_never_auto_commits_on_repeated_write(monkeypatch):
     runner = AgentRunner(provider=RepeatPlotProvider())
     result = asyncio.run(
         runner.run(
-            user_message="画两条曲线",
+            user_message="画 y=x^2 和 y=2*x+3",
             graph_state=GraphState(),
             recent_messages=[],
             request_id="req_stage3_repeat_write",
             session_id="session_test",
         )
     )
-    assert result.success is False
-    assert result.error_code == "repeated_action"
-    assert result.should_commit is False
-    assert result.graph_state.equations == []
-    assert any(step.status == "notice" and "安全跳过" in step.summary for step in result.steps)
+    assert result.success is True
+    assert result.should_commit is True
+    assert [item.normalized_expression for item in result.graph_state.equations] == ["x^2", "2*x+3"]
+    assert any(step.status == "final" for step in result.steps)
+
+
+def test_runner_bootstraps_plot_before_model_for_empty_graph(monkeypatch):
+    from dataclasses import replace
+
+    from app.config import settings
+
+    class AfterBootstrapProvider:
+        name = "deepseek"
+
+        def reset(self):
+            self.n = 0
+
+        async def decide(self, context: DecisionContext):
+            self.n += 1
+            assert len(context.graph_state.equations) >= 2
+            if self.n == 1:
+                return AgentAction(tool="calculate_intersections", arguments={})
+            if self.n == 2:
+                points = []
+                for item in context.observations:
+                    if item.tool == "calculate_intersections" and item.success:
+                        points = list(item.data.get("points") or [])
+                return AgentAction(
+                    tool="fit_viewport_to_points",
+                    arguments={"points": points, "padding": 0.4},
+                )
+            return AgentFinal(message="done")
+
+    monkeypatch.setattr(
+        "app.agent.runner.settings",
+        replace(settings, agent_mode="react", deepseek_api_key="sk-test", agent_max_steps=8),
+    )
+    result = asyncio.run(
+        AgentRunner(provider=AfterBootstrapProvider()).run(
+            user_message="画 y=x^2 和 y=x+2，求交点并放大到附近",
+            graph_state=GraphState(),
+            recent_messages=[],
+            request_id="req_bootstrap_plot",
+            session_id="session_test",
+        )
+    )
+    assert result.success is True
+    assert [item.normalized_expression for item in result.graph_state.equations] == ["x^2", "x+2"]
+    assert result.model_calls == 3
+
+
+def test_runner_blocks_incomplete_repeat_then_continues(monkeypatch):
+    from dataclasses import replace
+
+    from app.config import settings
+
+    class AddThenViewportProvider:
+        name = "local"
+
+        def reset(self):
+            self.n = 0
+
+        async def decide(self, context: DecisionContext):
+            self.n += 1
+            if self.n <= 3:
+                return AgentAction(
+                    tool="add_equations",
+                    arguments={"equations": [{"expression": "y = cos(x)"}]},
+                )
+            if self.n == 4:
+                return AgentAction(
+                    tool="set_viewport",
+                    arguments={"viewport": {"xMin": -5, "xMax": 5, "yMin": -5, "yMax": 5}},
+                )
+            return AgentFinal(message="done")
+
+    before = GraphState(
+        equations=[
+            EquationItem(id="eq_1", expression="y = x", normalized_expression="x", label="y = x"),
+        ]
+    )
+    monkeypatch.setattr(
+        "app.agent.runner.settings",
+        replace(settings, agent_mode="react", agent_max_repeated_actions=1, deepseek_api_key="", agent_max_steps=8),
+    )
+    result = asyncio.run(
+        AgentRunner(provider=AddThenViewportProvider()).run(
+            user_message="再添加 y=cos(x)，并把范围设为 -5 到 5",
+            graph_state=before,
+            recent_messages=[],
+            request_id="req_stage3_block_continue",
+            session_id="session_test",
+        )
+    )
+    assert result.success is True
+    assert [item.normalized_expression for item in result.graph_state.equations] == ["x", "cos(x)"]
+    assert result.graph_state.viewport.x_min == -5
+    assert any("重复调用已禁止" in (step.summary or "") for step in result.steps)
 
 
 @pytest.mark.persistence
