@@ -17,8 +17,9 @@ backend/uvmath/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+# 仅忽略仓库根目录的 Python 打包产物，勿忽略前端 src/lib/
+/lib/
+/lib64/
 parts/
 sdist/
 var/
