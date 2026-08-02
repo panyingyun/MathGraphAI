@@ -1,4 +1,5 @@
-# 前端多阶段构建：Vite 产物由 nginx 托管，/api 反代到 backend
+# 前端多阶段构建：Vite 产物由 nginx 托管，/api 反代到 backend:6108
+# Compose 将宿主 MATHGRAPH_PORT（默认 6106）映射到容器 80
 FROM node:22-alpine AS build
 
 WORKDIR /app

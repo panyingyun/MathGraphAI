@@ -15,7 +15,8 @@ Copy-Item .env.example .env
 uvicorn app.main:app --host 127.0.0.1 --port 6108 --reload
 ```
 
-`DEEPSEEK_API_KEY` 可以留空。留空时系统使用安全白名单本地解析器，常用绘图、追加方程、改色、删除、坐标范围和基础分析仍可使用。
+`DEEPSEEK_API_KEY` 可以留空。留空时系统使用安全白名单本地解析器，常用绘图、追加方程、改色、删除、坐标范围和基础分析仍可使用。  
+（仓库根目录也可用 `npm run dev:backend`，等价于上述 uvicorn 命令。）
 
 ### 前端
 
@@ -34,10 +35,16 @@ npm run dev
 docker compose up -d --build
 ```
 
-- 前端：`http://127.0.0.1:6106`（`MATHGRAPH_PORT` 可覆盖）
-- 后端：`http://127.0.0.1:6108`（`MATHGRAPH_BACKEND_PORT` 可覆盖；容器内仍为 8000）
+端口与本地开发一致：
 
-架构：`web`（nginx 静态前端 + `/api` 反代）→ `backend`（uvicorn）；SQLite 落在命名卷 `mathgraph-data`。
+| 服务 | 默认 URL | 环境变量覆盖 |
+| --- | --- | --- |
+| 前端（nginx → 容器 80） | `http://127.0.0.1:6106` | `MATHGRAPH_PORT` |
+| 后端（uvicorn 容器内 6108） | `http://127.0.0.1:6108` | `MATHGRAPH_BACKEND_PORT` |
+
+架构：`web`（nginx 静态前端 + `/api` 反代到 `backend:6108`）→ `backend`（`uvicorn app.main:app --host 0.0.0.0 --port 6108`）；SQLite 落在命名卷 `mathgraph-data`。
+
+健康检查：`GET http://127.0.0.1:6108/api/health`。
 
 ```powershell
 docker compose logs -f backend

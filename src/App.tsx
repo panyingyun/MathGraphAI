@@ -29,7 +29,7 @@ export default function App() {
         <h1>暂时无法连接工作台</h1>
         <p>{error ?? "请确认后端服务已经启动。"}</p>
         <button onClick={() => void loadSessions()}><RefreshCw size={17} />重新连接</button>
-        <code>cd backend &amp;&amp; uvicorn app.main:app --reload</code>
+        <code>cd backend &amp;&amp; uvicorn app.main:app --host 127.0.0.1 --port 6108 --reload</code>
       </div>
     );
   }

@@ -24,6 +24,8 @@
 
 ## 如何复跑
 
+本地联调端口：前端 `6106`、后端 `uvicorn … --port 6108`（Docker Compose 相同，见仓库根 `README.md`）。
+
 ```powershell
 # 后端
 cd backend

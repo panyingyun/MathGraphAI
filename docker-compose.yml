@@ -1,3 +1,5 @@
+# 端口与本地开发一致：前端 6106、后端 6108（容器内 uvicorn --port 6108）
+# 覆盖：MATHGRAPH_PORT / MATHGRAPH_BACKEND_PORT
 services:
   backend:
     build:
@@ -11,7 +13,7 @@ services:
     volumes:
       - mathgraph-data:/data
     ports:
-      - "${MATHGRAPH_BACKEND_PORT:-6108}:8000"
+      - "${MATHGRAPH_BACKEND_PORT:-6108}:6108"
     restart: unless-stopped
     healthcheck:
       test:
@@ -19,7 +21,7 @@ services:
           "CMD",
           "python",
           "-c",
-          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=3)",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:6108/api/health', timeout=3)",
         ]
       interval: 30s
       timeout: 5s
