@@ -21,7 +21,7 @@ from .adapter import action_to_command
 from .context_builder import truncate_observation
 from .executor import execute_command
 from .final_response import build_grounded_final_message
-from .goal_validator import validate_goal
+from .goal_validator import WRITE_TOOLS, validate_goal
 from .helpful_error import build_helpful_error_message
 from .providers import DecisionContext, DecisionProvider, LocalDecisionProvider, select_primary_provider
 from .request_spec import build_request_spec
@@ -372,6 +372,17 @@ class AgentRunner:
                     elif _looks_like_error_message(final_message):
                         success = False
                         error_code = error_code or "decision_error"
+                    elif (
+                        not request_spec.required_effects
+                        and not request_spec.mutation_expected
+                        and not (set(executed_tools) & WRITE_TOOLS)
+                    ):
+                        # 闲聊/无图意图被模型直接 final：转为引导失败，展示空会话同款示例。
+                        success = False
+                        error_code = error_code or "decision_error"
+                        final_message = (
+                            "没能理解这次请求。用自然语言描述，或直接输入一个关于 x 的方程。"
+                        )
                     else:
                         success = True
                     if success:

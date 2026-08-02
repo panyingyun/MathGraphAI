@@ -45,6 +45,15 @@ def test_request_spec_rejects_empty_rhs_and_dangerous_expression():
     assert dangerous.required_effects == []
 
 
+def test_request_spec_guides_chitchat_and_gibberish():
+    empty = GraphState()
+    for message in ("你好", "hello", "kkk", "ssss"):
+        spec = build_request_spec(message, empty)
+        assert spec.unsupported_request is True, message
+        assert "方程" in (spec.unsupported_reason or "")
+    assert build_request_spec("画 y=x", empty).unsupported_request is False
+
+
 def test_dynamic_tools_respect_preconditions_and_completed_calculation():
     empty = GraphState()
     plot_spec = build_request_spec("画 y=x", empty)

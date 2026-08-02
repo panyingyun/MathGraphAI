@@ -62,7 +62,14 @@ export function ChatPanel() {
             <div className="day-chip">今天</div>
             {session.messages.map((message, index) => {
               const isLast = index === session.messages.length - 1;
-              const canSuggest = isLast && message.role === "assistant" && message.status === "error";
+              const needsGuide =
+                message.role === "assistant"
+                && (
+                  message.status === "error"
+                  || message.content.includes("本轮未执行可验证的图像操作")
+                  || message.content.includes("没能理解这次请求")
+                );
+              const canSuggest = isLast && needsGuide;
               return (
                 <MessageItem
                   message={message}

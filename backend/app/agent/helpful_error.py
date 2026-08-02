@@ -1,12 +1,12 @@
-"""失败路径的产品化提示：说明原因 + 可模仿的示例说法。"""
+"""失败路径的产品化提示：说明原因；可点示例由前端空会话同款组件展示。"""
 
 from __future__ import annotations
 
-from typing import List, Optional, Sequence, Tuple
+from typing import List, Optional, Sequence
 
 
 _DEFAULT_TIPS = (
-    "画 y = x^2",
+    "帮我画 y = x^2，并解释它的图像特征",
     "比较 y = sin(x) 和 y = cos(x)",
     "绘制 y = 2*x + 1",
 )
@@ -17,11 +17,7 @@ _PARSE_TIPS = (
     "画 y = 2*x + 1",
 )
 
-_UNSUPPORTED_TIPS = (
-    "帮我画 y = x^2，并解释它的图像特征",
-    "比较 y = sin(x) 和 y = cos(x)",
-    "绘制 y = 2*x + 1",
-)
+_UNSUPPORTED_TIPS = _DEFAULT_TIPS
 
 _GOAL_TIPS = (
     "画 y = x^2",
@@ -41,11 +37,15 @@ def _tips_for(error_code: Optional[str], base_message: str) -> Sequence[str]:
     text = base_message or ""
     if code == "unsupported_request":
         return _UNSUPPORTED_TIPS
-    if code in {"expression_error", "invalid_arguments"} or "解析失败" in text or "方程" in text and "失败" in text:
+    if code in {"expression_error", "invalid_arguments"} or "解析失败" in text or (
+        "方程" in text and "失败" in text
+    ):
         return _PARSE_TIPS
     if code in {"goal_not_satisfied", "decision_error"} or "无法确定删除" in text or "无法理解" in text:
         if "删除" in text or "移除" in text:
             return _REMOVE_TIPS
+        if code == "decision_error" or "无法理解" in text:
+            return _DEFAULT_TIPS
         return _GOAL_TIPS
     return _DEFAULT_TIPS
 
@@ -54,21 +54,23 @@ def _lead_for(error_code: Optional[str], base_message: str) -> str:
     code = (error_code or "").lower()
     text = (base_message or "").strip()
     if code == "unsupported_request":
-        return "当前只支持函数图像相关请求，没法处理这类问题。"
+        return "当前只支持函数图像相关请求。用自然语言描述，或直接输入一个关于 x 的方程。"
     if code == "expression_error" or "解析失败" in text:
         first = text.split("。")[0].strip() if text else ""
-        if first and "解析" in first:
-            return first + "。"
-        return "没能解析出有效的函数表达式。"
+        if first and ("解析" in first or "方程" in first or "不允许" in first or "右侧为空" in first):
+            return first + "。用自然语言描述，或直接输入一个关于 x 的方程。"
+        return "没能解析出有效的函数表达式。用自然语言描述，或直接输入一个关于 x 的方程。"
     if code == "goal_not_satisfied":
-        return text or "没能完成全部请求，已保留原图。"
+        base = text or "没能完成全部请求，已保留原图。"
+        return base if "方程" in base or "保留" in base else f"{base.rstrip('。')}。"
     if code in {"agent_timeout", "model_call_limit", "max_steps_exceeded"}:
         return text or "处理时间过长，已停止并保留原图。"
     if code == "cancelled":
         return text or "请求已取消，未提交任何图像更改。"
+    if code == "decision_error" or "无法理解" in text:
+        return "没能理解这次请求。用自然语言描述，或直接输入一个关于 x 的方程。"
     if text:
-        # 保留本地规划器等已写好的首句，去掉可能重复的「例如可以输入」。
-        first = text.split("例如可以输入")[0].strip(" 。")
+        first = text.split("例如可以输入")[0].split("你可以试试")[0].strip(" 。\n")
         return (first + "。") if first else "没能完成这次请求，已保留原图。"
     return "没能完成这次请求，已保留原图。"
 
@@ -79,19 +81,16 @@ def build_helpful_error_message(
     *,
     cancelled: bool = False,
 ) -> str:
-    """生成失败回复：原因说明 + 可点击/可模仿的示例说法。"""
+    """生成失败回复文案（仅说明原因；示例按钮由前端渲染）。"""
 
     if cancelled or (error_code or "").lower() == "cancelled":
         return (base_message or "").strip() or "请求已取消，未提交任何图像更改。"
 
     text = (base_message or "").strip()
     if "你可以试试" in text:
-        return text
+        return text.split("你可以试试")[0].strip()
 
-    lead = _lead_for(error_code, text)
-    tips = _tips_for(error_code, text)
-    tip_lines = "\n".join(f"· {item}" for item in tips)
-    return f"{lead}\n\n你可以试试：\n{tip_lines}"
+    return _lead_for(error_code, text)
 
 
 def suggestion_prompts(error_code: Optional[str] = None, base_message: str = "") -> List[str]:

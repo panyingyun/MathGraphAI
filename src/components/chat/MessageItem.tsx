@@ -1,4 +1,4 @@
-import { AlertCircle, Bot, CheckCircle2 } from "lucide-react";
+import { Bot, CheckCircle2 } from "lucide-react";
 import { InlineMath } from "react-katex";
 import type { Message } from "../../types/chat";
 import { PromptSuggestions, suggestionKindFromError } from "./PromptSuggestions";
@@ -10,7 +10,13 @@ function withMath(content: string) {
   ) : part);
 }
 
-function formatErrorContent(content: string) {
+/** 气泡只保留说明句；「你可以试试」列表改由下方按钮展示。 */
+function guideLead(content: string) {
+  const lead = content.split(/\n\s*你可以试试[：:]/)[0].trim();
+  return lead || content;
+}
+
+function formatMultiline(content: string) {
   return content.split("\n").map((line, index) => (
     <span key={`${index}-${line}`}>
       {index > 0 && <br />}
@@ -27,13 +33,24 @@ export function MessageItem({
   onSelectPrompt?: (prompt: string) => void;
 }) {
   const isUser = message.role === "user";
-  const isError = message.status === "error";
-  const showSuggestions = Boolean(isError && onSelectPrompt);
+  const noopGuideText = message.content.includes("本轮未执行可验证的图像操作");
+  // 引导态：失败回复，或成功但未做任何可验证图操作（旧路径/模型空 final）
+  const treatAsGuide = !isUser && (message.status === "error" || noopGuideText);
+  const showSuggestions = Boolean(treatAsGuide && onSelectPrompt);
   const suggestionKind = suggestionKindFromError(message.structuredResult?.error, message.content);
+  const bubbleText = treatAsGuide
+    ? (noopGuideText && message.status !== "error"
+      ? "没能理解这次请求。用自然语言描述，或直接输入一个关于 x 的方程。"
+      : guideLead(message.content))
+    : message.content;
 
   return (
-    <article className={`message ${isUser ? "user-message" : "assistant-message"} ${isError ? "message-error" : ""}`}>
-      {!isUser && <div className="assistant-avatar">{isError ? <AlertCircle size={16} /> : <Bot size={16} />}</div>}
+    <article className={`message ${isUser ? "user-message" : "assistant-message"}${treatAsGuide ? " message-guide" : ""}`}>
+      {!isUser && (
+        <div className="assistant-avatar">
+          <Bot size={16} />
+        </div>
+      )}
       <div className="message-content">
         {!isUser && (
           <div className="message-author">
@@ -45,18 +62,13 @@ export function MessageItem({
             )}
           </div>
         )}
-        <div className="message-bubble">{isError ? formatErrorContent(message.content) : withMath(message.content)}</div>
+        <div className="message-bubble">{treatAsGuide ? formatMultiline(bubbleText) : withMath(bubbleText)}</div>
         {showSuggestions && (
-          <div className="error-suggestions">
-            <div className="error-suggestions-label">点选一条合法示例继续</div>
-            <PromptSuggestions
-              kind={suggestionKind}
-              compact
-              onSelect={onSelectPrompt!}
-            />
+          <div className="guide-suggestions">
+            <PromptSuggestions kind={suggestionKind} onSelect={onSelectPrompt!} />
           </div>
         )}
-        {!isUser && message.structuredResult?.analysis && (
+        {!isUser && !treatAsGuide && message.structuredResult?.analysis && (
           <div className="analysis-card">
             <div className="analysis-title"><CheckCircle2 size={15} />图像特征</div>
             {message.structuredResult.analysis.functionType && <div><span>函数类型</span><strong>{message.structuredResult.analysis.functionType}</strong></div>}

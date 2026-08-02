@@ -11,24 +11,24 @@ from dataclasses import replace
 from app.config import settings
 
 
-def test_unsupported_message_includes_try_examples():
+def test_unsupported_message_is_neutral_guide():
     text = build_helpful_error_message(
         "当前只支持函数图像相关请求，无法处理该问题。",
         "unsupported_request",
     )
-    assert "没法处理这类问题" in text or "只支持函数图像" in text
-    assert "你可以试试" in text
-    assert "y = x^2" in text
+    assert "只支持函数图像" in text
+    assert "你可以试试" not in text
+    assert any("x^2" in item for item in suggestion_prompts("unsupported_request"))
 
 
-def test_parse_failure_keeps_reason_and_adds_tips():
+def test_parse_failure_keeps_reason_without_inline_tips():
     text = build_helpful_error_message(
         "方程解析失败：未知符号。例如可以输入 y = x^2 或 y = sin(x)。",
         "expression_error",
     )
     assert "解析失败" in text
-    assert "你可以试试" in text
-    assert "y = sin(x)" in text
+    assert "你可以试试" not in text
+    assert any("sin" in item for item in suggestion_prompts("expression_error"))
 
 
 def test_cancelled_skips_tips():
@@ -38,6 +38,31 @@ def test_cancelled_skips_tips():
 
 def test_suggestion_prompts_by_code():
     assert any("sin" in item for item in suggestion_prompts("unsupported_request"))
+
+
+def test_runner_guides_chitchat_without_model(monkeypatch):
+    class ShouldNotDecide:
+        name = "deepseek"
+
+        def reset(self):
+            return
+
+        async def decide(self, _context: DecisionContext):
+            raise AssertionError("chitchat should not call decide")
+
+    monkeypatch.setattr("app.agent.runner.settings", replace(settings, agent_mode="react"))
+    result = asyncio.run(
+        AgentRunner(provider=ShouldNotDecide()).run(
+            user_message="你好",
+            graph_state=GraphState(),
+            recent_messages=[],
+            request_id="req_chitchat_guide",
+            session_id="session_test",
+        )
+    )
+    assert result.success is False
+    assert result.error_code == "unsupported_request"
+    assert "没能理解" in result.final_message or "方程" in result.final_message
 
 
 def test_runner_rejects_empty_rhs_and_dangerous_upfront(monkeypatch):
@@ -96,8 +121,8 @@ def test_runner_unsupported_reply_includes_tips(monkeypatch):
     )
     assert result.success is False
     assert result.error_code == "unsupported_request"
-    assert "你可以试试" in result.final_message
-    assert "y = x^2" in result.final_message
+    assert "只支持函数图像" in result.final_message
+    assert "你可以试试" not in result.final_message
 
 
 def test_runner_goal_failure_includes_tips(monkeypatch):
@@ -121,4 +146,5 @@ def test_runner_goal_failure_includes_tips(monkeypatch):
         )
     )
     assert result.success is False
-    assert "你可以试试" in result.final_message
+    assert result.final_message
+    assert "你可以试试" not in result.final_message

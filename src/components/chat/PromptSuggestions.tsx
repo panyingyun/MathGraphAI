@@ -25,9 +25,9 @@ const SUGGESTIONS: Record<SuggestionKind, Suggestion[]> = {
     { icon: DraftingCompass, text: "绘制直线", prompt: "绘制 y = 2*x + 1" },
   ],
   goal: [
-    { icon: ChartNoAxesColumnIncreasing, text: "画抛物线", prompt: "画 y = x^2" },
-    { icon: Waves, text: "再添加正弦", prompt: "再添加 y = sin(x)" },
-    { icon: DraftingCompass, text: "设置坐标范围", prompt: "把范围设为 -5 到 5" },
+    { icon: ChartNoAxesColumnIncreasing, text: "画一条抛物线", prompt: "帮我画 y = x^2，并解释它的图像特征" },
+    { icon: Waves, text: "比较正弦与余弦", prompt: "比较 y = sin(x) 和 y = cos(x)" },
+    { icon: DraftingCompass, text: "绘制 y = 2x + 1", prompt: "绘制 y = 2*x + 1" },
   ],
   remove: [
     { icon: ChartNoAxesColumnIncreasing, text: "先画一条曲线", prompt: "画 y = x^2" },
@@ -49,7 +49,10 @@ export function suggestionKindFromError(
   if ((code === "goal_not_satisfied" || code === "decision_error") && /删除|移除|去掉/.test(text)) {
     return "remove";
   }
-  if (code === "goal_not_satisfied" || code === "decision_error" || text.includes("无法理解")) {
+  if (code === "decision_error" || text.includes("无法理解") || text.includes("没能理解")) {
+    return "default";
+  }
+  if (code === "goal_not_satisfied") {
     return "goal";
   }
   return "default";

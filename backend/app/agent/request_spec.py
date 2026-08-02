@@ -59,6 +59,12 @@ _DANGEROUS_EXPR_PATTERNS = (
     re.compile(r"\bopen\s*\("),
 )
 _EMPTY_RHS_PATTERN = re.compile(r"y\s*=\s*(?:$|[,，。；;！？?\s])", re.IGNORECASE)
+_CHITCHAT_PATTERNS = (
+    re.compile(r"^(你好|您好|hello|hi|hey|哈喽|嗨)[\s!！.。?？]*$", re.IGNORECASE),
+    re.compile(r"^(thanks|thank you|谢谢|感谢|拜拜|再见|bye)[\s!！.。?？]*$", re.IGNORECASE),
+    re.compile(r"^(哈哈+|呵呵+|嗯+|好的|好吧|哦|喔|啊)[\s!！.。?？]*$"),
+)
+_GUIDE_HINT = "用自然语言描述，或直接输入一个关于 x 的方程。"
 
 
 def _contains_any(text: str, words) -> bool:
@@ -66,13 +72,24 @@ def _contains_any(text: str, words) -> bool:
 
 
 def _detect_unsupported_request(text: str, *, has_graph_intent: bool) -> Optional[str]:
-    """识别明显越界请求；有绘图/改图意图时不误杀。"""
+    """识别闲聊、乱码与明显越界请求；有绘图/改图意图时不误杀。"""
 
     if has_graph_intent:
         return None
+    stripped = text.strip()
     for pattern in _OUT_OF_SCOPE_PATTERNS:
-        if pattern.search(text):
-            return "当前只支持函数图像相关请求，无法处理该问题。"
+        if pattern.search(stripped):
+            return f"当前只支持函数图像相关请求。{_GUIDE_HINT}"
+    for pattern in _CHITCHAT_PATTERNS:
+        if pattern.match(stripped):
+            return f"没能理解这次请求。{_GUIDE_HINT}"
+    # 短英文/数字乱码（如 hello、kkk、ssss），且无数学关键词。
+    if (
+        len(stripped) <= 32
+        and re.fullmatch(r"[a-zA-Z0-9\s]+", stripped)
+        and not re.search(r"\b(sin|cos|tan|log|ln|exp|sqrt|plot|graph|abs)\b", stripped, re.IGNORECASE)
+    ):
+        return f"没能理解这次请求。{_GUIDE_HINT}"
     return None
 
 
