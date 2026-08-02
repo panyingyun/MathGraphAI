@@ -22,6 +22,7 @@
       .file-small { font:500 10px "JetBrains Mono", Consolas, monospace; fill:#667d98; }
       .body { font-size:11px; fill:#647a94; }
       .caps { font-size:10px; font-weight:750; letter-spacing:.09em; fill:#38689f; }
+      .core-tag { font-size:9px; font-weight:800; letter-spacing:.08em; fill:#8a5a00; }
       .white { fill:#fff; }
       .flow { fill:none; stroke:#2874d8; stroke-width:2.2; marker-end:url(#arrowB); }
       .flow-ai { fill:none; stroke:#7656dc; stroke-width:2.2; marker-end:url(#arrowP); }
@@ -34,7 +35,7 @@
   <circle cx="1690" cy="60" r="260" fill="#cce9ff" opacity=".24"/><circle cx="30" cy="1250" r="280" fill="#ded8ff" opacity=".20"/>
 
   <!-- header -->
-  <g transform="translate(60 38)"><rect width="56" height="56" rx="17" fill="url(#brand)" filter="url(#soft)"/><path d="M12 40c8-21 15-24 21-6 4 12 9 3 13-9M13 37c10-7 20-4 31-13" fill="none" stroke="#fff" stroke-width="3.3" stroke-linecap="round"/><path d="m42 9 1.5 5.2 5.2 1.5-5.2 1.5-1.5 5.2-1.5-5.2-5.2-1.5 5.2-1.5z" fill="#fff"/><text x="76" y="25" class="title">MathGraph AI 代码架构图</text><text x="76" y="50" class="subtitle">从 React 入口到 FastAPI、统一 Agent 内核、确定性工具、数据模型与工程质量的源码地图</text></g>
+  <g transform="translate(60 38)"><rect width="56" height="56" rx="17" fill="url(#brand)" filter="url(#soft)"/><path d="M12 40c8-21 15-24 21-6 4 12 9 3 13-9M13 37c10-7 20-4 31-13" fill="none" stroke="#fff" stroke-width="3.3" stroke-linecap="round"/><path d="m42 9 1.5 5.2 5.2 1.5-5.2 1.5-1.5 5.2-1.5-5.2-5.2-1.5 5.2-1.5z" fill="#fff"/><text x="76" y="25" class="title">MathGraph AI 代码架构图</text><text x="76" y="50" class="subtitle">frontend/ 与 backend/ 分层源码、统一 Agent 内核、确定性数学工具、数据模型及部署质量链路</text></g>
   <g transform="translate(1325 51)"><rect width="128" height="30" rx="15" fill="#e8f2ff" stroke="#bdd6f7"/><circle cx="17" cy="15" r="5" fill="#2874d8"/><text x="30" y="19" class="body">前端与契约</text><rect x="138" width="128" height="30" rx="15" fill="#f0eaff" stroke="#d7c8f6"/><circle cx="155" cy="15" r="5" fill="#7656dc"/><text x="168" y="19" class="body">Agent 与工具</text><rect x="276" width="128" height="30" rx="15" fill="#e5f7f1" stroke="#b9e1d5"/><circle cx="293" cy="15" r="5" fill="#089679"/><text x="306" y="19" class="body">数据与测试</text></g>
 
   <!-- reading order -->
@@ -48,6 +49,7 @@
     <rect x="888" width="177" height="42" rx="21" fill="#edf8f5" stroke="#bedfd5"/><text x="977" y="26" text-anchor="middle" class="file">goal_validator.py</text><path d="M1065 21h45" class="flow-data"/>
     <rect x="1110" width="205" height="42" rx="21" fill="#edf8f5" stroke="#bedfd5"/><text x="1213" y="26" text-anchor="middle" class="file">session_service.py</text>
   </g>
+  <g transform="translate(1592 138)"><rect width="116" height="38" rx="19" fill="#fff4d7" stroke="#e7c66b"/><text x="58" y="24" text-anchor="middle" class="core-tag">CORE 核心模块</text></g>
 
   <!-- four main panels -->
   <g filter="url(#shadow)">
@@ -60,10 +62,10 @@
   <rect x="516" y="230" width="350" height="67" rx="24" fill="#e6f6ff"/><rect x="516" y="273" width="350" height="24" fill="#e6f6ff"/>
   <rect x="892" y="230" width="528" height="67" rx="24" fill="#f0ebff"/><rect x="892" y="273" width="528" height="24" fill="#f0ebff"/>
   <rect x="1446" y="230" width="294" height="67" rx="24" fill="#e5f7f1"/><rect x="1446" y="273" width="294" height="24" fill="#e5f7f1"/>
-  <circle cx="91" cy="263" r="13" fill="#2874d8"/><text x="114" y="261" class="panel">前端应用</text><text x="114" y="281" class="panel-en">REACT / VITE / TYPESCRIPT</text>
-  <circle cx="547" cy="263" r="13" fill="#00a4cf"/><text x="570" y="261" class="panel">API 与服务</text><text x="570" y="281" class="panel-en">FASTAPI / PYDANTIC</text>
-  <circle cx="923" cy="263" r="13" fill="#7656dc"/><text x="946" y="261" class="panel">Agent 内核与领域工具</text><text x="946" y="281" class="panel-en">BOUNDED REACT / DETERMINISTIC EXECUTION</text>
-  <circle cx="1477" cy="263" r="13" fill="#089679"/><text x="1500" y="261" class="panel">数据与工程</text><text x="1500" y="281" class="panel-en">PERSISTENCE / QUALITY</text>
+  <circle cx="91" cy="263" r="13" fill="#2874d8"/><text x="114" y="261" class="panel">前端应用</text><text x="114" y="281" class="panel-en">frontend/src/</text>
+  <circle cx="547" cy="263" r="13" fill="#00a4cf"/><text x="570" y="261" class="panel">API 与服务</text><text x="570" y="281" class="panel-en">backend/app/</text>
+  <circle cx="923" cy="263" r="13" fill="#7656dc"/><text x="946" y="261" class="panel">Agent 内核与领域工具</text><text x="946" y="281" class="panel-en">backend/app/agent/ + backend/app/utils/</text>
+  <circle cx="1477" cy="263" r="13" fill="#089679"/><text x="1500" y="261" class="panel">数据与工程</text><text x="1500" y="281" class="panel-en">DATA / DEPLOY / QUALITY</text>
 
   <!-- frontend nodes -->
   <g filter="url(#soft)">
@@ -73,14 +75,16 @@
     <rect x="84" y="858" width="382" height="130" rx="15" fill="#f8fbff" stroke="#c9d9ed"/>
     <rect x="84" y="1012" width="382" height="128" rx="15" fill="#edf4ff" stroke="#b7cfea"/>
   </g>
-  <text x="107" y="353" class="caps">BOOTSTRAP &amp; COMPOSITION</text><text x="107" y="380" class="node">应用入口与三栏布局</text><text x="107" y="404" class="file">src/main.tsx  →  src/App.tsx</text><text x="107" y="421" class="body">初始化会话并组合导航、对话和图像工作区</text>
+  <text x="107" y="353" class="caps">BOOTSTRAP &amp; COMPOSITION</text><text x="107" y="380" class="node">应用入口与三栏布局</text><text x="107" y="404" class="file">frontend/src/main.tsx → App.tsx</text><text x="107" y="421" class="body">初始化会话并组合导航、对话和图像工作区</text>
   <text x="107" y="481" class="caps">COMPONENTS</text>
-  <text x="107" y="510" class="file">components/layout/</text><text x="107" y="531" class="file-small">BrandMark · TopBar · SidebarSessions</text>
-  <text x="107" y="563" class="file">components/chat/</text><text x="107" y="584" class="file-small">ChatPanel · ChatInput · MessageItem</text><text x="107" y="603" class="file-small">PromptSuggestions · AgentProgress</text>
-  <text x="107" y="630" class="file">components/graph/</text><text x="107" y="648" class="file-small">ResultPanel · GraphViewer · EquationList</text><text x="107" y="661" class="file-small">ViewportSettings · GraphAnalysisPanel</text>
-  <text x="107" y="717" class="caps">STATE &amp; API CLIENT</text><text x="107" y="746" class="node">Zustand 单一应用状态</text><text x="107" y="770" class="file">stores/appStore.ts</text><text x="107" y="793" class="body">会话 / 消息 / GraphState / Agent 阶段 / 取消</text><text x="107" y="816" class="file">services/api.ts  · REST + SSE parser</text>
-  <text x="107" y="887" class="caps">SHARED TYPES</text><text x="107" y="916" class="file">types/agent.ts · chat.ts · graph.ts · session.ts</text><text x="107" y="942" class="body">AgentPhase · StepSummary · ChatResponse</text><text x="107" y="965" class="body">Session · Message · GraphState · EquationItem · Viewport</text>
-  <text x="107" y="1041" class="caps">CLIENT MATH &amp; RENDERING</text><text x="107" y="1070" class="file">utils/graphSampler.ts · graphMarkers.ts</text><text x="107" y="1095" class="body">math.js AST 安全采样 · Plotly 图像 · KaTeX 公式</text><text x="107" y="1118" class="file-small">graphSampler.test.ts · graphMarkers.test.ts</text>
+  <text x="107" y="510" class="file">frontend/src/components/layout/</text><text x="107" y="531" class="file-small">BrandMark · TopBar · SidebarSessions</text>
+  <text x="107" y="563" class="file">frontend/src/components/chat/</text><text x="107" y="584" class="file-small">ChatPanel · ChatInput · MessageItem</text><text x="107" y="603" class="file-small">PromptSuggestions · AgentProgress</text>
+  <text x="107" y="630" class="file">frontend/src/components/graph/</text><text x="107" y="648" class="file-small">ResultPanel · GraphViewer · EquationList</text><text x="107" y="661" class="file-small">ViewportSettings · GraphAnalysisPanel</text>
+  <text x="107" y="717" class="caps">STATE &amp; API CLIENT</text><text x="107" y="746" class="node">Zustand 单一应用状态</text><text x="107" y="770" class="file">frontend/src/stores/appStore.ts</text><text x="107" y="793" class="body">会话 / 消息 / GraphState / Agent 阶段 / 取消</text><text x="107" y="816" class="file">frontend/src/services/api.ts · REST + SSE</text>
+  <g transform="translate(384 703)"><rect width="58" height="21" rx="10.5" fill="#fff4d7" stroke="#e7c66b"/><text x="29" y="14" text-anchor="middle" class="core-tag">CORE</text></g>
+  <text x="107" y="887" class="caps">SHARED TYPES</text><text x="107" y="916" class="file">frontend/src/types/ agent · chat · graph · session</text><text x="107" y="942" class="body">AgentPhase · StepSummary · ChatResponse</text><text x="107" y="965" class="body">Session · Message · GraphState · EquationItem · Viewport</text>
+  <text x="107" y="1037" class="caps">CLIENT MATH &amp; RENDERING</text><text x="107" y="1063" class="file">frontend/src/utils/graphSampler.ts · graphMarkers.ts</text><text x="107" y="1084" class="file">frontend/src/utils/trigAxis.ts</text><text x="107" y="1105" class="body">AST 安全采样 · π 刻度 · tan 渐近线断点</text><text x="107" y="1126" class="file-small">frontend/src/lib/plotly.ts · katexCss.ts · 单元测试</text>
+  <g transform="translate(384 1027)"><rect width="58" height="21" rx="10.5" fill="#fff4d7" stroke="#e7c66b"/><text x="29" y="14" text-anchor="middle" class="core-tag">CORE</text></g>
 
   <!-- API/service nodes -->
   <g filter="url(#soft)">
@@ -90,11 +94,13 @@
     <rect x="540" y="836" width="302" height="136" rx="15" fill="#f7fbff" stroke="#c8d9ed"/>
     <rect x="540" y="996" width="302" height="144" rx="15" fill="#f0faff" stroke="#b9ddec"/>
   </g>
-  <text x="563" y="353" class="caps">APPLICATION ENTRY</text><text x="563" y="382" class="file">app/main.py · config.py · database.py</text><text x="563" y="405" class="body">生命周期 / CORS / 设置 / Session 依赖</text>
-  <text x="563" y="477" class="caps">HTTP ROUTERS</text><text x="563" y="506" class="file">routers/chat.py</text><text x="563" y="529" class="body">幂等 · revision · SSE · cancel · 事务收口</text><text x="563" y="559" class="file">routers/sessions.py</text><text x="563" y="582" class="body">会话 CRUD · 消息分页 · 确定性 commands</text><text x="563" y="613" class="file-small">POST /chat · /chat/cancel · /sessions/*</text>
-  <text x="563" y="697" class="caps">API SCHEMAS</text><text x="563" y="726" class="file">schemas/chat.py · session.py · graph.py</text><text x="563" y="748" class="file">schemas/agent.py · base.py</text><text x="563" y="775" class="body">请求/响应、SSE 阶段、工具动作、目标与观察契约</text><text x="563" y="798" class="body">Pydantic v2 · camelCase alias</text>
-  <text x="563" y="865" class="caps">DOMAIN SERVICES</text><text x="563" y="894" class="file">services/session_service.py</text><text x="563" y="916" class="file">services/graph_service.py</text><text x="563" y="938" class="file">services/local_parser.py</text><text x="563" y="960" class="body">会话持久化、直接改图、规则解析</text>
-  <text x="563" y="1025" class="caps">MODEL ACCESS &amp; ERRORS</text><text x="563" y="1054" class="file">services/deepseek_service.py</text><text x="563" y="1076" class="file">services/model_errors.py</text><text x="563" y="1098" class="body">唯一 DeepSeek HTTP 出口 · 结构化错误分类</text><text x="563" y="1121" class="file-small">utils/json_repair.py · logging_utils.py</text>
+  <text x="563" y="353" class="caps">APPLICATION ENTRY</text><text x="563" y="382" class="file">backend/app/main.py · __main__.py</text><text x="563" y="405" class="body">config.py · database.py · 生命周期 / CORS / Session</text>
+  <text x="563" y="477" class="caps">HTTP ROUTERS</text><text x="563" y="506" class="file">backend/app/routers/chat.py</text><text x="563" y="529" class="body">幂等 · revision · SSE · cancel · 事务收口</text><text x="563" y="559" class="file">backend/app/routers/sessions.py</text><text x="563" y="582" class="body">会话 CRUD · 消息分页 · 确定性 commands</text><text x="563" y="613" class="file-small">POST /chat · /chat/cancel · /sessions/*</text>
+  <g transform="translate(760 463)"><rect width="58" height="21" rx="10.5" fill="#fff4d7" stroke="#e7c66b"/><text x="29" y="14" text-anchor="middle" class="core-tag">CORE</text></g>
+  <text x="563" y="697" class="caps">API SCHEMAS</text><text x="563" y="726" class="file">backend/app/schemas/chat.py · graph.py</text><text x="563" y="748" class="file">session.py · agent.py · base.py</text><text x="563" y="775" class="body">请求/响应、SSE 阶段、工具动作、目标与观察契约</text><text x="563" y="798" class="body">Pydantic v2 · camelCase alias</text>
+  <text x="563" y="865" class="caps">DOMAIN SERVICES</text><text x="563" y="894" class="file">backend/app/services/session_service.py</text><text x="563" y="916" class="file">graph_service.py · local_parser.py</text><text x="563" y="938" class="body">会话与 Agent 轨迹持久化</text><text x="563" y="960" class="body">直接改图、规则解析与增量响应组装</text>
+  <g transform="translate(760 851)"><rect width="58" height="21" rx="10.5" fill="#fff4d7" stroke="#e7c66b"/><text x="29" y="14" text-anchor="middle" class="core-tag">CORE</text></g>
+  <text x="563" y="1025" class="caps">MODEL ACCESS &amp; ERRORS</text><text x="563" y="1054" class="file">backend/app/services/deepseek_service.py</text><text x="563" y="1076" class="file">model_errors.py · utils/json_repair.py</text><text x="563" y="1098" class="body">唯一 DeepSeek HTTP 出口 · 结构化错误分类</text><text x="563" y="1121" class="file-small">utils/logging_utils.py · prompt_builder.py</text>
 
   <!-- agent inner -->
   <g filter="url(#soft)">
@@ -106,13 +112,18 @@
     <rect x="1164" y="780" width="232" height="170" rx="15" fill="#f2f7ff" stroke="#c2d5ed"/>
     <rect x="916" y="974" width="480" height="166" rx="15" fill="#f0f9f6" stroke="#bcded4"/>
   </g>
-  <text x="939" y="353" class="caps">ORCHESTRATOR</text><text x="939" y="382" class="file">agent/runner.py · working_state.py · cancel_registry.py</text><text x="939" y="404" class="body">有界循环、工作副本、阶段/步骤事件、超时、取消、模式提交策略</text>
-  <text x="939" y="467" class="caps">INTENT &amp; CONTEXT</text><text x="939" y="496" class="file">request_spec.py</text><text x="939" y="518" class="file">context_builder.py</text><text x="939" y="540" class="file">context_budget.py</text><text x="939" y="562" class="file">tool_policy.py</text><text x="939" y="584" class="body">目标契约 · 消息预算 · 动态工具集</text>
+  <text x="939" y="353" class="caps">ORCHESTRATOR</text><text x="939" y="382" class="file">agent/runner.py · working_state.py · cancel_registry.py</text><text x="939" y="404" class="body">30 步有界循环、工作副本、SSE 事件、超时、取消与三模式提交策略</text>
+  <g transform="translate(1314 339)"><rect width="58" height="21" rx="10.5" fill="#fff4d7" stroke="#e7c66b"/><text x="29" y="14" text-anchor="middle" class="core-tag">CORE</text></g>
+  <text x="939" y="467" class="caps">INTENT &amp; CONTEXT</text><text x="939" y="496" class="file">request_spec.py</text><text x="939" y="518" class="file">context_builder.py</text><text x="939" y="540" class="file">context_budget.py</text><text x="939" y="562" class="file">tool_policy.py</text><text x="939" y="584" class="body">目标契约 · 越界前置拒绝 · 可选历史 · 动态工具集</text>
+  <g transform="translate(1066 453)"><rect width="58" height="21" rx="10.5" fill="#fff4d7" stroke="#e7c66b"/><text x="29" y="14" text-anchor="middle" class="core-tag">CORE</text></g>
   <text x="1187" y="467" class="caps">DECISION LAYER</text><text x="1187" y="496" class="file">providers.py</text><text x="1187" y="518" class="file">local_planner.py</text><text x="1187" y="540" class="file">decision_parser.py</text><text x="1187" y="562" class="file">adapter.py · shadow.py</text><text x="1187" y="584" class="body">DeepSeek / Local · JSON / tool_calls</text>
-  <text x="939" y="653" class="caps">DETERMINISTIC EXECUTION</text><text x="939" y="682" class="file">executor.py · registry.py · policy.py · tool_schemas.py</text><text x="939" y="706" class="body">Action → Command 适配；精确 Schema；工具白名单；前后置条件；失败回滚工作副本</text><text x="939" y="734" class="file-small">step_summaries.py · helpful_error.py</text>
+  <text x="939" y="653" class="caps">DETERMINISTIC EXECUTION</text><text x="939" y="682" class="file">executor.py · registry.py · policy.py · tool_schemas.py</text><text x="939" y="706" class="body">Action → Command；精确 Schema；白名单与前后置条件；隔离副本执行，失败不污染状态</text><text x="939" y="734" class="file-small">adapter.py · step_summaries.py · helpful_error.py</text>
+  <g transform="translate(1314 639)"><rect width="58" height="21" rx="10.5" fill="#fff4d7" stroke="#e7c66b"/><text x="29" y="14" text-anchor="middle" class="core-tag">CORE</text></g>
   <text x="939" y="809" class="caps">GRAPH TOOLS</text><text x="939" y="838" class="file">tools/graph_tools.py</text><text x="939" y="860" class="file">tools/viewport_tools.py</text><text x="939" y="882" class="body">plot / add / update / remove</text><text x="939" y="904" class="body">settings / markers / viewport / fit</text><text x="939" y="932" class="file-small">tools/__init__.py → TOOL_REGISTRY</text>
-  <text x="1187" y="809" class="caps">ANALYSIS TOOLS</text><text x="1187" y="838" class="file">tools/analysis_tools.py</text><text x="1187" y="860" class="file">utils/numeric_analysis.py</text><text x="1187" y="882" class="body">intersections / zeros / extrema</text><text x="1187" y="904" class="body">compare / analyze / sample / explain</text><text x="1187" y="932" class="file-small">utils/equation_validator.py · graph_limits.py</text>
+  <text x="1187" y="809" class="caps">ANALYSIS TOOLS</text><text x="1187" y="838" class="file">tools/analysis_tools.py</text><text x="1187" y="860" class="file">utils/numeric_analysis.py</text><text x="1187" y="882" class="body">intersections / zeros / extrema 细化</text><text x="1187" y="904" class="body">compare / analyze / sample / fit viewport</text><text x="1187" y="932" class="file-small">equation_validator.py · graph_limits.py</text>
+  <g transform="translate(1314 795)"><rect width="58" height="21" rx="10.5" fill="#fff4d7" stroke="#e7c66b"/><text x="29" y="14" text-anchor="middle" class="core-tag">CORE</text></g>
   <text x="939" y="1003" class="caps">VALIDATION &amp; RESPONSE</text><text x="939" y="1032" class="file">goal_validator.py · final_response.py</text><text x="939" y="1055" class="body">Final Gate 验证 required effects / observations / 状态差异</text><text x="939" y="1078" class="body">Grounded final message 仅引用事实 Observation</text><text x="939" y="1108" class="file">accuracy_compare.py</text><text x="939" y="1130" class="body">复用真实 Executor + Goal Gate 判定评测通过</text>
+  <g transform="translate(1314 989)"><rect width="58" height="21" rx="10.5" fill="#fff4d7" stroke="#e7c66b"/><text x="29" y="14" text-anchor="middle" class="core-tag">CORE</text></g>
 
   <!-- data / engineering -->
   <g filter="url(#soft)">
@@ -124,9 +135,9 @@
   </g>
   <text x="1493" y="353" class="caps">ORM MODELS</text><text x="1493" y="382" class="file">models/session.py</text><text x="1493" y="404" class="file">models/message.py</text><text x="1493" y="426" class="file">models/agent.py</text><text x="1493" y="447" class="body">sessions · messages</text><text x="1493" y="460" class="body">agent_runs · agent_steps</text>
   <text x="1493" y="517" class="caps">DATABASE</text><text x="1493" y="546" class="node">SQLite / SQLAlchemy 2</text><text x="1493" y="570" class="file">app/database.py</text><text x="1493" y="592" class="file">app/migrations/</text><text x="1493" y="616" class="body">GraphState、revision、摘要与运行轨迹</text>
-  <text x="1493" y="687" class="caps">RUNTIME CONFIG</text><text x="1493" y="716" class="file">backend/.env.example</text><text x="1493" y="738" class="file">requirements.txt</text><text x="1493" y="760" class="file">package.json · vite.config.ts</text><text x="1493" y="784" class="body">Agent 模式、限制、模型、数据库 URL</text>
-  <text x="1493" y="856" class="caps">EVALUATION SCRIPTS</text><text x="1493" y="885" class="file">scripts/evaluate_react.py</text><text x="1493" y="907" class="file">scripts/aggregate_metrics.py</text><text x="1493" y="929" class="file">scripts/measure_baseline.py</text><text x="1493" y="953" class="body">准确率、稳定性、运行指标与发布判定</text>
-  <text x="1493" y="1028" class="caps">TEST &amp; RELEASE</text><text x="1493" y="1057" class="file">backend/tests/</text><text x="1493" y="1079" class="file">vitest.config.ts</text><text x="1493" y="1101" class="file">docs/baseline/ · release-checklist.md</text><text x="1493" y="1125" class="body">API / Agent / SSE / 模式 / 安全 / 数学工具</text>
+  <text x="1493" y="687" class="caps">CONFIG &amp; DEPLOY</text><text x="1493" y="714" class="file">backend/.env.example · Dockerfile</text><text x="1493" y="735" class="file">frontend/package.json · Dockerfile</text><text x="1493" y="756" class="file">docker-compose.yml</text><text x="1493" y="777" class="file-small">frontend/deploy/nginx.conf · /api 反代</text><text x="1493" y="796" class="body">web + backend + mathgraph-data 卷</text>
+  <text x="1493" y="856" class="caps">EVALUATION SCRIPTS</text><text x="1493" y="885" class="file">backend/scripts/evaluate_react.py</text><text x="1493" y="907" class="file">aggregate_metrics.py · measure_baseline.py</text><text x="1493" y="929" class="file">testdata/react_accuracy_cases.json</text><text x="1493" y="953" class="body">准确率、稳定性、运行指标与发布判定</text>
+  <text x="1493" y="1028" class="caps">TEST &amp; RELEASE</text><text x="1493" y="1054" class="file">backend/tests/</text><text x="1493" y="1074" class="file">frontend/vitest.config.ts</text><text x="1493" y="1094" class="file">docs/baseline/</text><text x="1493" y="1114" class="file">docs/release-checklist.md</text><text x="1493" y="1134" class="body">API / Agent / SSE / 模式 / 安全 / 数学工具</text>
 
   <!-- dependency arrows -->
   <path d="M466 376h74" class="flow"/><path d="M466 761h38c18 0 18-230 36-230" class="flow"/>
