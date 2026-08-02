@@ -124,6 +124,59 @@ def find_zeros(
     }
 
 
+def _refine_extremum(
+    evaluate: EvaluateFn,
+    left: float,
+    right: float,
+    kind: str,
+    *,
+    iterations: int = 48,
+) -> Optional[Tuple[float, float]]:
+    """在 [left, right] 内用黄金分割细化局部极值，减轻采样网格未踩中真极值的误差。"""
+
+    if not (right > left):
+        return None
+    maximize = kind == "max"
+    phi = (math.sqrt(5.0) - 1.0) / 2.0
+    a, b = left, right
+    c = b - phi * (b - a)
+    d = a + phi * (b - a)
+    fc = _safe_eval(evaluate, c)
+    fd = _safe_eval(evaluate, d)
+    for _ in range(iterations):
+        if fc is None or fd is None:
+            return None
+        if (maximize and fc > fd) or (not maximize and fc < fd):
+            b, d, fd = d, c, fc
+            c = b - phi * (b - a)
+            fc = _safe_eval(evaluate, c)
+        else:
+            a, c, fc = c, d, fd
+            d = a + phi * (b - a)
+            fd = _safe_eval(evaluate, d)
+        if abs(b - a) <= 1e-12:
+            break
+    # 端点与内点再比一次，避免边界退化
+    candidates: List[Tuple[float, float]] = []
+    for x in (a, b, (a + b) / 2.0):
+        y = _safe_eval(evaluate, x)
+        if y is not None:
+            candidates.append((x, y))
+    if not candidates:
+        return None
+    best_x, best_y = candidates[0]
+    for x, y in candidates[1:]:
+        if (maximize and y > best_y) or (not maximize and y < best_y):
+            best_x, best_y = x, y
+    # 极接近整数时收成干净坐标（如 x^3-3x → (±1, ±2)）
+    if abs(best_x - round(best_x)) < 1e-8:
+        snapped = float(round(best_x))
+        snapped_y = _safe_eval(evaluate, snapped)
+        if snapped_y is not None:
+            best_x, best_y = snapped, snapped_y
+    return best_x, best_y
+
+
 def find_extrema(
     expression: str,
     x_min: float,
@@ -138,6 +191,7 @@ def find_extrema(
     limit = int(max_points if max_points is not None else settings.math_max_points)
     _, xs, ys = sample_values(expression, x_min, x_max, sample_count)
     points: List[Dict[str, object]] = []
+    step = xs[1] - xs[0] if len(xs) >= 2 else 0.0
 
     for index in range(1, len(xs) - 1):
         y_prev, y_curr, y_next = ys[index - 1], ys[index], ys[index + 1]
@@ -150,10 +204,14 @@ def find_extrema(
             kind = "max"
         if kind is None:
             continue
-        x = xs[index]
-        if points and abs(float(points[-1]["x"]) - x) <= (xs[1] - xs[0]) * 2:
+        refined = _refine_extremum(evaluate, xs[index - 1], xs[index + 1], kind)
+        if refined is None:
+            x, y_curr = xs[index], y_curr
+        else:
+            x, y_curr = refined
+        if points and abs(float(points[-1]["x"]) - x) <= max(step * 2, 1e-9):
             continue
-        points.append({"x": round(x, 9), "y": round(y_curr, 9), "kind": kind, "errorBound": tol})
+        points.append({"x": round(x, 9), "y": round(float(y_curr), 9), "kind": kind, "errorBound": tol})
         if len(points) >= limit:
             break
 

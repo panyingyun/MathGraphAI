@@ -80,7 +80,23 @@ def test_zeros_and_extrema_for_parabola():
     extrema = find_extrema("x^2", -5, 5)
     assert extrema["count"] >= 1
     assert extrema["points"][0]["kind"] == "min"
-    assert extrema["points"][0]["x"] == pytest.approx(0, abs=0.05)
+    assert extrema["points"][0]["x"] == pytest.approx(0, abs=1e-6)
+    assert extrema["points"][0]["y"] == pytest.approx(0, abs=1e-6)
+
+
+@pytest.mark.expression
+def test_extrema_cubic_refined_on_wide_viewport():
+    """宽视口采样格点不对齐 ±1 时，细化后仍应得到教科书极值。"""
+    import math
+
+    for domain in ((-6, 6), (-3 * math.pi, 3 * math.pi), (-10, 10)):
+        extrema = find_extrema("x^3 - 3*x", domain[0], domain[1])
+        assert extrema["count"] >= 2
+        by_kind = {point["kind"]: point for point in extrema["points"]}
+        assert by_kind["max"]["x"] == pytest.approx(-1, abs=1e-6)
+        assert by_kind["max"]["y"] == pytest.approx(2, abs=1e-6)
+        assert by_kind["min"]["x"] == pytest.approx(1, abs=1e-6)
+        assert by_kind["min"]["y"] == pytest.approx(-2, abs=1e-6)
 
 
 @pytest.mark.expression
