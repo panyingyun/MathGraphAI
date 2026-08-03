@@ -8,6 +8,25 @@ from ..schemas.agent import Observation, RequestSpec
 from ..schemas.graph import GraphState
 
 
+EQUATION_EFFECTS = {"plot", "add", "remove", "update"}
+EQUATION_TOOLS = {
+    "plot_equations",
+    "add_equations",
+    "remove_equation",
+    "update_equation",
+}
+VIEWPORT_EFFECTS = {"viewport", "fit_viewport"}
+VIEWPORT_TOOLS = {"set_viewport", "fit_viewport_to_points"}
+ANALYSIS_EFFECTS = {"analyze", "explain"}
+ANALYSIS_TOOLS = {"analyze_function", "explain_graph"}
+SUSPICIOUS_ACTION_CLAIMS = ("已绘制", "已删除", "已更新", "交点", "零点", "极值")
+CALCULATION_TOOL_LABELS = {
+    "calculate_intersections": "交点",
+    "calculate_zeros": "零点",
+    "calculate_extrema": "极值点",
+}
+
+
 def _number(value) -> str:
     try:
         return f"{float(value):.9g}"
@@ -67,34 +86,51 @@ def _target_equation(request_spec: RequestSpec, state: GraphState):
     return state.equations[-1] if state.equations else None
 
 
+def _target_facts(
+    request_spec: RequestSpec,
+    graph_state: GraphState,
+    scope: str,
+) -> List[str]:
+    target = _target_equation(request_spec, graph_state)
+    facts: List[str] = []
+    if target is not None and request_spec.expected_color:
+        facts.append(f"{scope}的目标曲线颜色为 {target.color}。")
+    if target is not None and request_spec.expected_visible is not None:
+        facts.append(f"{scope}的目标曲线可见。" if target.visible else f"{scope}的目标曲线已隐藏。")
+    if target is not None and request_spec.expected_line_width is not None:
+        facts.append(f"{scope}的目标曲线线宽为 {_number(target.line_width)}。")
+    return facts
+
+
+def _calculation_fact(observation: Observation) -> str | None:
+    if observation.tool in CALCULATION_TOOL_LABELS:
+        points = _point_pairs(observation)
+        label = CALCULATION_TOOL_LABELS[observation.tool]
+        if points:
+            rendered = "、".join(f"({x}, {y})" for x, y in points)
+            return f"{label}：{rendered}。"
+        return f"当前计算范围内未找到{label}。"
+    if observation.tool == "compare_functions":
+        summary = observation.data.get("summary")
+        return f"比较结果：{summary}" if summary else None
+    if observation.tool == "check_sample":
+        drawable = observation.data.get("drawable")
+        if drawable is None:
+            return None
+        return "当前范围内可以绘制该函数。" if drawable else "当前范围内没有足够的可绘制采样点。"
+    return None
+
+
 def _calculation_facts(observations: Iterable[Observation]) -> List[str]:
     facts: List[str] = []
     seen: Set[str] = set()
-    labels = {
-        "calculate_intersections": "交点",
-        "calculate_zeros": "零点",
-        "calculate_extrema": "极值点",
-    }
     for observation in observations:
         if not observation.success or observation.tool in seen:
             continue
         seen.add(observation.tool)
-        if observation.tool in labels:
-            points = _point_pairs(observation)
-            label = labels[observation.tool]
-            if points:
-                rendered = "、".join(f"({x}, {y})" for x, y in points)
-                facts.append(f"{label}：{rendered}。")
-            else:
-                facts.append(f"当前计算范围内未找到{label}。")
-        elif observation.tool == "compare_functions":
-            summary = observation.data.get("summary")
-            if summary:
-                facts.append(f"比较结果：{summary}")
-        elif observation.tool == "check_sample":
-            drawable = observation.data.get("drawable")
-            if drawable is not None:
-                facts.append("当前范围内可以绘制该函数。" if drawable else "当前范围内没有足够的可绘制采样点。")
+        fact = _calculation_fact(observation)
+        if fact:
+            facts.append(fact)
     return facts
 
 
@@ -114,29 +150,16 @@ def build_grounded_final_message(
     parts: List[str] = []
     scope = "Shadow 候选状态" if shadow_candidate else "当前图"
 
-    equation_effects = {"plot", "add", "remove", "update"}
-    if effects & equation_effects or executed & {
-        "plot_equations",
-        "add_equations",
-        "remove_equation",
-        "update_equation",
-    }:
+    if effects & EQUATION_EFFECTS or executed & EQUATION_TOOLS:
         parts.append(_equation_fact(graph_state, scope))
 
-    target = _target_equation(request_spec, graph_state)
-    if target is not None and request_spec.expected_color:
-        parts.append(f"{scope}的目标曲线颜色为 {target.color}。")
-    if target is not None and request_spec.expected_visible is not None:
-        parts.append(f"{scope}的目标曲线可见。" if target.visible else f"{scope}的目标曲线已隐藏。")
-    if target is not None and request_spec.expected_line_width is not None:
-        parts.append(f"{scope}的目标曲线线宽为 {_number(target.line_width)}。")
-
+    parts.extend(_target_facts(request_spec, graph_state, scope))
     parts.extend(_calculation_facts(observations))
 
-    if effects & {"viewport", "fit_viewport"} or executed & {"set_viewport", "fit_viewport_to_points"}:
+    if effects & VIEWPORT_EFFECTS or executed & VIEWPORT_TOOLS:
         parts.append(_viewport_fact(graph_state, scope))
 
-    if effects & {"analyze", "explain"} or executed & {"analyze_function", "explain_graph"}:
+    if effects & ANALYSIS_EFFECTS or executed & ANALYSIS_TOOLS:
         parts.append("Shadow 候选执行已完成当前函数的分析。" if shadow_candidate else "已完成当前函数的分析。")
 
     if "set_graph_settings" in executed:
@@ -150,7 +173,6 @@ def build_grounded_final_message(
         return "".join(parts)
 
     # 无结构化图操作的普通回答仍可使用模型文本，但不得伪造已执行动作。
-    suspicious = ("已绘制", "已删除", "已更新", "交点", "零点", "极值")
-    if any(word in model_message for word in suspicious):
+    if any(word in model_message for word in SUSPICIOUS_ACTION_CLAIMS):
         return "本轮未执行可验证的图像操作。"
     return model_message or "已完成。"

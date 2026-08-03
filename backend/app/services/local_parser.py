@@ -65,64 +65,132 @@ def equation_item(expression: str, color: str) -> EquationItem:
     )
 
 
+def _unknown(error: str, explanation: str) -> StructuredResult:
+    return StructuredResult(intent="unknown", error=error, explanation=explanation)
+
+
+def _parse_viewport_update(text: str) -> StructuredResult | None:
+    ranges = re.findall(r"-?\d+(?:\.\d+)?", text)
+    if "范围" not in text or len(ranges) < 2:
+        return None
+    low, high = float(ranges[-2]), float(ranges[-1])
+    if low >= high:
+        return _unknown("坐标最小值必须小于最大值", "坐标范围无效，请重新输入。")
+    viewport = {"xMin": low, "xMax": high}
+    if not re.search(r"x\s*范围", text, re.I):
+        viewport |= {"yMin": low, "yMax": high}
+    return StructuredResult(
+        intent="update_viewport",
+        viewport=viewport,
+        explanation=f"已将坐标范围调整为 {low:g} 到 {high:g}。",
+    )
+
+
+def _default_target(text: str, graph_state: GraphState) -> EquationItem | None:
+    target = graph_state.equations[-1] if graph_state.equations else None
+    if re.search(r"第\s*一", text) and graph_state.equations:
+        return graph_state.equations[0]
+    return target
+
+
+def _target_by_expression(
+    graph_state: GraphState,
+    expressions: List[str],
+) -> EquationItem | None:
+    if not expressions:
+        return None
+    expected = expressions[0].replace(" ", "")
+    return next(
+        (
+            item
+            for item in graph_state.equations
+            if item.normalized_expression.replace(" ", "") == expected
+        ),
+        None,
+    )
+
+
+def _remove_result(
+    graph_state: GraphState,
+    expressions: List[str],
+    fallback_target: EquationItem | None,
+) -> StructuredResult:
+    target = _target_by_expression(graph_state, expressions) or fallback_target
+    if target:
+        return StructuredResult(
+            intent="remove_equation",
+            target_equation_id=target.id,
+            explanation="已删除所选方程。",
+        )
+    if expressions:
+        return _unknown("找不到指定方程", f"当前图中找不到 y = {expressions[0]}，未删除其他曲线。")
+    return _unknown("当前没有可删除的方程", "请先绘制一个方程。")
+
+
+def _color_update_result(
+    color: str,
+    target: EquationItem | None,
+) -> StructuredResult:
+    if not target:
+        return _unknown("当前没有可修改的方程", "请先绘制一个方程。")
+    return StructuredResult(
+        intent="update_equation",
+        target_equation_id=target.id,
+        updates={"color": color},
+        explanation="已更新曲线颜色。",
+    )
+
+
+def _analysis_result(target: EquationItem | None) -> StructuredResult:
+    if not target:
+        return _unknown("当前没有可分析的方程", "请先绘制一个方程。")
+    analysis = analyze_expression(target.normalized_expression)
+    return StructuredResult(intent="analyze", analysis=analysis, explanation=analysis.description)
+
+
+def _plot_result(
+    text: str,
+    graph_state: GraphState,
+    expressions: List[str],
+    color: str | None,
+) -> StructuredResult:
+    try:
+        items = [
+            equation_item(value, color or COLORS[(len(graph_state.equations) + index) % len(COLORS)])
+            for index, value in enumerate(expressions)
+        ]
+    except InvalidEquation as exc:
+        return _unknown(
+            f"方程解析失败：{exc}",
+            f"方程解析失败：{exc}。例如可以输入 y = x^2 或 y = sin(x)。",
+        )
+    intent = "add_equation" if any(word in text for word in ("再加", "添加", "增加", "追加")) else "plot"
+    primary_analysis = analyze_expression(items[0].normalized_expression)
+    action = "添加" if intent == "add_equation" else "绘制"
+    explanation = f"已为你{action} {', '.join(item.label for item in items)}。{primary_analysis.description or ''}"
+    return StructuredResult(intent=intent, equations=items, analysis=primary_analysis, explanation=explanation)
+
+
 def parse_locally(message: str, graph_state: GraphState) -> StructuredResult:
     text = message.strip()
-    ranges = re.findall(r"-?\d+(?:\.\d+)?", text)
-    if "范围" in text and len(ranges) >= 2:
-        low, high = float(ranges[-2]), float(ranges[-1])
-        if low >= high:
-            return StructuredResult(intent="unknown", error="坐标最小值必须小于最大值", explanation="坐标范围无效，请重新输入。")
-        viewport = {"xMin": low, "xMax": high} if re.search(r"x\s*范围", text, re.I) else {"xMin": low, "xMax": high, "yMin": low, "yMax": high}
-        return StructuredResult(intent="update_viewport", viewport=viewport, explanation=f"已将坐标范围调整为 {low:g} 到 {high:g}。")
+    viewport_result = _parse_viewport_update(text)
+    if viewport_result is not None:
+        return viewport_result
 
-    target = graph_state.equations[-1] if graph_state.equations else None
-    first_match = re.search(r"第\s*一", text)
-    if first_match and graph_state.equations:
-        target = graph_state.equations[0]
+    target = _default_target(text, graph_state)
+    expressions = extract_equations(text)
 
     if any(word in text for word in ("删除", "移除", "去掉", "删掉")):
-        requested = extract_equations(text)
-        if requested:
-            expected = requested[0].replace(" ", "")
-            target = next(
-                (
-                    item
-                    for item in graph_state.equations
-                    if item.normalized_expression.replace(" ", "") == expected
-                ),
-                None,
-            )
-        if not target:
-            if requested:
-                return StructuredResult(
-                    intent="unknown",
-                    error="找不到指定方程",
-                    explanation=f"当前图中找不到 y = {requested[0]}，未删除其他曲线。",
-                )
-            return StructuredResult(intent="unknown", error="当前没有可删除的方程", explanation="请先绘制一个方程。")
-        return StructuredResult(intent="remove_equation", target_equation_id=target.id if target else None, explanation="已删除所选方程。")
+        return _remove_result(graph_state, expressions, target)
 
     color = next((value for name, value in COLOR_NAMES.items() if name in text), None)
-    if color and not extract_equations(text):
-        if not target:
-            return StructuredResult(intent="unknown", error="当前没有可修改的方程", explanation="请先绘制一个方程。")
-        return StructuredResult(intent="update_equation", target_equation_id=target.id if target else None, updates={"color": color}, explanation="已更新曲线颜色。")
+    if color and not expressions:
+        return _color_update_result(color, target)
 
-    if any(word in text for word in ("解释", "分析", "单调", "顶点", "零点", "对称")) and not extract_equations(text):
-        if not target:
-            return StructuredResult(intent="unknown", error="当前没有可分析的方程", explanation="请先绘制一个方程。")
-        analysis = analyze_expression(target.normalized_expression)
-        return StructuredResult(intent="analyze", analysis=analysis, explanation=analysis.description)
+    if any(word in text for word in ("解释", "分析", "单调", "顶点", "零点", "对称")) and not expressions:
+        return _analysis_result(target)
 
-    expressions = extract_equations(text)
     if expressions:
-        try:
-            items = [equation_item(value, color or COLORS[(len(graph_state.equations) + index) % len(COLORS)]) for index, value in enumerate(expressions)]
-        except InvalidEquation as exc:
-            return StructuredResult(intent="unknown", error=f"方程解析失败：{exc}", explanation=f"方程解析失败：{exc}。例如可以输入 y = x^2 或 y = sin(x)。")
-        intent = "add_equation" if any(word in text for word in ("再加", "添加", "增加", "追加")) else "plot"
-        primary_analysis = analyze_expression(items[0].normalized_expression)
-        explanation = f"已为你{'添加' if intent == 'add_equation' else '绘制'} {', '.join(item.label for item in items)}。{primary_analysis.description or ''}"
-        return StructuredResult(intent=intent, equations=items, analysis=primary_analysis, explanation=explanation)
+        return _plot_result(text, graph_state, expressions, color)
 
-    return StructuredResult(intent="unknown", error="无法识别明确的数学方程或绘图需求", explanation="我还无法确定你想绘制的具体方程，请输入类似 y = x^2 的函数。")
+    return _unknown("无法识别明确的数学方程或绘图需求", "我还无法确定你想绘制的具体方程，请输入类似 y = x^2 的函数。")

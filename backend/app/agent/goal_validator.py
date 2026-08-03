@@ -63,6 +63,213 @@ def _required_observations_satisfied(
     return bool(required_tools) and required_tools.issubset(observed)
 
 
+def _normalized_expression(item: EquationItem) -> str:
+    return item.normalized_expression.replace(" ", "")
+
+
+def _items_matching_requests(
+    state: GraphState,
+    requested_expressions: Set[str],
+) -> List[EquationItem]:
+    return [
+        item
+        for item in state.equations
+        if not requested_expressions or _normalized_expression(item) in requested_expressions
+    ]
+
+
+def _all_items_match_color(items: List[EquationItem], expected_color: str) -> bool:
+    return bool(items) and all(item.color.lower() == expected_color.lower() for item in items)
+
+
+def _plot_satisfied(
+    spec: RequestSpec,
+    after: GraphState,
+    executed: Set[str],
+) -> bool:
+    requested_expressions = {item.replace(" ", "") for item in spec.explicit_expressions}
+    after_expressions = _normalized_set(after)
+    expressions_match = bool(after.equations) and (
+        not requested_expressions or requested_expressions.issubset(after_expressions)
+    )
+    # 也接受「先 plot 再 add」的复合路径：最终表达式齐全即可
+    satisfied = expressions_match and (
+        "plot_equations" in executed or "add_equations" in executed
+    )
+    if not satisfied or not spec.expected_color or len(requested_expressions) > 1:
+        return satisfied
+    return _all_items_match_color(
+        _items_matching_requests(after, requested_expressions),
+        spec.expected_color,
+    )
+
+
+def _add_satisfied(
+    spec: RequestSpec,
+    before: GraphState,
+    after: GraphState,
+    executed: Set[str],
+) -> bool:
+    requested_expressions = {item.replace(" ", "") for item in spec.explicit_expressions}
+    before_expressions = _normalized_set(before)
+    after_expressions = _normalized_set(after)
+    before_ids = {item.id for item in before.equations}
+    after_ids = {item.id for item in after.equations}
+    satisfied = (
+        ("add_equations" in executed or "plot_equations" in executed)
+        and requested_expressions.issubset(after_expressions)
+        and before_expressions.issubset(after_expressions)
+        and before_ids.issubset(after_ids)
+    )
+    # 多方程多颜色时不强制全部同色（expected_color 只是文中出现的某个色名）
+    if not satisfied or not spec.expected_color or len(requested_expressions) > 1:
+        return satisfied
+    added_items = [
+        item for item in after.equations if _normalized_expression(item) in requested_expressions
+    ]
+    return _all_items_match_color(added_items, spec.expected_color)
+
+
+def _remove_satisfied(
+    spec: RequestSpec,
+    before: GraphState,
+    after: GraphState,
+    executed: Set[str],
+) -> bool:
+    after_expressions = _normalized_set(after)
+    target_absent = False
+    protected_ids = {item.id for item in before.equations}
+    if spec.target_equation_id:
+        target_absent = all(item.id != spec.target_equation_id for item in after.equations)
+        protected_ids.discard(spec.target_equation_id)
+    elif spec.target_expression:
+        target = spec.target_expression.replace(" ", "")
+        target_absent = target not in after_expressions
+        protected_ids = {
+            item.id
+            for item in before.equations
+            if _normalized_expression(item) != target
+        }
+    else:
+        target_absent = len(after.equations) == max(0, len(before.equations) - 1)
+        removed_ids = {item.id for item in before.equations} - {item.id for item in after.equations}
+        protected_ids -= removed_ids
+    remaining_ids = {item.id for item in after.equations}
+    return "remove_equation" in executed and target_absent and protected_ids.issubset(remaining_ids)
+
+
+def _update_target(spec: RequestSpec, after: GraphState) -> Optional[EquationItem]:
+    target = _find_target(spec, after)
+    if (
+        target is None
+        and after.equations
+        and spec.target_equation_id is None
+        and spec.target_expression is None
+    ):
+        return after.equations[-1]
+    return target
+
+
+def _visible_expectation_satisfied(
+    spec: RequestSpec,
+    after: GraphState,
+    target: Optional[EquationItem],
+) -> bool:
+    if spec.target_equation_id or spec.target_expression:
+        return target is not None and target.visible is spec.expected_visible
+    if spec.expected_visible is False:
+        return any(item.visible is False for item in after.equations)
+    return any(item.visible is True for item in after.equations)
+
+
+def _line_width_expectation_satisfied(
+    spec: RequestSpec,
+    after: GraphState,
+    target: Optional[EquationItem],
+) -> bool:
+    if spec.target_equation_id or spec.target_expression:
+        return (
+            target is not None
+            and abs(target.line_width - spec.expected_line_width) <= 1e-9
+        )
+    return any(
+        abs(item.line_width - spec.expected_line_width) <= 1e-9
+        for item in after.equations
+    )
+
+
+def _update_satisfied(
+    spec: RequestSpec,
+    after: GraphState,
+    executed: Set[str],
+) -> bool:
+    requested_expressions = {item.replace(" ", "") for item in spec.explicit_expressions}
+    target = _update_target(spec, after)
+    satisfied = "update_equation" in executed and bool(after.equations)
+    if satisfied and spec.expected_expression and target is not None:
+        satisfied = (
+            _normalized_expression(target)
+            == spec.expected_expression.replace(" ", "")
+        )
+    if satisfied and spec.expected_color and target is not None and len(requested_expressions) <= 1:
+        satisfied = target.color.lower() == spec.expected_color.lower()
+    # 复合指令可能分别改线宽与隐藏不同曲线：按「图中存在满足条件的方程」校验
+    if satisfied and spec.expected_visible is not None:
+        satisfied = _visible_expectation_satisfied(spec, after, target)
+    if satisfied and spec.expected_line_width is not None:
+        satisfied = _line_width_expectation_satisfied(spec, after, target)
+    return satisfied
+
+
+def _viewport_satisfied(
+    spec: RequestSpec,
+    after: GraphState,
+    executed: Set[str],
+) -> bool:
+    actual = after.viewport.model_dump(by_alias=True)
+    expected = spec.expected_viewport or {}
+    return "set_viewport" in executed and all(
+        key in actual and abs(float(actual[key]) - float(value)) <= 1e-9
+        for key, value in expected.items()
+    )
+
+
+def _effect_satisfied(
+    effect: str,
+    spec: RequestSpec,
+    before: GraphState,
+    after: GraphState,
+    executed: Set[str],
+    observed: Set[str],
+) -> bool:
+    if effect == "plot":
+        return _plot_satisfied(spec, after, executed)
+    if effect == "add":
+        return _add_satisfied(spec, before, after, executed)
+    if effect == "remove":
+        return _remove_satisfied(spec, before, after, executed)
+    if effect == "update":
+        return _update_satisfied(spec, after, executed)
+    if effect == "viewport":
+        return _viewport_satisfied(spec, after, executed)
+    if effect == "analyze":
+        return (
+            after.analysis is not None
+            and _required_observations_satisfied(spec, effect, observed)
+        )
+    if effect == "explain":
+        return (
+            after.analysis is not None
+            and bool(after.analysis.description)
+            and _required_observations_satisfied(spec, effect, observed)
+        )
+    if effect in {"intersections", "zeros", "extrema", "compare"}:
+        return _required_observations_satisfied(spec, effect, observed)
+    if effect == "fit_viewport":
+        return "fit_viewport_to_points" in executed
+    return False
+
+
 def validate_goal(
     spec: RequestSpec,
     before: GraphState,
@@ -76,139 +283,19 @@ def validate_goal(
     missing: List[str] = []
     executed = set(executed_tools)
     observed = _successful_observation_tools(observations)
-    before_expressions = _normalized_set(before)
-    after_expressions = _normalized_set(after)
-    before_ids = {item.id for item in before.equations}
-    after_ids = {item.id for item in after.equations}
-    requested_expressions = {item.replace(" ", "") for item in spec.explicit_expressions}
 
     if spec.mutation_expected and not (executed & WRITE_TOOLS):
         missing.append("state_change")
 
     for effect in spec.required_effects:
-        satisfied = False
-
-        if effect == "plot":
-            expressions_match = bool(after.equations) and (
-                not requested_expressions or requested_expressions.issubset(after_expressions)
-            )
-            # 也接受「先 plot 再 add」的复合路径：最终表达式齐全即可
-            satisfied = expressions_match and (
-                "plot_equations" in executed or "add_equations" in executed
-            )
-            if satisfied and spec.expected_color and len(requested_expressions) <= 1:
-                requested_items = [
-                    item
-                    for item in after.equations
-                    if not requested_expressions
-                    or item.normalized_expression.replace(" ", "") in requested_expressions
-                ]
-                satisfied = bool(requested_items) and all(
-                    item.color.lower() == spec.expected_color.lower() for item in requested_items
-                )
-        elif effect == "add":
-            satisfied = (
-                ("add_equations" in executed or "plot_equations" in executed)
-                and requested_expressions.issubset(after_expressions)
-                and before_expressions.issubset(after_expressions)
-                and before_ids.issubset(after_ids)
-            )
-            # 多方程多颜色时不强制全部同色（expected_color 只是文中出现的某个色名）
-            if satisfied and spec.expected_color and len(requested_expressions) <= 1:
-                added_items = [
-                    item
-                    for item in after.equations
-                    if item.normalized_expression.replace(" ", "") in requested_expressions
-                ]
-                satisfied = bool(added_items) and all(
-                    item.color.lower() == spec.expected_color.lower() for item in added_items
-                )
-        elif effect == "remove":
-            target_absent = False
-            protected_ids = {item.id for item in before.equations}
-            if spec.target_equation_id:
-                target_absent = all(item.id != spec.target_equation_id for item in after.equations)
-                protected_ids.discard(spec.target_equation_id)
-            elif spec.target_expression:
-                target = spec.target_expression.replace(" ", "")
-                target_absent = target not in after_expressions
-                protected_ids = {
-                    item.id
-                    for item in before.equations
-                    if item.normalized_expression.replace(" ", "") != target
-                }
-            else:
-                target_absent = len(after.equations) == max(0, len(before.equations) - 1)
-                removed_ids = {item.id for item in before.equations} - {item.id for item in after.equations}
-                protected_ids -= removed_ids
-            remaining_ids = {item.id for item in after.equations}
-            satisfied = "remove_equation" in executed and target_absent and protected_ids.issubset(remaining_ids)
-        elif effect == "update":
-            target = _find_target(spec, after)
-            if (
-                target is None
-                and after.equations
-                and spec.target_equation_id is None
-                and spec.target_expression is None
-            ):
-                target = after.equations[-1]
-            satisfied = "update_equation" in executed and bool(after.equations)
-            if satisfied and spec.expected_expression and target is not None:
-                satisfied = (
-                    target.normalized_expression.replace(" ", "")
-                    == spec.expected_expression.replace(" ", "")
-                )
-            if satisfied and spec.expected_color and target is not None and len(requested_expressions) <= 1:
-                satisfied = target.color.lower() == spec.expected_color.lower()
-            # 复合指令可能分别改线宽与隐藏不同曲线：按「图中存在满足条件的方程」校验
-            if satisfied and spec.expected_visible is not None:
-                if spec.target_equation_id or spec.target_expression:
-                    satisfied = target is not None and target.visible is spec.expected_visible
-                elif spec.expected_visible is False:
-                    satisfied = any(item.visible is False for item in after.equations)
-                else:
-                    satisfied = any(item.visible is True for item in after.equations)
-            if satisfied and spec.expected_line_width is not None:
-                if spec.target_equation_id or spec.target_expression:
-                    satisfied = (
-                        target is not None
-                        and abs(target.line_width - spec.expected_line_width) <= 1e-9
-                    )
-                else:
-                    satisfied = any(
-                        abs(item.line_width - spec.expected_line_width) <= 1e-9
-                        for item in after.equations
-                    )
-        elif effect == "viewport":
-            actual = after.viewport.model_dump(by_alias=True)
-            expected = spec.expected_viewport or {}
-            satisfied = "set_viewport" in executed and all(
-                key in actual and abs(float(actual[key]) - float(value)) <= 1e-9
-                for key, value in expected.items()
-            )
-        elif effect == "analyze":
-            satisfied = (
-                after.analysis is not None
-                and _required_observations_satisfied(spec, effect, observed)
-            )
-        elif effect == "explain":
-            satisfied = (
-                after.analysis is not None
-                and bool(after.analysis.description)
-                and _required_observations_satisfied(spec, effect, observed)
-            )
-        elif effect == "intersections":
-            satisfied = _required_observations_satisfied(spec, effect, observed)
-        elif effect == "zeros":
-            satisfied = _required_observations_satisfied(spec, effect, observed)
-        elif effect == "extrema":
-            satisfied = _required_observations_satisfied(spec, effect, observed)
-        elif effect == "compare":
-            satisfied = _required_observations_satisfied(spec, effect, observed)
-        elif effect == "fit_viewport":
-            satisfied = "fit_viewport_to_points" in executed
-
-        if satisfied:
+        if _effect_satisfied(
+            effect,
+            spec,
+            before,
+            after,
+            executed,
+            observed,
+        ):
             completed.append(effect)
         else:
             missing.append(effect)
