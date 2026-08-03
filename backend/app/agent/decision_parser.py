@@ -25,7 +25,7 @@ def _coerce_mapping(value: Any) -> Dict[str, Any]:
             return {}
         try:
             parsed = json.loads(text) if text[0] in "{[" else parse_json_response(text)
-        except Exception:  # noqa: BLE001
+        except (json.JSONDecodeError, ValueError, TypeError):
             return {}
         return parsed if isinstance(parsed, dict) else {}
     return {}

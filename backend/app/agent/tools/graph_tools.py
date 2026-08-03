@@ -5,6 +5,8 @@ from __future__ import annotations
 import hashlib
 from typing import Any, Dict, List, Optional
 
+from pydantic import ValidationError
+
 from ...config import settings
 from ...schemas.graph import EquationItem, GraphAnalysis, GraphMarker, GraphSettings, KeyPoint, Viewport
 from ...services.local_parser import analyze_expression, display_label
@@ -67,6 +69,17 @@ def _normalize_equation(raw: Any, *, state_len: int, index: int) -> EquationItem
     )
 
 
+def _analysis_from_payload(payload: Any, fallback_expression: str, *, keep_fallback: bool) -> Optional[GraphAnalysis]:
+    if payload is None:
+        return clamp_analysis(analyze_expression(fallback_expression)) if keep_fallback else None
+    try:
+        if isinstance(payload, str):
+            return clamp_analysis(GraphAnalysis(description=payload[:500]))
+        return clamp_analysis(GraphAnalysis.model_validate(payload))
+    except ValidationError:
+        return clamp_analysis(analyze_expression(fallback_expression)) if keep_fallback else None
+
+
 def _resolve_target_id(working: WorkingGraphState, target: Optional[Any]) -> str:
     if not working.current.equations:
         raise ToolError("precondition_failed", "当前没有可操作的方程")
@@ -82,6 +95,50 @@ def _resolve_target_id(working: WorkingGraphState, target: Optional[Any]) -> str
             return equation_id
         raise ToolError("equation_not_found", f"找不到方程 {equation_id}")
     return working.current.equations[-1].id
+
+
+def _intersection_marker(
+    left: EquationItem,
+    right: EquationItem,
+    point: Any,
+    seen: List[tuple],
+    marker_count: int,
+    tol: float,
+) -> Optional[GraphMarker]:
+    if not isinstance(point, dict):
+        return None
+    try:
+        x = float(point["x"])
+        y = float(point["y"])
+    except (KeyError, TypeError, ValueError):
+        return None
+    if any(abs(x - sx) <= tol and abs(y - sy) <= tol for sx, sy in seen):
+        return None
+    seen.append((x, y))
+    return GraphMarker(
+        id=f"intersect_{marker_count}",
+        kind="intersection",
+        label=format_point_label(x, y),
+        x=x,
+        y=y,
+        equation_ids=[left.id, right.id],
+    )
+
+
+def _append_intersection_markers(
+    markers: List[GraphMarker],
+    seen: List[tuple],
+    left: EquationItem,
+    right: EquationItem,
+    found: Dict[str, Any],
+    tol: float,
+) -> None:
+    for point in found.get("points") or []:
+        marker = _intersection_marker(left, right, point, seen, len(markers), tol)
+        if marker is not None:
+            markers.append(marker)
+        if len(markers) >= settings.math_max_points:
+            return
 
 
 def _collect_intersection_markers(
@@ -109,26 +166,11 @@ def _collect_intersection_markers(
                     x_min,
                     x_max,
                 )
-            except Exception:  # noqa: BLE001
+            except (InvalidEquation, ArithmeticError, ValueError, TypeError):
                 continue
-            for point in found.get("points") or []:
-                x = float(point["x"])
-                y = float(point["y"])
-                if any(abs(x - sx) <= tol and abs(y - sy) <= tol for sx, sy in seen):
-                    continue
-                seen.append((x, y))
-                markers.append(
-                    GraphMarker(
-                        id=f"intersect_{len(markers)}",
-                        kind="intersection",
-                        label=format_point_label(x, y),
-                        x=x,
-                        y=y,
-                        equation_ids=[left.id, right.id],
-                    )
-                )
-                if len(markers) >= settings.math_max_points:
-                    return markers
+            _append_intersection_markers(markers, seen, left, right, found, tol)
+            if len(markers) >= settings.math_max_points:
+                return markers
     return markers
 
 
@@ -141,7 +183,7 @@ def _refresh_intersection_markers(state) -> None:
             x_min=state.viewport.x_min,
             x_max=state.viewport.x_max,
         )
-    except Exception:  # noqa: BLE001
+    except (InvalidEquation, ArithmeticError, ValueError, TypeError):
         intersections = []
     state.markers = kept + intersections
     # 同步到 analysis.keyPoints，便于前端特征面板与兜底渲染。
@@ -177,17 +219,11 @@ def plot_equations(working: WorkingGraphState, arguments: Dict[str, Any], _targe
     next_state = working.current.model_copy(deep=True)
     next_state.equations = equations
     next_state.markers = []
-    analysis_payload = arguments.get("analysis")
-    if analysis_payload is not None:
-        try:
-            if isinstance(analysis_payload, str):
-                next_state.analysis = clamp_analysis(GraphAnalysis(description=analysis_payload[:500]))
-            else:
-                next_state.analysis = clamp_analysis(GraphAnalysis.model_validate(analysis_payload))
-        except Exception:  # noqa: BLE001
-            next_state.analysis = clamp_analysis(analyze_expression(equations[0].normalized_expression))
-    elif equations:
-        next_state.analysis = clamp_analysis(analyze_expression(equations[0].normalized_expression))
+    next_state.analysis = _analysis_from_payload(
+        arguments.get("analysis"),
+        equations[0].normalized_expression,
+        keep_fallback=True,
+    )
     # 绘制两条及以上曲线时，自动标注所有曲线对的交点坐标 (x, y)。
     if arguments.get("autoMarkIntersections", True):
         _refresh_intersection_markers(next_state)
@@ -213,15 +249,13 @@ def add_equations(working: WorkingGraphState, arguments: Dict[str, Any], _target
     ]
     next_state = working.current.model_copy(deep=True)
     next_state.equations.extend(equations)
-    analysis_payload = arguments.get("analysis")
-    if analysis_payload is not None:
-        try:
-            if isinstance(analysis_payload, str):
-                next_state.analysis = clamp_analysis(GraphAnalysis(description=analysis_payload[:500]))
-            else:
-                next_state.analysis = clamp_analysis(GraphAnalysis.model_validate(analysis_payload))
-        except Exception:  # noqa: BLE001
-            pass
+    analysis = _analysis_from_payload(
+        arguments.get("analysis"),
+        equations[0].normalized_expression,
+        keep_fallback=False,
+    )
+    if analysis is not None:
+        next_state.analysis = analysis
     if arguments.get("autoMarkIntersections", True):
         _refresh_intersection_markers(next_state)
     working.replace_current(next_state)
@@ -292,7 +326,7 @@ def set_viewport(working: WorkingGraphState, arguments: Dict[str, Any], _target:
     data.update(viewport)
     try:
         validated = Viewport.model_validate(data)
-    except Exception as exc:  # noqa: BLE001
+    except ValidationError as exc:
         raise ToolError("invalid_arguments", str(exc)) from exc
     next_state = working.current.model_copy(deep=True)
     next_state.viewport = validated
@@ -310,7 +344,7 @@ def set_graph_settings(working: WorkingGraphState, arguments: Dict[str, Any], _t
     data.update(settings_payload)
     try:
         validated = GraphSettings.model_validate(data)
-    except Exception as exc:  # noqa: BLE001
+    except ValidationError as exc:
         raise ToolError("invalid_arguments", str(exc)) from exc
     next_state = working.current.model_copy(deep=True)
     next_state.settings = validated

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
+from pydantic import ValidationError
+
 from ...schemas.graph import GraphMarker, KeyPoint, Viewport
 from ...utils.graph_limits import clamp_analysis
 from ...utils.numeric_analysis import fit_viewport, format_point_label
@@ -70,7 +72,7 @@ def fit_viewport_to_points(
     try:
         viewport_data = fit_viewport(points, padding=padding)
         validated = Viewport.model_validate(viewport_data)
-    except Exception as exc:  # noqa: BLE001
+    except (KeyError, TypeError, ValueError, ValidationError) as exc:
         raise ToolError("invalid_arguments", str(exc)) from exc
 
     next_state = working.current.model_copy(deep=True)
