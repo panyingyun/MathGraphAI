@@ -1,0 +1,4 @@
+interface:
+  display_name: "Yypan Code"
+  short_description: "Simplify code while preserving behavior"
+  default_prompt: "Use $yypancode to simplify this code while preserving behavior and tests."
