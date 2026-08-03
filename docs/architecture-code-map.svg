@@ -51,12 +51,12 @@
   <g filter="url(#soft)"><rect x="60" y="118" width="1680" height="88" rx="19" fill="#fff" fill-opacity=".92" stroke="#c8d9ee"/></g>
   <text x="84" y="146" class="caps">PRIMARY BUSINESS PATH</text><text x="84" y="177" class="node">主业务链路</text>
   <g transform="translate(235 138)">
-    <circle cx="23" cy="23" r="20" fill="#2874d8"/><text x="23" y="29" text-anchor="middle" class="node white">1</text><text x="53" y="20" class="node">理解</text><text x="53" y="41" class="body">RequestSpec</text>
-    <path d="M155 23h62" class="flow"/><circle cx="242" cy="23" r="20" fill="#4869d9"/><text x="242" y="29" text-anchor="middle" class="node white">2</text><text x="272" y="20" class="node">决策</text><text x="272" y="41" class="body">DeepSeek / Local</text>
-    <path d="M400 23h62" class="flow-ai"/><circle cx="487" cy="23" r="20" fill="#7656dc"/><text x="487" y="29" text-anchor="middle" class="node white">3</text><text x="517" y="20" class="node">执行 / 计算</text><text x="517" y="41" class="body">Strict Tools</text>
-    <path d="M690 23h62" class="flow-ai"/><circle cx="777" cy="23" r="20" fill="#8958df"/><text x="777" y="29" text-anchor="middle" class="node white">4</text><text x="807" y="20" class="node">验证</text><text x="807" y="41" class="body">Final Gate</text>
-    <path d="M930 23h62" class="flow-data"/><circle cx="1017" cy="23" r="20" fill="#089679"/><text x="1017" y="29" text-anchor="middle" class="node white">5</text><text x="1047" y="20" class="node">保存</text><text x="1047" y="41" class="body">Commit / Preserve</text>
-    <path d="M1197 23h62" class="flow-data"/><circle cx="1284" cy="23" r="20" fill="#0aa783"/><text x="1284" y="29" text-anchor="middle" class="node white">6</text><text x="1314" y="20" class="node">反馈</text><text x="1314" y="41" class="body">Metrics / Gate</text>
+    <circle cx="23" cy="23" r="20" fill="#2874d8"/><text x="23" y="29" text-anchor="middle" class="node white">1</text><text x="53" y="20" class="node">理解</text><text x="53" y="41" class="small">RequestSpec（请求规格）</text>
+    <path d="M155 23h62" class="flow"/><circle cx="242" cy="23" r="20" fill="#4869d9"/><text x="242" y="29" text-anchor="middle" class="node white">2</text><text x="272" y="20" class="node">决策</text><text x="272" y="41" class="small">DeepSeek 模型 / 本地规划器</text>
+    <path d="M400 23h62" class="flow-ai"/><circle cx="487" cy="23" r="20" fill="#7656dc"/><text x="487" y="29" text-anchor="middle" class="node white">3</text><text x="517" y="20" class="node">执行 / 计算</text><text x="517" y="41" class="small">Strict Tools（严格工具）</text>
+    <path d="M690 23h62" class="flow-ai"/><circle cx="777" cy="23" r="20" fill="#8958df"/><text x="777" y="29" text-anchor="middle" class="node white">4</text><text x="807" y="20" class="node">验证</text><text x="807" y="41" class="small">Final Gate（最终门禁）</text>
+    <path d="M930 23h62" class="flow-data"/><circle cx="1017" cy="23" r="20" fill="#089679"/><text x="1017" y="29" text-anchor="middle" class="node white">5</text><text x="1047" y="20" class="node">保存</text><text x="1047" y="41" class="small">Commit / Preserve（提交 / 保留）</text>
+    <path d="M1197 23h62" class="flow-data"/><circle cx="1284" cy="23" r="20" fill="#0aa783"/><text x="1284" y="29" text-anchor="middle" class="node white">6</text><text x="1314" y="20" class="node">反馈</text><text x="1314" y="41" class="small">Metrics / Gate（指标 / 门禁）</text>
   </g>
 
   <!-- lane panels -->
@@ -86,7 +86,7 @@
   <text x="108" y="365" class="caps">NATURAL LANGUAGE</text><text x="108" y="394" class="node">描述绘图与数学分析目标</text><text x="108" y="419" class="body">绘制 · 添加 · 修改 · 删除 · 比较 · 求零点</text><text x="108" y="440" class="body">复合任务与多轮指代使用同一入口</text>
   <text x="108" y="505" class="caps">THREE-PANE WORKBENCH</text><text x="108" y="534" class="node">会话 / 对话 / 图像协同</text><text x="108" y="559" class="body">会话历史与分页 · 消息状态</text><text x="108" y="581" class="body">Plotly 图像 · 方程列表 · 视口设置</text><text x="108" y="603" class="body">分析结果 · 标记点 · KaTeX 公式</text>
   <text x="108" y="679" class="caps">LIVE PROGRESS</text><text x="108" y="708" class="node">阶段与步骤实时反馈</text><text x="108" y="733" class="body">理解 → 执行/计算 → 验证 → 保存</text><text x="108" y="755" class="body">显示工具摘要、耗时、模型与回退状态</text><text x="108" y="777" class="body">用户可主动取消当前请求</text>
-  <text x="108" y="845" class="caps">DIRECT GRAPH EDIT</text><text x="108" y="874" class="node">确定性图像命令</text><text x="108" y="899" class="body">方程、可见性、样式与视口直接修改</text><text x="108" y="921" class="body">与自然语言共用 GraphState / revision</text>
+  <text x="108" y="845" class="caps">DIRECT GRAPH EDIT</text><text x="108" y="874" class="node">确定性图像命令</text><text x="108" y="899" class="body">方程、可见性、样式与视口直接修改</text><text x="108" y="921" class="body">共用 GraphState（图状态）/ revision（版本）</text>
   <text x="108" y="987" class="caps">CLIENT MATH &amp; RENDERING</text><text x="108" y="1016" class="node">安全采样与三角函数坐标轴</text><text x="108" y="1039" class="body">AST 白名单 · π 刻度 · tan 渐近线断点</text>
 
   <!-- transport -->
@@ -97,9 +97,9 @@
     <rect x="463" y="856" width="300" height="195" rx="16" fill="#f7fbff" stroke="#c8d9ed"/>
   </g>
   <text x="486" y="365" class="caps">CHAT CONTRACT</text><text x="486" y="394" class="node">POST /api/chat</text><text x="486" y="419" class="body">requestId：幂等与结果缓存</text><text x="486" y="441" class="body">expectedRevision：并发写冲突保护</text><text x="486" y="463" class="body">stream=true：默认开启流式响应</text>
-  <text x="486" y="531" class="caps">SERVER-SENT EVENTS</text><text x="486" y="560" class="node">meta / phase / step / done / error</text><text x="486" y="585" class="body">单向增量推送，无需改变最终响应契约</text><text x="486" y="607" class="body">断连 / 异常会收口运行记录</text><text x="486" y="629" class="body">非流模式仍返回同一 ChatResponse</text>
+  <text x="486" y="531" class="caps">SERVER-SENT EVENTS · SSE（服务器推送事件）</text><text x="486" y="560" class="node">meta / phase / step / done / error</text><text x="486" y="585" class="body">单向增量推送，无需改变最终响应契约</text><text x="486" y="607" class="body">断连 / 异常会收口运行记录</text><text x="486" y="629" class="body">非流模式仍返回 ChatResponse（聊天响应）</text>
   <text x="486" y="713" class="caps">REQUEST LIFECYCLE</text><text x="486" y="742" class="node">预写入与取消控制</text><text x="486" y="767" class="body">校验会话 → 保存用户消息</text><text x="486" y="789" class="body">创建 agent_run(running) → 启动 Runner</text><text x="486" y="811" class="body">POST /api/chat/cancel 发送取消信号</text>
-  <text x="486" y="887" class="caps">SESSION API</text><text x="486" y="916" class="node">会话管理与直接命令</text><text x="486" y="941" class="body">/api/sessions：CRUD、收藏、标题</text><text x="486" y="963" class="body">消息游标分页、上下文摘要</text><text x="486" y="985" class="body">/commands：确定性 GraphState 修改</text><text x="486" y="1028" class="body">Vite / nginx 将 /api 统一转发至 FastAPI</text>
+  <text x="486" y="887" class="caps">SESSION API</text><text x="486" y="916" class="node">会话管理与直接命令</text><text x="486" y="941" class="body">/api/sessions：CRUD、收藏、标题</text><text x="486" y="963" class="body">消息游标分页、上下文摘要</text><text x="486" y="985" class="body">UI 图状态也拆解为确定性 commands 执行</text><text x="486" y="1028" class="body">Vite / nginx 将 /api 统一转发至 FastAPI</text>
 
   <!-- agent core -->
   <g filter="url(#soft)">
@@ -111,17 +111,17 @@
     <rect x="1120" y="832" width="264" height="142" rx="16" fill="#eff9f6" stroke="#bddfd5"/>
     <rect x="842" y="994" width="542" height="57" rx="15" fill="#eaf8f3" stroke="#b8dbd0"/>
   </g>
-  <text x="866" y="365" class="caps">UNDERSTAND</text><text x="866" y="394" class="node">RequestSpec + 可验证目标 + 上下文构建</text><text x="866" y="416" class="body">提取表达式、目标效果、观察要求、目标对象与视口；越界请求和无效表达式在模型前拦截</text><text x="866" y="431" class="body">GraphState 始终进入决策；近期消息与 context_summary 由配置决定是否携带</text>
+  <text x="866" y="365" class="caps">UNDERSTAND</text><text x="866" y="394" class="node">RequestSpec（请求规格）+ 可验证目标</text><text x="866" y="416" class="body">提取表达式、目标效果、观察要求、目标对象与视口；越界请求和无效表达式在模型前拦截</text><text x="866" y="431" class="body">GraphState（图状态）必带；context_summary（上下文摘要）等历史信息可配置</text>
   <text x="866" y="491" class="caps">DECISION PROVIDERS</text><text x="866" y="520" class="node">DeepSeek 优先 · Local 回退</text><text x="866" y="545" class="body">JSON / native tool_calls 双协议</text><text x="866" y="567" class="body">动态工具集、上下文预算、30 步 / 30 次调用上限</text><text x="866" y="589" class="body">明确 plot / add / viewport 可前置确定性动作</text>
-  <text x="1144" y="491" class="caps">EXECUTION MODES</text><text x="1144" y="520" class="node">react / shadow / off</text><text x="1144" y="545" class="body">react：验证成功后提交</text><text x="1144" y="567" class="body">shadow：执行并比较，不改变图状态</text><text x="1144" y="589" class="body">off：单步工具 + 同一 Final Gate</text>
-  <text x="866" y="657" class="caps">BOUNDED ACTION LOOP</text><text x="866" y="686" class="node">Action → Command → Tool → Observation → Decision</text>
+  <text x="1144" y="491" class="caps">EXECUTION MODES</text><text x="1144" y="520" class="node">react / shadow / off</text><text x="1144" y="545" class="body">react（提交）：验证成功后提交</text><text x="1144" y="567" class="body">shadow（影子）：执行比较，不改变状态</text><text x="1144" y="589" class="body">off（单步）：单工具 + 同一最终门禁</text>
+  <text x="866" y="657" class="caps">BOUNDED ACTION LOOP</text><text x="866" y="682" class="node">AgentAction（代理动作）→ Command（命令）→ Tool（工具）</text><text x="866" y="701" class="small">→ Observation（观察结果）→ Decision（决策）</text>
   <rect x="866" y="706" width="151" height="69" rx="11" fill="#eee8ff" stroke="#d2c3ef"/><text x="942" y="732" text-anchor="middle" class="node">图状态变更</text><text x="942" y="755" text-anchor="middle" class="small">plot / add / update / remove</text>
   <rect x="1032" y="706" width="151" height="69" rx="11" fill="#edf5ff" stroke="#c3d7ed"/><text x="1108" y="732" text-anchor="middle" class="node">数学分析</text><text x="1108" y="755" text-anchor="middle" class="small">交点 / 零点 / 极值细化 / 比较</text>
-  <rect x="1198" y="706" width="162" height="69" rx="11" fill="#edf8f5" stroke="#bfddd4"/><text x="1279" y="732" text-anchor="middle" class="node">视口与标记</text><text x="1279" y="755" text-anchor="middle" class="small">set / fit / markers / sample</text>
-  <text x="866" y="797" class="body">严格参数 Schema · 策略与前后置条件 · 工作副本隔离 · 工具超时 · 重复动作检测 · Observation 修复</text>
-  <text x="866" y="863" class="caps">FINAL GATE</text><text x="866" y="892" class="node">目标效果与事实观察双重校验</text><text x="866" y="917" class="body">缺失目标继续规划；零动作假成功被拒绝</text><text x="866" y="939" class="body">最终答复只引用已执行工具的事实观察</text><text x="866" y="961" class="body">错误 / 取消均保持原始 GraphState</text>
+  <rect x="1198" y="706" width="162" height="69" rx="11" fill="#edf8f5" stroke="#bfddd4"/><text x="1279" y="732" text-anchor="middle" class="node">视口与标记</text><text x="1279" y="755" text-anchor="middle" class="small">set / fit / 自动刷新交点</text>
+  <text x="866" y="797" class="body">Schema（结构）· Policy（策略）· 隔离副本 · 超时取消 · 语义指纹去重 · Observation（观察）修复</text>
+  <text x="866" y="863" class="caps">FINAL GATE</text><text x="866" y="892" class="node">Final Gate（最终门禁）</text><text x="866" y="917" class="body">目标效果与事实观察双重校验；零动作假成功被拒绝</text><text x="866" y="939" class="body">最终答复只引用已执行工具的事实观察</text><text x="866" y="961" class="body">错误 / 取消均保持原始 GraphState（图状态）</text>
   <text x="1144" y="863" class="caps">COMMIT POLICY</text><text x="1144" y="892" class="node">事务化保存或显式保留</text><text x="1144" y="917" class="body">success + dirty + react/off → commit</text><text x="1144" y="939" class="body">shadow → baseline diff，不提交</text><text x="1144" y="961" class="body">失败 / 超时 / 取消 → preserve</text>
-  <text x="866" y="1029" class="node">所有路径最终落到 save 阶段，并生成一致的 ChatResponse</text>
+  <text x="866" y="1029" class="node">所有路径落到 save（保存），并生成 ChatResponse（聊天响应）</text>
 
   <!-- data / quality -->
   <g filter="url(#soft)">
@@ -130,10 +130,10 @@
     <rect x="1463" y="714" width="252" height="142" rx="16" fill="#eff9f6" stroke="#b9ded4"/>
     <rect x="1463" y="880" width="252" height="171" rx="16" fill="#f5fbf8" stroke="#c4e0d8"/>
   </g>
-  <text x="1486" y="365" class="caps">SESSION STATE</text><text x="1486" y="394" class="node">SQLite + SQLAlchemy</text><text x="1486" y="419" class="body">sessions / messages</text><text x="1486" y="441" class="body">GraphState + revision</text><text x="1486" y="463" class="body">context_summary + message pages</text><text x="1486" y="485" class="body">助手消息与图状态原子保存</text>
-  <text x="1486" y="561" class="caps">OBSERVABILITY</text><text x="1486" y="590" class="node">agent_runs / agent_steps</text><text x="1486" y="615" class="body">模式 · Provider · 状态 · 回退 · 耗时</text><text x="1486" y="637" class="body">工具、参数摘要、观察摘要、步骤耗时</text><text x="1486" y="659" class="body">完成 / 错误 / 取消 / 断连均收口</text>
+  <text x="1486" y="365" class="caps">SESSION STATE</text><text x="1486" y="394" class="node">SQLite + SQLAlchemy</text><text x="1486" y="419" class="body">sessions（会话）/ messages（消息）</text><text x="1486" y="441" class="body">GraphState（图状态）+ revision（版本）</text><text x="1486" y="463" class="body">context_summary（上下文摘要）+ 分页</text><text x="1486" y="485" class="body">助手消息与图状态原子保存</text>
+  <text x="1486" y="561" class="caps">OBSERVABILITY</text><text x="1486" y="584" class="node">agent_runs（运行）</text><text x="1486" y="606" class="node">agent_steps（步骤）</text><text x="1486" y="629" class="body">Provider（决策来源）· 状态 · 回退</text><text x="1486" y="650" class="body">参数摘要 · 观察摘要 · 步骤耗时</text><text x="1486" y="671" class="body">完成 / 错误 / 取消 / 断连均收口</text>
   <text x="1486" y="745" class="caps">METRICS</text><text x="1486" y="774" class="node">近窗口聚合</text><text x="1486" y="799" class="body">成功率 · 回退率 · 延迟分位数</text><text x="1486" y="821" class="body">错误分布 · 工具耗时 · 模式分组</text><text x="1486" y="843" class="body">JSON / Markdown 基线产物</text>
-  <text x="1486" y="911" class="caps">RELEASE GATE</text><text x="1486" y="940" class="node">91 用例 × 稳定性重复</text><text x="1486" y="965" class="body">单步 / 复合 / 多轮 / 安全拒绝</text><text x="1486" y="987" class="body">一致性 · 正常终止 · Schema 错误</text><text x="1486" y="1009" class="body">DeepSeek 全量目录 + repeats ≥ 3</text><text x="1486" y="1031" class="body">指标全部达标才允许发布 react</text>
+  <text x="1486" y="911" class="caps">RELEASE GATE</text><text x="1486" y="940" class="node">91 用例 × 3 = 273 trials</text><text x="1486" y="965" class="body">单步 / 复合 / 多轮 / 安全拒绝</text><text x="1486" y="987" class="body">DeepSeek 全量 · 无 fallback</text><text x="1486" y="1009" class="body">全部质量指标与稳定性 100%</text><text x="1486" y="1031" class="body">publishReactAllowed = true</text>
 
   <!-- flows between lanes -->
   <path d="M385 405h78" class="flow"/><path d="M385 719h44c18 0 18-140 34-140" class="return"/>
@@ -144,7 +144,7 @@
 
   <!-- footer -->
   <g filter="url(#soft)"><rect x="60" y="1114" width="1680" height="80" rx="18" fill="#fff" fill-opacity=".92" stroke="#c8d9ee"/></g>
-  <text x="86" y="1143" class="caps">BUSINESS GUARANTEE</text><text x="86" y="1172" class="node">先执行、再验证、后提交：模型负责选择动作，确定性工具负责数学与状态，Final Gate 负责业务正确性。</text>
-  <g transform="translate(1180 1135)"><rect width="155" height="35" rx="18" fill="#e9f2ff"/><text x="78" y="23" text-anchor="middle" class="body">SSE 实时可见</text><rect x="170" width="155" height="35" rx="18" fill="#f0eaff"/><text x="248" y="23" text-anchor="middle" class="body">失败不污染状态</text><rect x="340" width="155" height="35" rx="18" fill="#e5f7f1"/><text x="418" y="23" text-anchor="middle" class="body">Docker Compose 部署</text></g>
-  <text x="1715" y="1218" text-anchor="end" class="small">Current architecture · 2026-08-02</text>
+  <text x="86" y="1143" class="caps">BUSINESS GUARANTEE</text><text x="86" y="1172" class="node">先执行、再验证、后提交：模型选择动作，确定性工具处理数学与状态，Final Gate（最终门禁）保证正确性。</text>
+  <g transform="translate(1180 1135)"><rect width="155" height="35" rx="18" fill="#e9f2ff"/><text x="78" y="23" text-anchor="middle" class="body">SSE（服务器推送）</text><rect x="170" width="155" height="35" rx="18" fill="#f0eaff"/><text x="248" y="23" text-anchor="middle" class="body">失败不污染状态</text><rect x="340" width="155" height="35" rx="18" fill="#e5f7f1"/><text x="418" y="23" text-anchor="middle" class="body">Docker Compose 部署</text></g>
+  <text x="1715" y="1218" text-anchor="end" class="small">Current architecture · 2026-08-03</text>
 </svg>
