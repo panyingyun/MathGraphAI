@@ -40,20 +40,31 @@ def _failure(
     )
 
 
+def _schema_ref_name(reference: object) -> str:
+    return str(reference).rsplit("/", 1)[-1]
+
+
+def _schema_payload_type(payload: Dict[str, Any]) -> Any:
+    if payload.get("type"):
+        return payload["type"]
+    if payload.get("$ref"):
+        return _schema_ref_name(payload["$ref"])
+    if payload.get("anyOf"):
+        return [
+            option.get("type") or _schema_ref_name(option.get("$ref") or "")
+            for option in payload["anyOf"]
+        ]
+    return None
+
+
 def _schema_summary(model) -> Dict[str, Any]:
     schema = model.model_json_schema(by_alias=True)
     fields: Dict[str, Any] = {}
     for name, payload in (schema.get("properties") or {}).items():
         item: Dict[str, Any] = {}
-        if payload.get("type"):
-            item["type"] = payload["type"]
-        elif payload.get("$ref"):
-            item["type"] = str(payload["$ref"]).rsplit("/", 1)[-1]
-        elif payload.get("anyOf"):
-            item["type"] = [
-                option.get("type") or str(option.get("$ref") or "").rsplit("/", 1)[-1]
-                for option in payload["anyOf"]
-            ]
+        payload_type = _schema_payload_type(payload)
+        if payload_type:
+            item["type"] = payload_type
         if "minItems" in payload:
             item["minItems"] = payload["minItems"]
         if "maxItems" in payload:

@@ -56,6 +56,33 @@ def sample_values(
     return normalized, xs, ys
 
 
+def _best_extremum_candidate(
+    evaluate: EvaluateFn,
+    xs: Sequence[float],
+    maximize: bool,
+) -> Optional[Tuple[float, float]]:
+    candidates = [
+        (x, y)
+        for x in xs
+        if (y := _safe_eval(evaluate, x)) is not None
+    ]
+    if not candidates:
+        return None
+    return max(candidates, key=lambda point: point[1]) if maximize else min(candidates, key=lambda point: point[1])
+
+
+def _snap_integer_extremum(
+    evaluate: EvaluateFn,
+    x: float,
+    y: float,
+) -> Tuple[float, float]:
+    if abs(x - round(x)) >= 1e-8:
+        return x, y
+    snapped = float(round(x))
+    snapped_y = _safe_eval(evaluate, snapped)
+    return (snapped, snapped_y) if snapped_y is not None else (x, y)
+
+
 def check_sample(
     expression: str,
     x_min: float,
@@ -158,24 +185,11 @@ def _refine_extremum(
         if abs(b - a) <= 1e-12:
             break
     # 端点与内点再比一次，避免边界退化
-    candidates: List[Tuple[float, float]] = []
-    for x in (a, b, (a + b) / 2.0):
-        y = _safe_eval(evaluate, x)
-        if y is not None:
-            candidates.append((x, y))
-    if not candidates:
+    best = _best_extremum_candidate(evaluate, (a, b, (a + b) / 2.0), maximize)
+    if best is None:
         return None
-    best_x, best_y = candidates[0]
-    for x, y in candidates[1:]:
-        if (maximize and y > best_y) or (not maximize and y < best_y):
-            best_x, best_y = x, y
     # 极接近整数时收成干净坐标（如 x^3-3x → (±1, ±2)）
-    if abs(best_x - round(best_x)) < 1e-8:
-        snapped = float(round(best_x))
-        snapped_y = _safe_eval(evaluate, snapped)
-        if snapped_y is not None:
-            best_x, best_y = snapped, snapped_y
-    return best_x, best_y
+    return _snap_integer_extremum(evaluate, *best)
 
 
 def find_extrema(

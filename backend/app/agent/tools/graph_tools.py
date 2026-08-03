@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+from itertools import combinations
 from typing import Any, Dict, List, Optional
 
 from pydantic import ValidationError
@@ -156,21 +157,19 @@ def _collect_intersection_markers(
     seen: List[tuple] = []
     tol = max(1e-6, float(getattr(settings, "math_tolerance", 1e-6)) * 20)
 
-    for i in range(len(visibles)):
-        for j in range(i + 1, len(visibles)):
-            left, right = visibles[i], visibles[j]
-            try:
-                found = find_intersections(
-                    left.normalized_expression,
-                    right.normalized_expression,
-                    x_min,
-                    x_max,
-                )
-            except (InvalidEquation, ArithmeticError, ValueError, TypeError):
-                continue
-            _append_intersection_markers(markers, seen, left, right, found, tol)
-            if len(markers) >= settings.math_max_points:
-                return markers
+    for left, right in combinations(visibles, 2):
+        try:
+            found = find_intersections(
+                left.normalized_expression,
+                right.normalized_expression,
+                x_min,
+                x_max,
+            )
+        except (InvalidEquation, ArithmeticError, ValueError, TypeError):
+            continue
+        _append_intersection_markers(markers, seen, left, right, found, tol)
+        if len(markers) >= settings.math_max_points:
+            return markers
     return markers
 
 
@@ -267,6 +266,35 @@ def add_equations(working: WorkingGraphState, arguments: Dict[str, Any], _target
     }
 
 
+def _expression_update(updates: Dict[str, Any]) -> Any:
+    return updates.get("normalizedExpression") or updates.get("normalized_expression") or updates.get("expression")
+
+
+def _has_expression_update(updates: Dict[str, Any]) -> bool:
+    return any(key in updates for key in ("normalizedExpression", "normalized_expression", "expression"))
+
+
+def _apply_expression_update(item: EquationItem, updates: Dict[str, Any]) -> None:
+    expression = _expression_update(updates)
+    if not expression:
+        return
+    try:
+        normalized = validate_expression(str(expression))
+    except InvalidEquation as exc:
+        raise ToolError("expression_error", str(exc)) from exc
+    item.normalized_expression = normalized
+    item.expression = f"y = {normalized}"
+    if "label" not in updates:
+        item.label = display_label(normalized)
+
+
+def _apply_field_updates(item: EquationItem, updates: Dict[str, Any]) -> None:
+    for key, value in updates.items():
+        snake_key = {"lineWidth": "line_width", "normalizedExpression": "normalized_expression"}.get(key, key)
+        if snake_key in {"color", "visible", "line_width", "label"}:
+            setattr(item, snake_key, value)
+
+
 def update_equation(working: WorkingGraphState, arguments: Dict[str, Any], target: Optional[Any]) -> Dict[str, Any]:
     updates_raw = arguments.get("updates") or {}
     if isinstance(updates_raw, str):
@@ -277,28 +305,17 @@ def update_equation(working: WorkingGraphState, arguments: Dict[str, Any], targe
     equation_id = _resolve_target_id(working, target)
     next_state = working.current.model_copy(deep=True)
     found = None
+    refresh_intersections = _has_expression_update(updates)
     for item in next_state.equations:
         if item.id != equation_id:
             continue
-        expression = updates.get("normalizedExpression") or updates.get("normalized_expression") or updates.get("expression")
-        if expression:
-            try:
-                normalized = validate_expression(str(expression))
-            except InvalidEquation as exc:
-                raise ToolError("expression_error", str(exc)) from exc
-            item.normalized_expression = normalized
-            item.expression = f"y = {normalized}"
-            if "label" not in updates:
-                item.label = display_label(normalized)
-        for key, value in updates.items():
-            snake_key = {"lineWidth": "line_width", "normalizedExpression": "normalized_expression"}.get(key, key)
-            if snake_key in {"color", "visible", "line_width", "label"}:
-                setattr(item, snake_key, value)
+        _apply_expression_update(item, updates)
+        _apply_field_updates(item, updates)
         found = item
         break
     if found is None:
         raise ToolError("equation_not_found", f"找不到方程 {equation_id}")
-    if "normalizedExpression" in updates or "normalized_expression" in updates or "expression" in updates:
+    if refresh_intersections:
         _refresh_intersection_markers(next_state)
     working.replace_current(next_state)
     return {"equation": found.model_dump(by_alias=True)}

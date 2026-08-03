@@ -38,44 +38,61 @@ def _conflict(current: int, expected: int) -> HTTPException:
     )
 
 
-def _apply_graph_state_commands(working: WorkingGraphState, desired) -> None:
-    """将 UI 全量 GraphState 同步拆成确定性 Command（不调用 LLM）。"""
+def _execute_ui_command(working: WorkingGraphState, command: Command, fallback_message: str) -> None:
+    result = execute_command(working, command)
+    if not result.success:
+        raise HTTPException(status_code=422, detail=result.error_message or fallback_message)
+
+
+def _equation_payloads(desired) -> List[dict]:
+    return [
+        {
+            "id": item.id,
+            "expression": item.expression,
+            "normalizedExpression": item.normalized_expression or item.expression,
+            "label": item.label,
+            "color": item.color,
+            "visible": item.visible,
+            "lineWidth": item.line_width,
+            "type": item.type,
+        }
+        for item in desired.equations
+    ]
+
+
+def _sync_equations_from_ui(working: WorkingGraphState, desired) -> None:
     if desired.equations:
-        plot = Command(
-            command_id=f"cmd_ui_plot_{uuid.uuid4().hex[:8]}",
-            type="plot_equations",
-            arguments={
-                "equations": [
-                    {
-                        "id": item.id,
-                        "expression": item.expression,
-                        "normalizedExpression": item.normalized_expression or item.expression,
-                        "label": item.label,
-                        "color": item.color,
-                        "visible": item.visible,
-                        "lineWidth": item.line_width,
-                        "type": item.type,
-                    }
-                    for item in desired.equations
-                ],
-                "analysis": desired.analysis.model_dump(by_alias=True) if desired.analysis else None,
-            },
-            source="ui",
+        _execute_ui_command(
+            working,
+            Command(
+                command_id=f"cmd_ui_plot_{uuid.uuid4().hex[:8]}",
+                type="plot_equations",
+                arguments={
+                    "equations": _equation_payloads(desired),
+                    "analysis": desired.analysis.model_dump(by_alias=True) if desired.analysis else None,
+                },
+                source="ui",
+            ),
+            "更新方程失败",
         )
-        result = execute_command(working, plot)
-        if not result.success:
-            raise HTTPException(status_code=422, detail=result.error_message or "更新方程失败")
-    else:
-        while working.current.equations:
-            remove = Command(
+        return
+
+    while working.current.equations:
+        _execute_ui_command(
+            working,
+            Command(
                 command_id=f"cmd_ui_rm_{uuid.uuid4().hex[:8]}",
                 type="remove_equation",
                 target={"equationId": working.current.equations[-1].id},
                 source="ui",
-            )
-            result = execute_command(working, remove)
-            if not result.success:
-                raise HTTPException(status_code=422, detail=result.error_message or "清空方程失败")
+            ),
+            "清空方程失败",
+        )
+
+
+def _apply_graph_state_commands(working: WorkingGraphState, desired) -> None:
+    """将 UI 全量 GraphState 同步拆成确定性 Command（不调用 LLM）。"""
+    _sync_equations_from_ui(working, desired)
 
     viewport = Command(
         command_id=f"cmd_ui_vp_{uuid.uuid4().hex[:8]}",
@@ -83,9 +100,7 @@ def _apply_graph_state_commands(working: WorkingGraphState, desired) -> None:
         arguments={"viewport": desired.viewport.model_dump(by_alias=True)},
         source="ui",
     )
-    result = execute_command(working, viewport)
-    if not result.success:
-        raise HTTPException(status_code=422, detail=result.error_message or "更新坐标范围失败")
+    _execute_ui_command(working, viewport, "更新坐标范围失败")
 
     settings_cmd = Command(
         command_id=f"cmd_ui_set_{uuid.uuid4().hex[:8]}",
@@ -93,9 +108,7 @@ def _apply_graph_state_commands(working: WorkingGraphState, desired) -> None:
         arguments={"settings": desired.settings.model_dump(by_alias=True)},
         source="ui",
     )
-    result = execute_command(working, settings_cmd)
-    if not result.success:
-        raise HTTPException(status_code=422, detail=result.error_message or "更新图像设置失败")
+    _execute_ui_command(working, settings_cmd, "更新图像设置失败")
 
 
 @router.get("", response_model=List[SessionSummary])

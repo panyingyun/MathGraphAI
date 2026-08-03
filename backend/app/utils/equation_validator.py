@@ -59,6 +59,26 @@ def _ast_depth(node: ast.AST) -> int:
     return 1 + max(_ast_depth(child) for child in children)
 
 
+def _numeric_constant(value: object) -> float | None:
+    if isinstance(value, (int, float)):
+        return float(value)
+    return None
+
+
+def _power_exponent(node: ast.AST) -> float | None:
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Pow):
+        return _numeric_constant(node.right.value) if isinstance(node.right, ast.Constant) else None
+    if (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "pow"
+        and len(node.args) >= 2
+        and isinstance(node.args[1], ast.Constant)
+    ):
+        return _numeric_constant(node.args[1].value)
+    return None
+
+
 def _check_complexity(tree: ast.AST, normalized: str) -> None:
     if len(normalized) > settings.max_expression_length:
         raise InvalidEquation(f"表达式过长，最多允许 {settings.max_expression_length} 个字符")
@@ -72,17 +92,13 @@ def _check_complexity(tree: ast.AST, normalized: str) -> None:
         raise InvalidEquation(f"表达式嵌套过深，深度不能超过 {settings.max_ast_depth}")
 
     for node in nodes:
-        if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
-            if abs(float(node.value)) > settings.max_numeric_constant:
-                raise InvalidEquation(f"数值常量超出范围，绝对值不能超过 {settings.max_numeric_constant:g}")
-        if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Pow):
-            if isinstance(node.right, ast.Constant) and isinstance(node.right.value, (int, float)):
-                if abs(float(node.right.value)) > settings.max_power_exponent:
-                    raise InvalidEquation(f"指数过大，绝对值不能超过 {settings.max_power_exponent:g}")
-        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "pow":
-            if len(node.args) >= 2 and isinstance(node.args[1], ast.Constant) and isinstance(node.args[1].value, (int, float)):
-                if abs(float(node.args[1].value)) > settings.max_power_exponent:
-                    raise InvalidEquation(f"指数过大，绝对值不能超过 {settings.max_power_exponent:g}")
+        numeric = _numeric_constant(node.value) if isinstance(node, ast.Constant) else None
+        if numeric is not None and abs(numeric) > settings.max_numeric_constant:
+            raise InvalidEquation(f"数值常量超出范围，绝对值不能超过 {settings.max_numeric_constant:g}")
+
+        exponent = _power_exponent(node)
+        if exponent is not None and abs(exponent) > settings.max_power_exponent:
+            raise InvalidEquation(f"指数过大，绝对值不能超过 {settings.max_power_exponent:g}")
 
 
 def _evaluate_node(node: ast.AST, scope: Dict[str, object]) -> float:
