@@ -1,5 +1,5 @@
 {
-  "capturedAt": "2026-08-03T09:29:44.716676+00:00",
+  "capturedAt": "2026-08-03T10:00:57.850348+00:00",
   "stage": "plan02-stage-c",
   "provider": "deepseek",
   "agentMode": "shadow",
@@ -99,7 +99,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 50.33,
+          "durationMs": 54.67,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -152,7 +152,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 25.37,
+          "durationMs": 30.52,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -205,7 +205,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 25.04,
+          "durationMs": 24.46,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -271,7 +271,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.6,
+          "durationMs": 23.55,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -324,7 +324,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.7,
+          "durationMs": 23.68,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -377,7 +377,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 24.12,
+          "durationMs": 24.61,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -443,7 +443,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.33,
+          "durationMs": 24.77,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -496,7 +496,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 24.24,
+          "durationMs": 23.17,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -549,7 +549,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.72,
+          "durationMs": 23.13,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -615,7 +615,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.47,
+          "durationMs": 23.4,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -668,7 +668,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 24.78,
+          "durationMs": 23.26,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -721,7 +721,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 24.54,
+          "durationMs": 23.13,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -787,7 +787,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.96,
+          "durationMs": 23.2,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -840,7 +840,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.8,
+          "durationMs": 24.02,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -893,7 +893,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 22.87,
+          "durationMs": 23.5,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -959,7 +959,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 24.02,
+          "durationMs": 23.12,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -1012,7 +1012,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.38,
+          "durationMs": 23.63,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -1065,7 +1065,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 25.21,
+          "durationMs": 24.0,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -1131,7 +1131,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.55,
+          "durationMs": 23.89,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -1184,7 +1184,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 25.07,
+          "durationMs": 23.22,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -1237,7 +1237,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.65,
+          "durationMs": 23.03,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -1303,7 +1303,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.44,
+          "durationMs": 23.46,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -1356,7 +1356,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.66,
+          "durationMs": 23.35,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -1409,7 +1409,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.72,
+          "durationMs": 23.45,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -1475,7 +1475,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 24.92,
+          "durationMs": 23.55,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -1528,7 +1528,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.28,
+          "durationMs": 23.39,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -1581,7 +1581,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 24.04,
+          "durationMs": 23.23,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -1647,7 +1647,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.59,
+          "durationMs": 23.42,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -1700,7 +1700,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 26.44,
+          "durationMs": 23.41,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -1753,7 +1753,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 24.06,
+          "durationMs": 23.43,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -1819,7 +1819,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 25.7,
+          "durationMs": 23.62,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -1872,7 +1872,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.88,
+          "durationMs": 23.62,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -1925,7 +1925,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.43,
+          "durationMs": 23.38,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -1991,7 +1991,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.81,
+          "durationMs": 24.89,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -2044,7 +2044,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 24.93,
+          "durationMs": 23.04,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -2097,7 +2097,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.8,
+          "durationMs": 24.1,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -2163,7 +2163,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.33,
+          "durationMs": 23.52,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -2216,7 +2216,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.23,
+          "durationMs": 25.03,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -2269,7 +2269,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.45,
+          "durationMs": 28.88,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -2335,7 +2335,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.9,
+          "durationMs": 25.1,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -2388,7 +2388,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 29.34,
+          "durationMs": 24.41,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -2441,7 +2441,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 24.25,
+          "durationMs": 24.02,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -2508,7 +2508,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 26.43,
+          "durationMs": 26.12,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -2563,7 +2563,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 25.49,
+          "durationMs": 25.35,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -2685,7 +2685,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.82,
+          "durationMs": 23.68,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -2738,7 +2738,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.64,
+          "durationMs": 24.68,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -2791,7 +2791,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.86,
+          "durationMs": 23.94,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -2857,7 +2857,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.38,
+          "durationMs": 23.62,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -2910,7 +2910,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.86,
+          "durationMs": 23.76,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -2963,7 +2963,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 24.4,
+          "durationMs": 23.8,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -3029,7 +3029,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 24.46,
+          "durationMs": 23.76,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -3082,7 +3082,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.42,
+          "durationMs": 23.33,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -3135,7 +3135,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.66,
+          "durationMs": 23.72,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -3201,7 +3201,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 24.99,
+          "durationMs": 23.99,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -3254,7 +3254,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 24.51,
+          "durationMs": 23.15,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -3307,7 +3307,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 22.98,
+          "durationMs": 22.9,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -3373,7 +3373,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 24.19,
+          "durationMs": 23.69,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -3426,7 +3426,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.53,
+          "durationMs": 29.06,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -3479,7 +3479,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.25,
+          "durationMs": 24.37,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -3545,7 +3545,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.72,
+          "durationMs": 23.5,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -3598,7 +3598,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.77,
+          "durationMs": 23.57,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -3651,7 +3651,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.73,
+          "durationMs": 23.29,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -3717,7 +3717,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 24.04,
+          "durationMs": 24.17,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -3770,7 +3770,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 24.52,
+          "durationMs": 23.03,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -3823,7 +3823,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 24.57,
+          "durationMs": 22.97,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -3889,7 +3889,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 24.76,
+          "durationMs": 23.03,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -3942,7 +3942,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.46,
+          "durationMs": 24.29,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -3995,7 +3995,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 27.43,
+          "durationMs": 22.99,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -4062,7 +4062,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 25.8,
+          "durationMs": 25.31,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -4117,7 +4117,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 25.84,
+          "durationMs": 26.08,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -4172,7 +4172,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 25.32,
+          "durationMs": 26.46,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -4240,7 +4240,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 25.25,
+          "durationMs": 25.17,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -4295,7 +4295,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 25.53,
+          "durationMs": 30.82,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -4350,7 +4350,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 25.01,
+          "durationMs": 26.54,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -4418,7 +4418,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 27.21,
+          "durationMs": 25.18,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -4473,7 +4473,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 26.35,
+          "durationMs": 24.97,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -4528,7 +4528,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 26.36,
+          "durationMs": 27.42,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -4596,7 +4596,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 829.04,
+          "durationMs": 855.19,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -4651,7 +4651,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1144.78,
+          "durationMs": 874.13,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -4706,7 +4706,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 908.81,
+          "durationMs": 1129.74,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -4774,7 +4774,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 949.23,
+          "durationMs": 1116.68,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -4829,7 +4829,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 968.66,
+          "durationMs": 1001.43,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -4884,7 +4884,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 884.53,
+          "durationMs": 826.71,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -4952,7 +4952,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1239.43,
+          "durationMs": 915.38,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -5007,7 +5007,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 980.29,
+          "durationMs": 1181.26,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -5062,7 +5062,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1220.26,
+          "durationMs": 914.48,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -5130,7 +5130,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1028.95,
+          "durationMs": 896.07,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -5185,7 +5185,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1087.25,
+          "durationMs": 1116.11,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -5240,7 +5240,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1098.56,
+          "durationMs": 877.54,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -5308,7 +5308,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 810.38,
+          "durationMs": 1022.51,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -5363,7 +5363,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 944.66,
+          "durationMs": 929.93,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -5418,7 +5418,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1091.44,
+          "durationMs": 885.25,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -5486,7 +5486,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 844.63,
+          "durationMs": 1251.64,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -5541,7 +5541,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1008.18,
+          "durationMs": 786.99,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -5596,7 +5596,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1246.95,
+          "durationMs": 1132.87,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -5663,7 +5663,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 946.02,
+          "durationMs": 747.33,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -5716,7 +5716,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 939.64,
+          "durationMs": 783.28,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -5769,7 +5769,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1193.97,
+          "durationMs": 1108.6,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -5835,7 +5835,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 738.34,
+          "durationMs": 789.02,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -5888,7 +5888,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 711.75,
+          "durationMs": 840.46,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -5941,7 +5941,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 791.99,
+          "durationMs": 876.75,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -6007,7 +6007,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 808.23,
+          "durationMs": 782.47,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -6060,7 +6060,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1575.42,
+          "durationMs": 994.32,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -6113,7 +6113,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 933.84,
+          "durationMs": 802.3,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -6177,7 +6177,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 807.36,
+          "durationMs": 1062.26,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -6226,7 +6226,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 950.93,
+          "durationMs": 1045.49,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -6275,7 +6275,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 836.07,
+          "durationMs": 788.62,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -6339,7 +6339,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 952.55,
+          "durationMs": 941.47,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -6392,7 +6392,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 747.76,
+          "durationMs": 1058.36,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -6445,7 +6445,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1330.09,
+          "durationMs": 1051.44,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -6512,7 +6512,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 721.04,
+          "durationMs": 1258.83,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -6567,7 +6567,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 919.11,
+          "durationMs": 1612.04,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -6622,7 +6622,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 885.76,
+          "durationMs": 1142.41,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -6689,7 +6689,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 30.26,
+          "durationMs": 26.74,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -6742,7 +6742,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 24.42,
+          "durationMs": 23.29,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -6795,7 +6795,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.49,
+          "durationMs": 23.23,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -6861,7 +6861,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.83,
+          "durationMs": 23.84,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -6914,7 +6914,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.4,
+          "durationMs": 23.23,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -6967,7 +6967,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.02,
+          "durationMs": 23.28,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -7033,7 +7033,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.21,
+          "durationMs": 23.13,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -7086,7 +7086,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 24.6,
+          "durationMs": 23.04,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -7139,7 +7139,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.87,
+          "durationMs": 24.12,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -7205,7 +7205,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 897.94,
+          "durationMs": 1080.05,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -7258,7 +7258,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1099.9,
+          "durationMs": 845.07,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -7311,7 +7311,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1112.88,
+          "durationMs": 922.88,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -7377,7 +7377,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 788.69,
+          "durationMs": 931.46,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -7430,7 +7430,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 950.69,
+          "durationMs": 2054.07,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -7483,7 +7483,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 955.45,
+          "durationMs": 1503.81,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -7551,7 +7551,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 31.38,
+          "durationMs": 30.39,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -7607,7 +7607,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 24.43,
+          "durationMs": 24.51,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -7663,7 +7663,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 25.86,
+          "durationMs": 24.01,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -7733,7 +7733,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 953.31,
+          "durationMs": 978.27,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -7791,7 +7791,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1121.2,
+          "durationMs": 955.97,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -7849,7 +7849,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1060.84,
+          "durationMs": 1032.9,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -7918,7 +7918,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 31.02,
+          "durationMs": 27.75,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -7973,7 +7973,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 26.34,
+          "durationMs": 24.74,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -8028,7 +8028,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 25.27,
+          "durationMs": 25.0,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -8097,7 +8097,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1804.47,
+          "durationMs": 1601.71,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -8153,7 +8153,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1722.59,
+          "durationMs": 1458.61,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -8209,7 +8209,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1728.95,
+          "durationMs": 1551.35,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -8279,7 +8279,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 29.17,
+          "durationMs": 28.56,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -8337,7 +8337,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 28.23,
+          "durationMs": 27.26,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -8395,7 +8395,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 28.65,
+          "durationMs": 27.25,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -8466,7 +8466,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1208.03,
+          "durationMs": 857.01,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -8524,7 +8524,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1256.88,
+          "durationMs": 1038.48,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -8582,7 +8582,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1090.91,
+          "durationMs": 765.17,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -8655,7 +8655,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 2141.24,
+          "durationMs": 2128.68,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 2,
@@ -8716,7 +8716,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 2559.43,
+          "durationMs": 2036.24,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 2,
@@ -8777,7 +8777,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 2190.52,
+          "durationMs": 2486.18,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 2,
@@ -8848,7 +8848,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 847.23,
+          "durationMs": 1110.27,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -8904,7 +8904,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 813.16,
+          "durationMs": 1026.73,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -8960,7 +8960,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 794.44,
+          "durationMs": 839.34,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -9029,7 +9029,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 951.2,
+          "durationMs": 897.41,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -9085,7 +9085,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1020.2,
+          "durationMs": 1183.88,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -9141,7 +9141,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 829.04,
+          "durationMs": 942.68,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -9211,7 +9211,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 955.83,
+          "durationMs": 1413.91,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -9269,7 +9269,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1057.65,
+          "durationMs": 934.32,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -9327,7 +9327,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1060.19,
+          "durationMs": 949.07,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -9395,7 +9395,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1071.13,
+          "durationMs": 920.43,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -9448,7 +9448,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 981.71,
+          "durationMs": 1033.96,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -9501,7 +9501,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1011.68,
+          "durationMs": 883.85,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -9569,7 +9569,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1738.2,
+          "durationMs": 1337.05,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -9625,7 +9625,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1869.9,
+          "durationMs": 1316.03,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -9681,7 +9681,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1491.31,
+          "durationMs": 1594.9,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -9750,7 +9750,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 31.29,
+          "durationMs": 34.46,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -9807,7 +9807,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 28.96,
+          "durationMs": 32.52,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -9864,7 +9864,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 30.95,
+          "durationMs": 28.08,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -9933,7 +9933,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1154.37,
+          "durationMs": 1123.09,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -9988,7 +9988,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1488.21,
+          "durationMs": 847.63,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -10043,7 +10043,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1064.37,
+          "durationMs": 1114.1,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -10111,7 +10111,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1026.09,
+          "durationMs": 999.39,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -10166,7 +10166,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 925.7,
+          "durationMs": 845.84,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -10221,7 +10221,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1117.37,
+          "durationMs": 1180.04,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -10288,7 +10288,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1565.22,
+          "durationMs": 829.9,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -10341,7 +10341,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 983.52,
+          "durationMs": 1134.29,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -10394,7 +10394,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1024.6,
+          "durationMs": 1052.57,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -10460,7 +10460,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1158.25,
+          "durationMs": 1360.69,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -10513,7 +10513,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 790.44,
+          "durationMs": 1093.25,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -10566,7 +10566,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 993.93,
+          "durationMs": 960.41,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -10633,7 +10633,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 881.96,
+          "durationMs": 1117.98,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -10688,7 +10688,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1091.23,
+          "durationMs": 1279.88,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -10743,7 +10743,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 930.94,
+          "durationMs": 1001.07,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -10810,7 +10810,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1892.11,
+          "durationMs": 2085.05,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -10863,7 +10863,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1572.63,
+          "durationMs": 2180.94,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -10916,7 +10916,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 953.76,
+          "durationMs": 1779.03,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -10985,7 +10985,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 2153.37,
+          "durationMs": 2520.56,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 2,
@@ -11043,7 +11043,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 2550.94,
+          "durationMs": 2071.29,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 2,
@@ -11101,7 +11101,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 2107.62,
+          "durationMs": 2633.26,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 2,
@@ -11165,7 +11165,7 @@
             "success": false,
             "errorCode": "unsupported_request"
           },
-          "durationMs": 24.63,
+          "durationMs": 24.94,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -11212,7 +11212,7 @@
             "success": false,
             "errorCode": "unsupported_request"
           },
-          "durationMs": 23.92,
+          "durationMs": 22.91,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -11259,7 +11259,7 @@
             "success": false,
             "errorCode": "unsupported_request"
           },
-          "durationMs": 25.22,
+          "durationMs": 24.88,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -11321,7 +11321,7 @@
             "success": false,
             "errorCode": "goal_not_satisfied"
           },
-          "durationMs": 3366.6,
+          "durationMs": 4558.92,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 4,
@@ -11370,7 +11370,7 @@
             "success": false,
             "errorCode": "goal_not_satisfied"
           },
-          "durationMs": 4083.25,
+          "durationMs": 5147.23,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 4,
@@ -11419,7 +11419,7 @@
             "success": false,
             "errorCode": "goal_not_satisfied"
           },
-          "durationMs": 4332.02,
+          "durationMs": 4236.9,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 4,
@@ -11481,7 +11481,7 @@
             "success": false,
             "errorCode": "expression_error"
           },
-          "durationMs": 894.56,
+          "durationMs": 1116.01,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -11530,7 +11530,7 @@
             "success": false,
             "errorCode": "expression_error"
           },
-          "durationMs": 1113.6,
+          "durationMs": 919.19,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -11579,7 +11579,7 @@
             "success": false,
             "errorCode": "expression_error"
           },
-          "durationMs": 825.58,
+          "durationMs": 810.79,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -11639,7 +11639,7 @@
             "success": false,
             "errorCode": "expression_error"
           },
-          "durationMs": 28.28,
+          "durationMs": 27.11,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -11686,7 +11686,7 @@
             "success": false,
             "errorCode": "expression_error"
           },
-          "durationMs": 23.15,
+          "durationMs": 22.31,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -11733,7 +11733,7 @@
             "success": false,
             "errorCode": "expression_error"
           },
-          "durationMs": 24.71,
+          "durationMs": 22.15,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -11793,7 +11793,7 @@
             "success": false,
             "errorCode": "expression_error"
           },
-          "durationMs": 24.18,
+          "durationMs": 23.76,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -11840,7 +11840,7 @@
             "success": false,
             "errorCode": "expression_error"
           },
-          "durationMs": 22.86,
+          "durationMs": 23.67,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -11887,7 +11887,7 @@
             "success": false,
             "errorCode": "expression_error"
           },
-          "durationMs": 22.85,
+          "durationMs": 22.9,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -11947,7 +11947,7 @@
             "success": false,
             "errorCode": "unsupported_request"
           },
-          "durationMs": 24.02,
+          "durationMs": 22.46,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -11994,7 +11994,7 @@
             "success": false,
             "errorCode": "unsupported_request"
           },
-          "durationMs": 23.1,
+          "durationMs": 23.73,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -12041,7 +12041,7 @@
             "success": false,
             "errorCode": "unsupported_request"
           },
-          "durationMs": 22.96,
+          "durationMs": 22.88,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -12101,7 +12101,7 @@
             "success": false,
             "errorCode": "unsupported_request"
           },
-          "durationMs": 22.8,
+          "durationMs": 22.43,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -12148,7 +12148,7 @@
             "success": false,
             "errorCode": "unsupported_request"
           },
-          "durationMs": 23.7,
+          "durationMs": 22.07,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -12195,7 +12195,7 @@
             "success": false,
             "errorCode": "unsupported_request"
           },
-          "durationMs": 28.47,
+          "durationMs": 22.14,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -12255,7 +12255,7 @@
             "success": false,
             "errorCode": "unsupported_request"
           },
-          "durationMs": 23.04,
+          "durationMs": 22.71,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -12302,7 +12302,7 @@
             "success": false,
             "errorCode": "unsupported_request"
           },
-          "durationMs": 23.01,
+          "durationMs": 22.59,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -12349,7 +12349,7 @@
             "success": false,
             "errorCode": "unsupported_request"
           },
-          "durationMs": 23.31,
+          "durationMs": 22.22,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -12413,7 +12413,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.84,
+          "durationMs": 23.35,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -12466,7 +12466,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.19,
+          "durationMs": 23.22,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -12519,7 +12519,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 24.51,
+          "durationMs": 23.82,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -12585,7 +12585,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 24.22,
+          "durationMs": 23.36,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -12638,7 +12638,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 24.04,
+          "durationMs": 23.24,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -12691,7 +12691,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 25.14,
+          "durationMs": 22.9,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -12759,7 +12759,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 32.35,
+          "durationMs": 31.01,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -12816,7 +12816,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 31.8,
+          "durationMs": 30.39,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -12873,7 +12873,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 30.6,
+          "durationMs": 30.22,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -12942,7 +12942,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 868.25,
+          "durationMs": 848.38,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -12997,7 +12997,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 860.87,
+          "durationMs": 1036.69,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -13052,7 +13052,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 853.34,
+          "durationMs": 771.33,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -13120,7 +13120,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 914.39,
+          "durationMs": 898.1,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -13175,7 +13175,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 818.93,
+          "durationMs": 1007.61,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -13230,7 +13230,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 840.25,
+          "durationMs": 1018.02,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -13297,7 +13297,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 809.13,
+          "durationMs": 851.25,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -13350,7 +13350,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 958.04,
+          "durationMs": 927.75,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -13403,7 +13403,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 920.5,
+          "durationMs": 1048.6,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -13469,7 +13469,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 30.8,
+          "durationMs": 27.67,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -13522,7 +13522,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 24.95,
+          "durationMs": 24.83,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -13575,7 +13575,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 24.05,
+          "durationMs": 24.83,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -13641,7 +13641,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 24.23,
+          "durationMs": 24.41,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -13694,7 +13694,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 24.05,
+          "durationMs": 24.1,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -13747,7 +13747,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 24.22,
+          "durationMs": 23.53,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -13813,7 +13813,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 3.64,
+          "durationMs": 3.43,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -13866,7 +13866,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 3.42,
+          "durationMs": 3.02,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -13919,7 +13919,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 3.91,
+          "durationMs": 4.1,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -13985,7 +13985,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1046.66,
+          "durationMs": 1131.63,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -14038,7 +14038,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 831.85,
+          "durationMs": 1032.97,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -14091,7 +14091,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 880.47,
+          "durationMs": 1092.28,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -14157,7 +14157,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 27.84,
+          "durationMs": 26.31,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -14210,7 +14210,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 24.34,
+          "durationMs": 23.88,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -14263,7 +14263,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 25.91,
+          "durationMs": 23.85,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -14329,7 +14329,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 24.21,
+          "durationMs": 24.08,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -14382,7 +14382,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 25.48,
+          "durationMs": 24.09,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -14435,7 +14435,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.96,
+          "durationMs": 24.56,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -14501,7 +14501,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 24.52,
+          "durationMs": 24.26,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -14554,7 +14554,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.93,
+          "durationMs": 24.68,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -14607,7 +14607,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 24.54,
+          "durationMs": 23.82,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -14673,7 +14673,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.19,
+          "durationMs": 23.51,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -14726,7 +14726,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.97,
+          "durationMs": 24.01,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -14779,7 +14779,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.4,
+          "durationMs": 23.52,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -14815,59 +14815,6 @@
       "passCount": 3,
       "passRate": 1.0,
       "trials": [
-        {
-          "comparison": {
-            "passed": true,
-            "diffs": [],
-            "metrics": {
-              "stateCorrect": true,
-              "goalSatisfied": true,
-              "zeroActionFalseSuccess": false,
-              "repeatedDestructive": false,
-              "schemaError": false,
-              "schemaErrorEvents": 0,
-              "toolInvocations": 1,
-              "safeRejectCorrect": true,
-              "finalConsistent": true,
-              "fallbackUsed": false,
-              "terminatedNormally": true
-            },
-            "expectedEffects": [
-              "plot"
-            ],
-            "actualExpressions": [
-              "x^2"
-            ],
-            "executedTools": [
-              "plot_equations"
-            ],
-            "stepCount": 1,
-            "success": true,
-            "errorCode": null
-          },
-          "durationMs": 24.43,
-          "decisionProvider": "deepseek",
-          "fallbackUsed": false,
-          "modelCalls": 0,
-          "finalMessage": "Shadow 候选状态中有 1 条曲线：y=x^2。\n（Shadow 模式未提交；与本地基线一致）",
-          "errorCode": null,
-          "passed": true,
-          "diffs": [],
-          "zeroActionFalseSuccess": false,
-          "repeatedDestructive": false,
-          "schemaError": false,
-          "schemaErrorEvents": 0,
-          "toolInvocations": 1,
-          "finalConsistent": true,
-          "terminatedNormally": true,
-          "safeRejectCorrect": true,
-          "executedTools": [
-            "plot_equations"
-          ],
-          "actualExpressions": [
-            "x^2"
-          ]
-        },
         {
           "comparison": {
             "passed": true,
@@ -14951,7 +14898,60 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.67,
+          "durationMs": 23.84,
+          "decisionProvider": "deepseek",
+          "fallbackUsed": false,
+          "modelCalls": 0,
+          "finalMessage": "Shadow 候选状态中有 1 条曲线：y=x^2。\n（Shadow 模式未提交；与本地基线一致）",
+          "errorCode": null,
+          "passed": true,
+          "diffs": [],
+          "zeroActionFalseSuccess": false,
+          "repeatedDestructive": false,
+          "schemaError": false,
+          "schemaErrorEvents": 0,
+          "toolInvocations": 1,
+          "finalConsistent": true,
+          "terminatedNormally": true,
+          "safeRejectCorrect": true,
+          "executedTools": [
+            "plot_equations"
+          ],
+          "actualExpressions": [
+            "x^2"
+          ]
+        },
+        {
+          "comparison": {
+            "passed": true,
+            "diffs": [],
+            "metrics": {
+              "stateCorrect": true,
+              "goalSatisfied": true,
+              "zeroActionFalseSuccess": false,
+              "repeatedDestructive": false,
+              "schemaError": false,
+              "schemaErrorEvents": 0,
+              "toolInvocations": 1,
+              "safeRejectCorrect": true,
+              "finalConsistent": true,
+              "fallbackUsed": false,
+              "terminatedNormally": true
+            },
+            "expectedEffects": [
+              "plot"
+            ],
+            "actualExpressions": [
+              "x^2"
+            ],
+            "executedTools": [
+              "plot_equations"
+            ],
+            "stepCount": 1,
+            "success": true,
+            "errorCode": null
+          },
+          "durationMs": 23.95,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -15017,7 +15017,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.91,
+          "durationMs": 23.7,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -15070,7 +15070,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 25.02,
+          "durationMs": 23.63,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -15123,7 +15123,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 23.65,
+          "durationMs": 23.75,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -15159,59 +15159,6 @@
       "passCount": 3,
       "passRate": 1.0,
       "trials": [
-        {
-          "comparison": {
-            "passed": true,
-            "diffs": [],
-            "metrics": {
-              "stateCorrect": true,
-              "goalSatisfied": true,
-              "zeroActionFalseSuccess": false,
-              "repeatedDestructive": false,
-              "schemaError": false,
-              "schemaErrorEvents": 0,
-              "toolInvocations": 1,
-              "safeRejectCorrect": true,
-              "finalConsistent": true,
-              "fallbackUsed": false,
-              "terminatedNormally": true
-            },
-            "expectedEffects": [
-              "plot"
-            ],
-            "actualExpressions": [
-              "x^2+x"
-            ],
-            "executedTools": [
-              "plot_equations"
-            ],
-            "stepCount": 1,
-            "success": true,
-            "errorCode": null
-          },
-          "durationMs": 23.67,
-          "decisionProvider": "deepseek",
-          "fallbackUsed": false,
-          "modelCalls": 0,
-          "finalMessage": "Shadow 候选状态中有 1 条曲线：y=x^2+x。\n（Shadow 模式未提交；与本地基线一致）",
-          "errorCode": null,
-          "passed": true,
-          "diffs": [],
-          "zeroActionFalseSuccess": false,
-          "repeatedDestructive": false,
-          "schemaError": false,
-          "schemaErrorEvents": 0,
-          "toolInvocations": 1,
-          "finalConsistent": true,
-          "terminatedNormally": true,
-          "safeRejectCorrect": true,
-          "executedTools": [
-            "plot_equations"
-          ],
-          "actualExpressions": [
-            "x^2+x"
-          ]
-        },
         {
           "comparison": {
             "passed": true,
@@ -15295,7 +15242,60 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 25.15,
+          "durationMs": 23.66,
+          "decisionProvider": "deepseek",
+          "fallbackUsed": false,
+          "modelCalls": 0,
+          "finalMessage": "Shadow 候选状态中有 1 条曲线：y=x^2+x。\n（Shadow 模式未提交；与本地基线一致）",
+          "errorCode": null,
+          "passed": true,
+          "diffs": [],
+          "zeroActionFalseSuccess": false,
+          "repeatedDestructive": false,
+          "schemaError": false,
+          "schemaErrorEvents": 0,
+          "toolInvocations": 1,
+          "finalConsistent": true,
+          "terminatedNormally": true,
+          "safeRejectCorrect": true,
+          "executedTools": [
+            "plot_equations"
+          ],
+          "actualExpressions": [
+            "x^2+x"
+          ]
+        },
+        {
+          "comparison": {
+            "passed": true,
+            "diffs": [],
+            "metrics": {
+              "stateCorrect": true,
+              "goalSatisfied": true,
+              "zeroActionFalseSuccess": false,
+              "repeatedDestructive": false,
+              "schemaError": false,
+              "schemaErrorEvents": 0,
+              "toolInvocations": 1,
+              "safeRejectCorrect": true,
+              "finalConsistent": true,
+              "fallbackUsed": false,
+              "terminatedNormally": true
+            },
+            "expectedEffects": [
+              "plot"
+            ],
+            "actualExpressions": [
+              "x^2+x"
+            ],
+            "executedTools": [
+              "plot_equations"
+            ],
+            "stepCount": 1,
+            "success": true,
+            "errorCode": null
+          },
+          "durationMs": 24.17,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -15362,7 +15362,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 27.28,
+          "durationMs": 27.81,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -15417,7 +15417,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 26.7,
+          "durationMs": 26.91,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -15472,7 +15472,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 27.09,
+          "durationMs": 28.13,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -15539,7 +15539,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 929.18,
+          "durationMs": 903.19,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -15592,7 +15592,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 733.41,
+          "durationMs": 800.48,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -15645,7 +15645,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 809.95,
+          "durationMs": 1051.01,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -15713,7 +15713,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1059.53,
+          "durationMs": 1220.98,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -15769,7 +15769,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1152.67,
+          "durationMs": 747.04,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,
@@ -15825,7 +15825,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1248.93,
+          "durationMs": 830.67,
           "decisionProvider": "deepseek",
           "fallbackUsed": false,
           "modelCalls": 1,

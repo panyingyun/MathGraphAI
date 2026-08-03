@@ -38,6 +38,11 @@ from ..utils.logging_utils import log_event
 
 
 router = APIRouter(prefix="/chat", tags=["chat"])
+SSE_HEADERS = {
+    "Cache-Control": "no-cache",
+    "Connection": "keep-alive",
+    "X-Accel-Buffering": "no",
+}
 
 
 def _conflict(current: int, expected: int) -> HTTPException:
@@ -55,6 +60,55 @@ def _conflict(current: int, expected: int) -> HTTPException:
 def _format_sse(event: str, data: Any) -> str:
     payload = data if isinstance(data, str) else json.dumps(data, ensure_ascii=False, default=str)
     return f"event: {event}\ndata: {payload}\n\n"
+
+
+def _streaming_response(events: AsyncIterator[str]) -> StreamingResponse:
+    return StreamingResponse(events, media_type="text/event-stream", headers=SSE_HEADERS)
+
+
+def _cached_response_for_request(database: DatabaseSession, request_id: str) -> Optional[ChatResponse]:
+    existing = get_agent_run_by_request_id(database, request_id)
+    return cached_chat_response(existing) if existing and existing.response_json else None
+
+
+def _cached_stream_response(cached: ChatResponse) -> StreamingResponse:
+    async def cached_events() -> AsyncIterator[str]:
+        yield _format_sse("phase", {"phase": cached.phase or "save"})
+        yield _format_sse("done", cached.model_dump(by_alias=True, mode="json"))
+
+    return _streaming_response(cached_events())
+
+
+async def _discard_stream_task(task: "asyncio.Task[None]") -> None:
+    try:
+        await task
+    except (asyncio.CancelledError, Exception):  # noqa: BLE001
+        pass
+
+
+async def _settle_stream_task(task: "asyncio.Task[None]", request_id: str) -> None:
+    if task.done():
+        return
+    cancel_registry.request_cancel(request_id)
+    try:
+        await asyncio.wait_for(asyncio.shield(task), timeout=2.0)
+    except (asyncio.TimeoutError, asyncio.CancelledError):
+        task.cancel()
+        await _discard_stream_task(task)
+    except Exception:  # noqa: BLE001
+        task.cancel()
+        await _discard_stream_task(task)
+
+
+def _pending_runner_result(queue: "asyncio.Queue[Optional[Tuple[str, Any]]]") -> Optional[RunnerResult]:
+    pending_result: Optional[RunnerResult] = None
+    while True:
+        try:
+            item = queue.get_nowait()
+        except asyncio.QueueEmpty:
+            return pending_result
+        if item and item[0] == "__result__":
+            pending_result = item[1]
 
 
 def _close_unfinished_run(
@@ -259,35 +313,18 @@ async def chat(
     request_id = payload.request_id or f"req_{uuid.uuid4().hex}"
     payload.request_id = request_id
 
-    existing = get_agent_run_by_request_id(database, request_id)
-    if existing and existing.response_json:
-        cached = cached_chat_response(existing)
-        if cached:
-            log_event(
-                "chat_idempotent_hit",
-                requestId=request_id,
-                sessionId=payload.session_id,
-                agentMode=settings.agent_mode,
-                decisionProvider=cached.decision_provider,
-                durationMs=round((time.perf_counter() - started) * 1000, 2),
-                stream=payload.stream,
-            )
-            if payload.stream:
-
-                async def cached_events() -> AsyncIterator[str]:
-                    yield _format_sse("phase", {"phase": cached.phase or "save"})
-                    yield _format_sse("done", cached.model_dump(by_alias=True, mode="json"))
-
-                return StreamingResponse(
-                    cached_events(),
-                    media_type="text/event-stream",
-                    headers={
-                        "Cache-Control": "no-cache",
-                        "Connection": "keep-alive",
-                        "X-Accel-Buffering": "no",
-                    },
-                )
-            return cached
+    cached = _cached_response_for_request(database, request_id)
+    if cached:
+        log_event(
+            "chat_idempotent_hit",
+            requestId=request_id,
+            sessionId=payload.session_id,
+            agentMode=settings.agent_mode,
+            decisionProvider=cached.decision_provider,
+            durationMs=round((time.perf_counter() - started) * 1000, 2),
+            stream=payload.stream,
+        )
+        return _cached_stream_response(cached) if payload.stream else cached
 
     session_row = get_session_row(database, payload.session_id)
     if not session_row:
@@ -307,26 +344,9 @@ async def chat(
         database.commit()
     except IntegrityError:
         database.rollback()
-        existing = get_agent_run_by_request_id(database, request_id)
-        if existing and existing.response_json:
-            cached = cached_chat_response(existing)
-            if cached:
-                if payload.stream:
-
-                    async def cached_events_race() -> AsyncIterator[str]:
-                        yield _format_sse("phase", {"phase": cached.phase or "save"})
-                        yield _format_sse("done", cached.model_dump(by_alias=True, mode="json"))
-
-                    return StreamingResponse(
-                        cached_events_race(),
-                        media_type="text/event-stream",
-                        headers={
-                            "Cache-Control": "no-cache",
-                            "Connection": "keep-alive",
-                            "X-Accel-Buffering": "no",
-                        },
-                    )
-                return cached
+        cached = _cached_response_for_request(database, request_id)
+        if cached:
+            return _cached_stream_response(cached) if payload.stream else cached
         raise HTTPException(status_code=409, detail={"code": "request_in_progress", "message": "相同请求正在处理中"})
 
     recent = (
@@ -433,31 +453,8 @@ async def chat(
                     break
                 yield _format_sse(event_type, data)
         finally:
-            if not task.done():
-                cancel_registry.request_cancel(request_id)
-                try:
-                    await asyncio.wait_for(asyncio.shield(task), timeout=2.0)
-                except (asyncio.TimeoutError, asyncio.CancelledError):
-                    task.cancel()
-                    try:
-                        await task
-                    except (asyncio.CancelledError, Exception):  # noqa: BLE001
-                        pass
-                except Exception:  # noqa: BLE001
-                    task.cancel()
-                    try:
-                        await task
-                    except (asyncio.CancelledError, Exception):  # noqa: BLE001
-                        pass
-
-            pending_result: Optional[RunnerResult] = None
-            while True:
-                try:
-                    item = queue.get_nowait()
-                except asyncio.QueueEmpty:
-                    break
-                if item and item[0] == "__result__":
-                    pending_result = item[1]
+            await _settle_stream_task(task, request_id)
+            pending_result = _pending_runner_result(queue)
 
             if not finalized:
                 if pending_result is not None:
@@ -488,12 +485,4 @@ async def chat(
                         ),
                     )
 
-    return StreamingResponse(
-        event_stream(),
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no",
-        },
-    )
+    return _streaming_response(event_stream())

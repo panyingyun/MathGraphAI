@@ -131,6 +131,12 @@ class RunnerResult:
     executed_tools: List[str] = field(default_factory=list)
 
 
+@dataclass(frozen=True)
+class StepDetails:
+    arguments_summary: Optional[str] = None
+    observation_summary: Optional[str] = None
+
+
 def _action_fingerprint(action: AgentAction) -> str:
     material = json.dumps(
         {"tool": action.tool, "arguments": action.arguments, "target": action.target},
@@ -146,18 +152,17 @@ def _public_step(
     status: str,
     summary: str,
     duration_ms: float = 0,
-    *,
-    arguments_summary: Optional[str] = None,
-    observation_summary: Optional[str] = None,
+    details: Optional[StepDetails] = None,
 ) -> StepSummary:
+    details = details or StepDetails()
     return StepSummary(
         step_index=index,
         tool_name=tool,
         status=status,  # type: ignore[arg-type]
         summary=summary,
         duration_ms=duration_ms,
-        arguments_summary=arguments_summary,
-        observation_summary=observation_summary,
+        arguments_summary=details.arguments_summary,
+        observation_summary=details.observation_summary,
     )
 
 
@@ -195,6 +200,76 @@ def _goal_observation(result: GoalValidationResult) -> Observation:
         error_code="goal_not_satisfied",
         error_message=result.message,
     )
+
+
+def _upfront_rejection(request_spec) -> Optional[tuple[str, str]]:
+    if request_spec.unsupported_request:
+        return "unsupported_request", request_spec.unsupported_reason or "当前只支持函数图像相关请求。"
+    if request_spec.expression_invalid:
+        return "expression_error", request_spec.expression_invalid_reason or "方程无效，已拒绝执行。"
+    return None
+
+
+def _refresh_available_tools(
+    context: DecisionContext,
+    request_spec,
+    working: WorkingGraphState,
+    fact_observations: List[Observation],
+    observations: List[Observation],
+    executed_tools: List[str],
+) -> None:
+    context.graph_state = working.current
+    context.observations = observations
+    if settings.agent_dynamic_tools_enabled:
+        policy_observations = list(fact_observations) + [
+            item for item in observations if item.tool == "goal_validator"
+        ]
+        context.available_tool_names = select_available_tools(
+            request_spec,
+            working.current,
+            policy_observations,
+            executed_tools,
+        )
+    else:
+        context.available_tool_names = None
+
+
+def _model_error_from_exception(exc: Exception) -> ModelServiceError:
+    if isinstance(exc, ModelServiceError):
+        return exc
+    return ModelServiceError(ModelErrorCode.UNKNOWN, str(exc))
+
+
+def _final_without_required_work(request_spec, executed_tools: List[str]) -> bool:
+    return (
+        not request_spec.required_effects
+        and not request_spec.mutation_expected
+        and not (set(executed_tools) & WRITE_TOOLS)
+    )
+
+
+def _can_repair_tool_error(
+    current_error: str,
+    tool_repair_attempts: int,
+    repair_key: str,
+    recoverable_failures: set[str],
+) -> bool:
+    return (
+        settings.agent_mode != "off"
+        and current_error in _RECOVERABLE_TOOL_ERRORS
+        and tool_repair_attempts < settings.agent_tool_repair_attempts
+        and repair_key not in recoverable_failures
+    )
+
+
+def _tool_failure_message(execution) -> tuple[str, str]:
+    if execution.error_code in _RECOVERABLE_TOOL_ERRORS:
+        return "tool_repair_exhausted", "工具参数修复仍未通过，已停止并保留原图。"
+    error_code = execution.error_code or "execution_error"
+    message = execution.error_message or "工具执行失败"
+    if execution.error_code == "expression_error":
+        message = f"方程解析失败：{execution.error_message}。例如可以输入 y = x^2 或 y = sin(x)。"
+    return error_code, message
 
 
 async def _execute_with_timeout(working: WorkingGraphState, command: Command):
@@ -315,18 +390,12 @@ class AgentRunner:
             else []
         )
 
-        upfront_blocked = bool(request_spec.unsupported_request or request_spec.expression_invalid)
+        upfront_error = _upfront_rejection(request_spec)
+        upfront_blocked = upfront_error is not None
 
         try:
-            if request_spec.unsupported_request:
-                error_code = "unsupported_request"
-                final_message = request_spec.unsupported_reason or "当前只支持函数图像相关请求。"
-                working.discard()
-                await _add_step(_public_step(0, None, "error", final_message))
-                success = False
-            elif request_spec.expression_invalid:
-                error_code = "expression_error"
-                final_message = request_spec.expression_invalid_reason or "方程无效，已拒绝执行。"
+            if upfront_error is not None:
+                error_code, final_message = upfront_error
                 working.discard()
                 await _add_step(_public_step(0, None, "error", final_message))
                 success = False
@@ -357,22 +426,16 @@ class AgentRunner:
                     success = False
                     break
 
-                context.graph_state = working.current
-                context.observations = observations
                 context.step_index = action_steps
                 context.prior_steps = list(steps)
-                if settings.agent_dynamic_tools_enabled:
-                    policy_observations = list(fact_observations) + [
-                        item for item in observations if item.tool == "goal_validator"
-                    ]
-                    context.available_tool_names = select_available_tools(
-                        request_spec,
-                        working.current,
-                        policy_observations,
-                        executed_tools,
-                    )
-                else:
-                    context.available_tool_names = None
+                _refresh_available_tools(
+                    context,
+                    request_spec,
+                    working,
+                    fact_observations,
+                    observations,
+                    executed_tools,
+                )
                 await _set_phase("understand" if action_steps == 0 else "execute")
 
                 if bootstrap_actions:
@@ -385,11 +448,7 @@ class AgentRunner:
                     except Exception as exc:  # noqa: BLE001
                         if provider.name != "deepseek":
                             raise
-                        mapped = (
-                            exc
-                            if isinstance(exc, ModelServiceError)
-                            else ModelServiceError(ModelErrorCode.UNKNOWN, str(exc))
-                        )
+                        mapped = _model_error_from_exception(exc)
                         fallback_used = True
                         fallback_reason = mapped.user_message
                         error_code = mapped.code.value
@@ -467,11 +526,7 @@ class AgentRunner:
                     elif _looks_like_error_message(final_message):
                         success = False
                         error_code = error_code or "decision_error"
-                    elif (
-                        not request_spec.required_effects
-                        and not request_spec.mutation_expected
-                        and not (set(executed_tools) & WRITE_TOOLS)
-                    ):
+                    elif _final_without_required_work(request_spec, executed_tools):
                         # 闲聊/无图意图被模型直接 final：转为引导失败，展示空会话同款示例。
                         success = False
                         error_code = error_code or "decision_error"
@@ -562,10 +617,12 @@ class AgentRunner:
                                 decision.tool,
                                 "notice",
                                 "检测到重复调用，已安全跳过，不影响当前结果",
-                                arguments_summary=summarize_arguments(
-                                    decision.tool, decision.arguments, decision.target
+                                details=StepDetails(
+                                    arguments_summary=summarize_arguments(
+                                        decision.tool, decision.arguments, decision.target
+                                    ),
+                                    observation_summary=summarize_observation(skip_obs),
                                 ),
-                                observation_summary=summarize_observation(skip_obs),
                             )
                         )
                         action_steps += 1
@@ -592,10 +649,12 @@ class AgentRunner:
                             decision.tool,
                             "warning",
                             "重复调用已禁止，请改用其他工具继续",
-                            arguments_summary=summarize_arguments(
-                                decision.tool, decision.arguments, decision.target
+                            details=StepDetails(
+                                arguments_summary=summarize_arguments(
+                                    decision.tool, decision.arguments, decision.target
+                                ),
+                                observation_summary=summarize_observation(block_obs),
                             ),
-                            observation_summary=summarize_observation(block_obs),
                         )
                     )
                     action_steps += 1
@@ -695,11 +754,11 @@ class AgentRunner:
                 if not execution.success:
                     current_error = execution.error_code or "execution_error"
                     repair_key = f"{fingerprint}:{current_error}"
-                    can_repair = (
-                        settings.agent_mode != "off"
-                        and current_error in _RECOVERABLE_TOOL_ERRORS
-                        and tool_repair_attempts < settings.agent_tool_repair_attempts
-                        and repair_key not in recoverable_failures
+                    can_repair = _can_repair_tool_error(
+                        current_error,
+                        tool_repair_attempts,
+                        repair_key,
+                        recoverable_failures,
                     )
                     if can_repair:
                         recoverable_failures.add(repair_key)
@@ -712,20 +771,12 @@ class AgentRunner:
                                 "warning",
                                 f"工具参数可修复，已回填 Observation（{tool_repair_attempts}/{settings.agent_tool_repair_attempts}）",
                                 duration_ms,
-                                arguments_summary=arg_summary,
-                                observation_summary=obs_summary,
+                                StepDetails(arg_summary, obs_summary),
                             )
                         )
                         continue
 
-                    if current_error in _RECOVERABLE_TOOL_ERRORS:
-                        error_code = "tool_repair_exhausted"
-                        final_message = "工具参数修复仍未通过，已停止并保留原图。"
-                    else:
-                        error_code = current_error
-                        final_message = execution.error_message or "工具执行失败"
-                    if execution.error_code == "expression_error":
-                        final_message = f"方程解析失败：{execution.error_message}。例如可以输入 y = x^2 或 y = sin(x)。"
+                    error_code, final_message = _tool_failure_message(execution)
                     working.discard()
                     await _add_step(
                         _public_step(
@@ -734,8 +785,7 @@ class AgentRunner:
                             "error",
                             final_message,
                             duration_ms,
-                            arguments_summary=arg_summary,
-                            observation_summary=obs_summary,
+                            StepDetails(arg_summary, obs_summary),
                         )
                     )
                     success = False
@@ -754,8 +804,7 @@ class AgentRunner:
                         "success",
                         _tool_summary(decision.tool),
                         duration_ms,
-                        arguments_summary=arg_summary,
-                        observation_summary=obs_summary,
+                        StepDetails(arg_summary, obs_summary),
                     )
                 )
 
