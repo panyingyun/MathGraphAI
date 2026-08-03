@@ -8,7 +8,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     DOCKER=1
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt \
+# 构建机访问 files.pythonhosted.org 常超时，pip 会报 versions: none
+# 全程走国内镜像，避免 sqlalchemy 等包解析/下载失败
+RUN pip install --no-cache-dir \
+        -i https://mirrors.aliyun.com/pypi/simple/ \
+        --trusted-host mirrors.aliyun.com \
+        --retries 5 \
+        --timeout 60 \
+        -r requirements.txt \
     && mkdir -p /data
 
 COPY app ./app
