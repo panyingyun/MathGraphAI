@@ -20,6 +20,9 @@ INTENT_TO_TOOL = {
     "explain": "explain_graph",
 }
 
+EQUATION_INTENTS = {"plot", "add_equation"}
+ANALYSIS_INTENTS = {"analyze", "explain"}
+
 
 def _equation_payload(item: EquationItem) -> Dict[str, Any]:
     # Strip random IDs so Executor 可按状态确定性分配。
@@ -34,6 +37,37 @@ def _equation_payload(item: EquationItem) -> Dict[str, Any]:
     }
 
 
+def _target_payload(equation_id: Optional[str]) -> Optional[Dict[str, Any]]:
+    return {"equationId": equation_id} if equation_id else None
+
+
+def _analysis_payload(result: StructuredResult) -> Dict[str, Any]:
+    arguments: Dict[str, Any] = {}
+    if result.analysis is not None:
+        arguments["analysis"] = result.analysis.model_dump(by_alias=True)
+    if result.explanation:
+        arguments["explanation"] = result.explanation
+    return arguments
+
+
+def _arguments_and_target(result: StructuredResult) -> tuple[Dict[str, Any], Optional[Dict[str, Any]]]:
+    if result.intent in EQUATION_INTENTS:
+        arguments = {
+            "equations": [_equation_payload(item) for item in (result.equations or [])],
+            **_analysis_payload(result),
+        }
+        return arguments, None
+    if result.intent == "update_equation":
+        return {"updates": result.updates or {}}, _target_payload(result.target_equation_id)
+    if result.intent == "remove_equation":
+        return {}, _target_payload(result.target_equation_id)
+    if result.intent == "update_viewport":
+        return {"viewport": result.viewport or {}}, None
+    if result.intent in ANALYSIS_INTENTS:
+        return _analysis_payload(result), _target_payload(result.target_equation_id)
+    return {}, None
+
+
 def structured_result_to_action(result: StructuredResult) -> Optional[AgentAction]:
     if result.intent == "unknown":
         return None
@@ -41,29 +75,7 @@ def structured_result_to_action(result: StructuredResult) -> Optional[AgentActio
     if not tool:
         return None
 
-    arguments: Dict[str, Any] = {}
-    target: Optional[Dict[str, Any]] = None
-
-    if result.intent in {"plot", "add_equation"}:
-        arguments["equations"] = [_equation_payload(item) for item in (result.equations or [])]
-        if result.analysis is not None:
-            arguments["analysis"] = result.analysis.model_dump(by_alias=True)
-        if result.explanation:
-            arguments["explanation"] = result.explanation
-    elif result.intent == "update_equation":
-        target = {"equationId": result.target_equation_id} if result.target_equation_id else None
-        arguments["updates"] = result.updates or {}
-    elif result.intent == "remove_equation":
-        target = {"equationId": result.target_equation_id} if result.target_equation_id else None
-    elif result.intent == "update_viewport":
-        arguments["viewport"] = result.viewport or {}
-    elif result.intent in {"analyze", "explain"}:
-        target = {"equationId": result.target_equation_id} if result.target_equation_id else None
-        if result.analysis is not None:
-            arguments["analysis"] = result.analysis.model_dump(by_alias=True)
-        if result.explanation:
-            arguments["explanation"] = result.explanation
-
+    arguments, target = _arguments_and_target(result)
     return AgentAction(tool=tool, arguments=arguments, target=target)
 
 

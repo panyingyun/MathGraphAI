@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from typing import Any, Dict, List, Optional
 
 import httpx
@@ -10,6 +11,16 @@ from ..config import settings
 from ..utils.json_repair import parse_json_response
 from ..utils.logging_utils import log_event
 from .model_errors import ModelErrorCode, ModelServiceError
+
+
+def _env_http_proxy() -> Optional[str]:
+    """Use httpx-compatible proxy env vars and ignore unsupported ALL_PROXY schemes."""
+
+    for name in ("HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy", "ALL_PROXY", "all_proxy"):
+        value = os.getenv(name, "").strip()
+        if value.startswith(("http://", "https://")):
+            return value
+    return None
 
 
 def classify_http_status(status_code: int) -> ModelErrorCode:
@@ -45,7 +56,11 @@ def map_exception(exc: Exception) -> ModelServiceError:
 
 def create_deepseek_client() -> httpx.AsyncClient:
     """创建可在一次 ReAct 运行的多轮决策间复用的连接池。"""
-    return httpx.AsyncClient(timeout=httpx.Timeout(settings.deepseek_timeout_seconds))
+    return httpx.AsyncClient(
+        timeout=httpx.Timeout(settings.deepseek_timeout_seconds),
+        proxy=_env_http_proxy(),
+        trust_env=False,
+    )
 
 
 async def _post_with_client(client: httpx.AsyncClient, payload: Dict[str, Any]) -> Dict[str, Any]:

@@ -10,6 +10,7 @@ from .equation_validator import InvalidEquation, compile_expression
 
 
 EvaluateFn = Callable[[float], float]
+BISECTION_ITERATIONS = 48
 
 
 def format_point_label(x: float, y: float) -> str:
@@ -224,6 +225,63 @@ def find_extrema(
     }
 
 
+def _intersection_root(
+    diff: Callable[[float], Optional[float]],
+    left: float,
+    right: float,
+    left_value: Optional[float],
+    right_value: Optional[float],
+    tol: float,
+) -> Optional[float]:
+    if left_value is not None and abs(left_value) <= tol:
+        return left
+    if left_value is None or right_value is None or left_value * right_value >= 0:
+        return None
+
+    for _ in range(BISECTION_ITERATIONS):
+        mid = (left + right) / 2.0
+        mid_value = diff(mid)
+        if mid_value is None:
+            break
+        if abs(mid_value) <= tol or abs(right - left) <= tol:
+            return mid
+        current_left_value = diff(left)
+        if current_left_value is None:
+            break
+        if current_left_value * mid_value <= 0:
+            right = mid
+        else:
+            left = mid
+    else:
+        return (left + right) / 2.0
+    return None
+
+
+def _append_intersection_point(
+    points: List[Dict[str, float]],
+    evaluate_a: EvaluateFn,
+    evaluate_b: EvaluateFn,
+    root: float,
+    tol: float,
+) -> None:
+    ya = _safe_eval(evaluate_a, root)
+    yb = _safe_eval(evaluate_b, root)
+    if ya is None or yb is None:
+        return
+    if points and abs(points[-1]["x"] - root) <= tol * 10:
+        return
+
+    y = (ya + yb) / 2.0
+    points.append(
+        {
+            "x": round(root, 9),
+            "y": round(y, 9),
+            "errorBound": tol,
+            "residual": round(abs(ya - yb), 9),
+        }
+    )
+
+
 def find_intersections(
     expression_a: str,
     expression_b: str,
@@ -253,42 +311,9 @@ def find_intersections(
     for index in range(1, count + 1):
         x = x_min + (index / count) * (x_max - x_min)
         current_d = diff(x)
-        root: Optional[float] = None
-        if previous_d is not None and abs(previous_d) <= tol:
-            root = previous_x
-        elif previous_d is not None and current_d is not None and previous_d * current_d < 0:
-            left, right = previous_x, x
-            for _ in range(48):
-                mid = (left + right) / 2.0
-                mid_d = diff(mid)
-                if mid_d is None:
-                    break
-                if abs(mid_d) <= tol or abs(right - left) <= tol:
-                    root = mid
-                    break
-                left_d = diff(left)
-                if left_d is None:
-                    break
-                if left_d * mid_d <= 0:
-                    right = mid
-                else:
-                    left = mid
-            else:
-                root = (left + right) / 2.0
+        root = _intersection_root(diff, previous_x, x, previous_d, current_d, tol)
         if root is not None:
-            ya = _safe_eval(evaluate_a, root)
-            yb = _safe_eval(evaluate_b, root)
-            if ya is not None and yb is not None:
-                y = (ya + yb) / 2.0
-                if not points or abs(points[-1]["x"] - root) > tol * 10:
-                    points.append(
-                        {
-                            "x": round(root, 9),
-                            "y": round(y, 9),
-                            "errorBound": tol,
-                            "residual": round(abs(ya - yb), 9),
-                        }
-                    )
+            _append_intersection_point(points, evaluate_a, evaluate_b, root, tol)
         previous_x, previous_d = x, current_d
         if len(points) >= limit:
             break

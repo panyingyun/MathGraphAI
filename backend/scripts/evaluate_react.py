@@ -193,6 +193,7 @@ async def evaluate_catalog(
                 "category": case.get("category"),
                 "complexity": case.get("complexity", "single"),
                 "expectSafeReject": bool(case.get("expectSafeReject")),
+                "expectToolRepair": bool(case.get("expectToolRepair")),
                 "message": case["message"],
                 "repeats": repeats,
                 "passCount": pass_count,

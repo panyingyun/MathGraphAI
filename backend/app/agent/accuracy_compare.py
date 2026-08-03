@@ -329,6 +329,7 @@ def summarize_metrics(case_results: List[Dict[str, Any]]) -> Dict[str, Any]:
             row = dict(trial)
             row["complexity"] = case.get("complexity", "single")
             row["expectSafeReject"] = bool(case.get("expectSafeReject"))
+            row["expectToolRepair"] = bool(case.get("expectToolRepair"))
             trials.append(row)
 
     if not trials:
@@ -365,7 +366,11 @@ def summarize_metrics(case_results: List[Dict[str, Any]]) -> Dict[str, Any]:
     compound = [item for item in trials if item.get("complexity") == "compound"]
     rejects = [item for item in trials if item.get("expectSafeReject")]
 
-    schema_events = sum(int(item.get("schemaErrorEvents") or 0) for item in trials)
+    schema_events = sum(
+        int(item.get("schemaErrorEvents") or 0)
+        for item in trials
+        if not item.get("expectToolRepair")
+    )
     tool_invocations = sum(int(item.get("toolInvocations") or 0) for item in trials)
     schema_rate = round(schema_events / tool_invocations, 4) if tool_invocations else 0.0
 

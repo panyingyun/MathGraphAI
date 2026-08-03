@@ -279,6 +279,8 @@ def test_scripted_repair_provider_trajectory():
     trial = report["cases"][0]["trials"][0]
     assert trial["schemaErrorEvents"] >= 1
     assert trial["passed"] is True
+    assert report["summary"]["schemaErrorEvents"] == 0
+    assert report["targetsMet"]["schemaErrorRate"] is True
     assert report["publishReactAllowed"] is False
 
 

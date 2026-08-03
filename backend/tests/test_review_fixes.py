@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import replace
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -113,7 +114,7 @@ def test_aggregate_counts_duplicate_action_steps(tmp_path):
         );
         """
     )
-    now = "2026-08-02T02:00:00+00:00"
+    now = datetime.now(timezone.utc).isoformat()
     conn.execute(
         "INSERT INTO agent_runs VALUES (?,?,?,?,?,?,?,?,?,?)",
         ("run_1", "req_1", "success", "react", "local", 2, 0, None, now, now),

@@ -69,6 +69,172 @@ def _received_summary(arguments: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def _restore(working: WorkingGraphState, snapshot: GraphState, dirty: bool) -> None:
+    working.current = snapshot
+    working.dirty = dirty
+
+
+def _validation_error_data(tool, command: Command, exc: ValidationError) -> Dict[str, Any]:
+    error_data: Dict[str, Any] = {
+        "expectedSchema": _schema_summary(tool.arguments_model),
+        "receivedSummary": _received_summary(command.arguments or {}),
+        "validationErrors": [
+            {
+                "location": ".".join(str(item) for item in error.get("loc") or []),
+                "message": error.get("msg"),
+            }
+            for error in exc.errors(include_url=False)[:4]
+        ],
+    }
+    if tool.target_model is not None:
+        error_data["expectedTargetSchema"] = _schema_summary(tool.target_model)
+        error_data["receivedTargetSummary"] = _received_summary(command.target or {})
+    return error_data
+
+
+def _normalize_command(command: Command, tool) -> Command:
+    validated_arguments = tool.arguments_model.model_validate(command.arguments or {})
+    normalized_target = command.target
+    if command.target is not None and tool.target_model is not None:
+        normalized_target = tool.target_model.model_validate(command.target).model_dump(
+            by_alias=True,
+            exclude_none=True,
+        )
+    return command.model_copy(
+        update={
+            "arguments": validated_arguments.model_dump(by_alias=True, exclude_none=True),
+            "target": normalized_target,
+        }
+    )
+
+
+def _policy_violation_data(command: Command) -> Dict[str, Any]:
+    try:
+        tool_spec = get_tool(command.type)
+    except KeyError:
+        return {}
+
+    data = {
+        "expectedSchema": _schema_summary(tool_spec.arguments_model),
+        "receivedSummary": _received_summary(command.arguments or {}),
+    }
+    if tool_spec.target_model is not None:
+        data["expectedTargetSchema"] = _schema_summary(tool_spec.target_model)
+        data["receivedTargetSummary"] = _received_summary(command.target or {})
+    return data
+
+
+def _invalid_arguments_failure(
+    command: Command,
+    tool,
+    exc: ValidationError,
+    graph_state: GraphState,
+) -> ExecutionResult:
+    first = exc.errors(include_url=False)[0]
+    location = ".".join(str(item) for item in first.get("loc") or []) or "arguments"
+    return _failure(
+        command,
+        code="invalid_arguments",
+        message=f"{command.type} 参数 {location} 无效：{first.get('msg', '校验失败')}",
+        graph_state=graph_state,
+        data=_validation_error_data(tool, command, exc),
+    )
+
+
+def _execute_normalized_command(
+    working: WorkingGraphState,
+    command: Command,
+    before: GraphState,
+    tool,
+) -> ExecutionResult:
+    precondition = check_preconditions(command, working.current)
+    if precondition:
+        raise PolicyViolation(precondition.code, precondition.message)
+
+    data = tool.handler(working, command.arguments or {}, command.target)
+    postcondition = check_postconditions(command, before, working.current)
+    if postcondition:
+        raise PolicyViolation(postcondition.code, postcondition.message)
+
+    observation = Observation(tool=command.type, success=True, data=data or {})
+    working.observations.append(observation.model_dump(by_alias=True))
+    return ExecutionResult(
+        success=True,
+        command_id=command.command_id,
+        observation=observation,
+        graph_state=working.current.model_copy(deep=True),
+    )
+
+
+def _policy_violation_failure(
+    working: WorkingGraphState,
+    snapshot: GraphState,
+    dirty_before: bool,
+    command: Command,
+    exc: PolicyViolation,
+) -> ExecutionResult:
+    _restore(working, snapshot, dirty_before)
+    data = _policy_violation_data(command) if exc.code == "invalid_arguments" else {}
+    return _failure(
+        command,
+        code=exc.code,
+        message=exc.message,
+        graph_state=working.current.model_copy(deep=True),
+        data=data,
+    )
+
+
+def _tool_error_failure(
+    working: WorkingGraphState,
+    snapshot: GraphState,
+    dirty_before: bool,
+    command: Command,
+    exc: ToolError,
+) -> ExecutionResult:
+    _restore(working, snapshot, dirty_before)
+    data = {}
+    if exc.code == "equation_not_found":
+        data["availableEquationIds"] = [item.id for item in working.current.equations]
+    return _failure(
+        command,
+        code=exc.code,
+        message=exc.message,
+        graph_state=working.current.model_copy(deep=True),
+        data=data,
+    )
+
+
+def _unknown_tool_failure(
+    working: WorkingGraphState,
+    snapshot: GraphState,
+    dirty_before: bool,
+    command: Command,
+) -> ExecutionResult:
+    _restore(working, snapshot, dirty_before)
+    return _failure(
+        command,
+        code="unknown_tool",
+        message=f"未知工具：{command.type}",
+        graph_state=working.current.model_copy(deep=True),
+    )
+
+
+def _execution_error_failure(
+    working: WorkingGraphState,
+    snapshot: GraphState,
+    dirty_before: bool,
+    command: Command,
+    exc: Exception,
+) -> ExecutionResult:
+    _restore(working, snapshot, dirty_before)
+    return _failure(
+        command,
+        code="execution_error",
+        message=str(exc),
+        graph_state=working.current.model_copy(deep=True),
+    )
+
+
 def execute_command(working: WorkingGraphState, command: Command) -> ExecutionResult:
     """在 WorkingGraphState 上执行单条 Command；失败不修改 current。"""
     if not command.command_id:
@@ -82,112 +248,22 @@ def execute_command(working: WorkingGraphState, command: Command) -> ExecutionRe
         assert_tool_allowed(command.type, command.source)
         tool = get_tool(command.type)
         try:
-            validated_arguments = tool.arguments_model.model_validate(command.arguments or {})
-            normalized_target = command.target
-            if command.target is not None and tool.target_model is not None:
-                normalized_target = tool.target_model.model_validate(command.target).model_dump(
-                    by_alias=True,
-                    exclude_none=True,
-                )
+            command = _normalize_command(command, tool)
         except ValidationError as exc:
-            first = exc.errors(include_url=False)[0]
-            location = ".".join(str(item) for item in first.get("loc") or []) or "arguments"
-            working.current = snapshot
-            working.dirty = dirty_before
-            error_data: Dict[str, Any] = {
-                "expectedSchema": _schema_summary(tool.arguments_model),
-                "receivedSummary": _received_summary(command.arguments or {}),
-                "validationErrors": [
-                    {
-                        "location": ".".join(str(item) for item in error.get("loc") or []),
-                        "message": error.get("msg"),
-                    }
-                    for error in exc.errors(include_url=False)[:4]
-                ],
-            }
-            if tool.target_model is not None:
-                error_data["expectedTargetSchema"] = _schema_summary(tool.target_model)
-                error_data["receivedTargetSummary"] = _received_summary(command.target or {})
-            return _failure(
-                command,
-                code="invalid_arguments",
-                message=f"{command.type} 参数 {location} 无效：{first.get('msg', '校验失败')}",
-                graph_state=working.current.model_copy(deep=True),
-                data=error_data,
+            _restore(working, snapshot, dirty_before)
+            return _invalid_arguments_failure(
+                command, tool, exc, working.current.model_copy(deep=True)
             )
 
-        command = command.model_copy(
-            update={
-                "arguments": validated_arguments.model_dump(by_alias=True, exclude_none=True),
-                "target": normalized_target,
-            }
-        )
-        precondition = check_preconditions(command, working.current)
-        if precondition:
-            raise PolicyViolation(precondition.code, precondition.message)
-
-        data = tool.handler(working, command.arguments or {}, command.target)
-        postcondition = check_postconditions(command, before, working.current)
-        if postcondition:
-            raise PolicyViolation(postcondition.code, postcondition.message)
-
-        observation = Observation(tool=command.type, success=True, data=data or {})
-        working.observations.append(observation.model_dump(by_alias=True))
-        return ExecutionResult(
-            success=True,
-            command_id=command.command_id,
-            observation=observation,
-            graph_state=working.current.model_copy(deep=True),
-        )
+        return _execute_normalized_command(working, command, before, tool)
     except PolicyViolation as exc:
-        working.current = snapshot
-        working.dirty = dirty_before
-        data = {}
-        if exc.code == "invalid_arguments":
-            try:
-                tool_spec = get_tool(command.type)
-                data = {
-                    "expectedSchema": _schema_summary(tool_spec.arguments_model),
-                    "receivedSummary": _received_summary(command.arguments or {}),
-                }
-                if tool_spec.target_model is not None:
-                    data["expectedTargetSchema"] = _schema_summary(tool_spec.target_model)
-                    data["receivedTargetSummary"] = _received_summary(command.target or {})
-            except KeyError:
-                data = {}
-        return _failure(
-            command,
-            code=exc.code,
-            message=exc.message,
-            graph_state=working.current.model_copy(deep=True),
-            data=data,
-        )
+        return _policy_violation_failure(working, snapshot, dirty_before, command, exc)
     except ToolError as exc:
-        working.current = snapshot
-        working.dirty = dirty_before
-        data = {}
-        if exc.code == "equation_not_found":
-            data["availableEquationIds"] = [item.id for item in working.current.equations]
-        return _failure(
-            command,
-            code=exc.code,
-            message=exc.message,
-            graph_state=working.current.model_copy(deep=True),
-            data=data,
-        )
+        return _tool_error_failure(working, snapshot, dirty_before, command, exc)
     except KeyError:
-        working.current = snapshot
-        working.dirty = dirty_before
-        return _failure(command, code="unknown_tool", message=f"未知工具：{command.type}", graph_state=working.current.model_copy(deep=True))
+        return _unknown_tool_failure(working, snapshot, dirty_before, command)
     except Exception as exc:  # noqa: BLE001
-        working.current = snapshot
-        working.dirty = dirty_before
-        return _failure(
-            command,
-            code="execution_error",
-            message=str(exc),
-            graph_state=working.current.model_copy(deep=True),
-        )
+        return _execution_error_failure(working, snapshot, dirty_before, command, exc)
 
 
 class GraphExecutor:

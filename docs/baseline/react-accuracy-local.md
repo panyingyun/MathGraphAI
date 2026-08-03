@@ -1,21 +1,21 @@
 # Plan 02 · ReAct 准确性评测
 
-- 采集时间：`2026-08-01T23:29:05.913981+00:00`
+- 采集时间：`2026-08-03T08:08:07.989235+00:00`
 - Provider：`local`
 - Agent 模式：`shadow`
 - 协议：`json`
 - 每用例重复：`1`
-- 用例数：`10` / 目录 `91`
-- trial 数：`10`
-- 子集评测：`True`
+- 用例数：`91` / 目录 `91`
+- trial 数：`91`
+- 子集评测：`False`
 - 允许发布 react：`False`
 
 ## 发布门禁
 
 - `providerIsDeepseek`: ❌
-- `fullCatalog`: ❌
+- `fullCatalog`: ✅
 - `repeatsAtLeast3`: ❌
-- `requiredCategories`: ❌
+- `requiredCategories`: ✅
 - `noFallback`: ✅
 - `metricsPass`: ✅
 
