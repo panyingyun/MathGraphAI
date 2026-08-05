@@ -1,7 +1,7 @@
 import { Check, Copy, Eye, EyeOff, Palette, Trash2 } from "lucide-react";
 import { useAppStore } from "../../stores/appStore";
 
-const COLORS = ["#2563eb", "#da3437", "#007d55", "#a855f7", "#f97316"];
+const COLORS = ["#c15f3c", "#da3437", "#007d55", "#a855f7", "#d9a066"];
 
 export function EquationList() {
   const equations = useAppStore((state) => state.currentSession?.graphState.equations ?? []);

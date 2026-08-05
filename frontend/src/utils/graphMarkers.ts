@@ -41,7 +41,7 @@ export function buildMarkerTrace(markers: GraphMarker[]): Record<string, unknown
     name: "交点",
     text: markers.map(markerLabel),
     textposition: "top center",
-    textfont: { size: 12, color: "#111827", family: "JetBrains Mono, Consolas, monospace" },
+    textfont: { size: 12, color: "#26251e", family: "SF Mono, JetBrains Mono, Menlo, Consolas, monospace" },
     cliponaxis: false,
     marker: {
       size: 10,
@@ -66,7 +66,7 @@ export function buildMarkerAnnotations(markers: GraphMarker[]): Record<string, u
     arrowwidth: 0.01,
     ax: 0,
     ay: -22,
-    font: { size: 11, color: "#111827", family: "JetBrains Mono, Consolas, monospace" },
+    font: { size: 11, color: "#26251e", family: "SF Mono, JetBrains Mono, Menlo, Consolas, monospace" },
     bgcolor: "rgba(255,255,255,0.92)",
     bordercolor: "#da3437",
     borderwidth: 1,
