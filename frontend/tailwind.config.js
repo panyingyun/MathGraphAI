@@ -4,15 +4,15 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: "#c15f3c",
-        "primary-container": "#d4784f",
-        surface: "#fcfaf8",
-        "surface-low": "#f3f0ef",
-        "surface-container": "#ebe6e2",
-        "outline-variant": "#e7e2dd",
-        ink: "#26251e",
-        muted: "#504f49",
-        danger: "#b5473a",
+        primary: "#004ac6",
+        "primary-container": "#2563eb",
+        surface: "#faf8ff",
+        "surface-low": "#f3f3fe",
+        "surface-container": "#ededf9",
+        "outline-variant": "#c3c6d7",
+        ink: "#191b23",
+        muted: "#5e6272",
+        danger: "#ba1a1a",
       },
       fontFamily: {
         sans: [
@@ -33,7 +33,7 @@ export default {
         mono: ["SF Mono", "JetBrains Mono", "Menlo", "Consolas", "monospace"],
       },
       boxShadow: {
-        soft: "0 10px 30px rgba(38, 37, 30, 0.07)",
+        soft: "0 10px 30px rgba(25, 27, 35, 0.07)",
       },
     },
   },
