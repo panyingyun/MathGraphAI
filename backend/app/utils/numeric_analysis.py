@@ -71,16 +71,75 @@ def _best_extremum_candidate(
     return max(candidates, key=lambda point: point[1]) if maximize else min(candidates, key=lambda point: point[1])
 
 
+SNAP_INTEGER_TOLERANCE = 1e-6
+
+
 def _snap_integer_extremum(
     evaluate: EvaluateFn,
     x: float,
     y: float,
+    *,
+    maximize: bool,
+    tolerance: float = SNAP_INTEGER_TOLERANCE,
 ) -> Tuple[float, float]:
-    if abs(x - round(x)) >= 1e-8:
+    """极接近整数时收成干净坐标（如 x^3-3x → (±1, ±2)）。
+
+    阈值取 1e-6：抛物线精化后残余误差通常 <1e-10，1e-6 可覆盖浮点平坦区的
+    ~√ε(约 1e-8) 极限，且不会误伤真实非整数极值。吸附后用函数值校验防误吸附。
+    """
+
+    if abs(x - round(x)) >= tolerance:
         return x, y
     snapped = float(round(x))
     snapped_y = _safe_eval(evaluate, snapped)
-    return (snapped, snapped_y) if snapped_y is not None else (x, y)
+    if snapped_y is None:
+        return x, y
+    # 吸附后函数值不得明显劣化（防数值噪声把非整数极值误吸附到整数）
+    budget = tolerance * max(1.0, abs(y))
+    if maximize and snapped_y < y - budget:
+        return x, y
+    if not maximize and snapped_y > y + budget:
+        return x, y
+    return snapped, snapped_y
+
+
+def _parabolic_vertex(
+    evaluate: EvaluateFn,
+    x1: float,
+    x2: float,
+    x3: float,
+    maximize: bool,
+) -> Optional[Tuple[float, float]]:
+    """过三点二次插值求顶点（拉格朗日形式）。
+
+    黄金分割靠比较函数值收窄区间，在平坦极值区（函数值二次平坦，f 值差低于 double
+    分辨率）只能收敛到 ~√ε（约 1e-8，如 x=-0.999999989）；改用采样跨度上的三点做
+    抛物线插值、解析求顶点，可将 x 精度提升到 ~1e-13。开口方向与极值类型不符或
+    顶点越界时返回 None（数值噪声，调用方退回原结果）。
+    """
+
+    if not (x1 < x2 < x3):
+        return None
+    y1, y2, y3 = _safe_eval(evaluate, x1), _safe_eval(evaluate, x2), _safe_eval(evaluate, x3)
+    if y1 is None or y2 is None or y3 is None:
+        return None
+    denom = (x1 - x2) * (x1 - x3) * (x2 - x3)
+    if denom == 0:
+        return None
+    # 拉格朗日二次插值 f(x) = a*x^2 + b*x + c 的系数 a、b
+    a = (x1 * (y3 - y2) + x2 * (y1 - y3) + x3 * (y2 - y1)) / denom
+    b = (x1**2 * (y2 - y3) + x2**2 * (y3 - y1) + x3**2 * (y1 - y2)) / denom
+    if a == 0:
+        return None
+    if (maximize and a >= 0) or (not maximize and a <= 0):
+        return None
+    x_vertex = -b / (2.0 * a)
+    if not (x1 <= x_vertex <= x3):
+        return None
+    y_vertex = _safe_eval(evaluate, x_vertex)
+    if y_vertex is None:
+        return None
+    return x_vertex, y_vertex
 
 
 def check_sample(
@@ -188,8 +247,25 @@ def _refine_extremum(
     best = _best_extremum_candidate(evaluate, (a, b, (a + b) / 2.0), maximize)
     if best is None:
         return None
+    # 抛物线三点精化:黄金分割在平坦极值区只能收敛到 ~√ε(约 1e-8,如 x=-0.999999989)。
+    # 用收敛后的窄区间 [a, b] 三点二次插值解析求顶点——区间宽度 ~1e-8 时,插值顶点对
+    # 任意光滑函数的偏差 ~O(h²·f'''/f'') 可忽略,把 x 精化到接近机器精度;
+    # 用初始采样跨度反而会引入 O(h²) 插值偏差,故必须用收敛区间。
+    # 插值对病态函数可能给出错误顶点(开口方向校验只能挡"方向反"),故仅当插值结果
+    # 不劣于黄金分割结果时才采用,否则回退,防止把正确极值拉偏。
+    parabolic = _parabolic_vertex(evaluate, a, (a + b) / 2.0, b, maximize)
+    if parabolic is not None:
+        parabolic_y = parabolic[1]
+        best_y = best[1]
+        degraded = (
+            parabolic_y < best_y - 1e-9 * max(1.0, abs(best_y))
+            if maximize
+            else parabolic_y > best_y + 1e-9 * max(1.0, abs(best_y))
+        )
+        if not degraded:
+            best = parabolic
     # 极接近整数时收成干净坐标（如 x^3-3x → (±1, ±2)）
-    return _snap_integer_extremum(evaluate, *best)
+    return _snap_integer_extremum(evaluate, *best, maximize=maximize)
 
 
 def find_extrema(

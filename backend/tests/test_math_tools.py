@@ -100,6 +100,35 @@ def test_extrema_cubic_refined_on_wide_viewport():
 
 
 @pytest.mark.expression
+def test_extrema_snap_to_exact_integers_on_all_viewports():
+    """整数极值必须精确吸附（-0.999999989 这类残余误差必须消除，而不是 1e-6 容差放过）。"""
+    for domain in ((-10, 10), (-6, 6), (-5, 5), (-4, 4), (-3, 3), (-2, 2)):
+        by_kind = {point["kind"]: point for point in find_extrema("x^3 - 3*x", domain[0], domain[1])["points"]}
+        assert by_kind["max"]["x"] == -1.0
+        assert by_kind["max"]["y"] == pytest.approx(2, abs=1e-6)
+        assert by_kind["min"]["x"] == 1.0
+        assert by_kind["min"]["y"] == pytest.approx(-2, abs=1e-6)
+    # 半开区间 (0, 4) 只包含 min 极值
+    half = find_extrema("x^3 - 3*x", 0, 4)
+    assert half["points"][0]["kind"] == "min"
+    assert half["points"][0]["x"] == 1.0
+    assert half["points"][0]["y"] == pytest.approx(-2, abs=1e-6)
+
+
+@pytest.mark.expression
+def test_extrema_non_integer_never_snapped():
+    """非整数极值（如 sin 的 π/2）不得被误吸附成整数。"""
+    import math
+
+    extrema = find_extrema("sin(x)", -10, 10)
+    maxima = sorted(point["x"] for point in extrema["points"] if point["kind"] == "max")
+    positive = [x for x in maxima if x > 0]
+    assert positive
+    assert min(positive) == pytest.approx(math.pi / 2, abs=1e-4)
+    assert abs(positive[0] - round(positive[0])) > 0.1
+
+
+@pytest.mark.expression
 def test_compare_and_sample_check():
     compared = compare_functions("x", "x^2", -2, 2)
     assert compared["comparableCount"] > 0
