@@ -85,7 +85,8 @@ def test_plot_equations_accepts_string_items():
     )
     assert result.success, result.error_message
     assert len(working.current.equations) == 2
-    assert [item.label for item in working.current.markers] == ["(-1, 1)", "(3, 9)"]
+    intersection_labels = [item.label for item in working.current.markers if item.kind == "intersection"]
+    assert intersection_labels == ["(-1, 1)", "(3, 9)"]
 
 
 def test_runner_compound_commits_once(monkeypatch):

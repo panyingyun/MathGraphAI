@@ -100,6 +100,8 @@ class PartialGraphSettings(ToolArgsModel):
     show_grid: Optional[bool] = None
     show_axis: Optional[bool] = None
     show_legend: Optional[bool] = None
+    show_extrema: Optional[bool] = None
+    show_intersections: Optional[bool] = None
     sample_count: Optional[int] = Field(default=None, ge=200, le=5000)
 
     @model_validator(mode="after")

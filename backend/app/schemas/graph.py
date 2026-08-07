@@ -32,6 +32,9 @@ class GraphSettings(APIModel):
     show_grid: bool = True
     show_axis: bool = True
     show_legend: bool = True
+    # 是否在图上显示极值点 / 交点的坐标标注（前端开关，渲染时过滤 markers）
+    show_extrema: bool = True
+    show_intersections: bool = True
     sample_count: int = Field(default=1000, ge=200, le=5000)
 
 
@@ -55,12 +58,15 @@ class KeyPoint(APIModel):
 
 class GraphMarker(APIModel):
     id: str = ""
-    kind: Literal["intersection", "zero", "extremum", "point"] = "point"
+    kind: Literal["intersection", "zero", "extremum", "axis_y", "point"] = "point"
     label: str = ""
     x: float
     y: float
     color: Optional[str] = None
     equation_ids: List[str] = Field(default_factory=list)
+    # 自动标注(auto=True)在绘图/增删改/视口变化时会被重算丢弃;手动标注(set_graph_markers
+    # 等写入)保留。
+    auto: bool = False
 
 
 class GraphAnalysis(APIModel):

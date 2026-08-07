@@ -35,8 +35,8 @@ REACT_SYSTEM_PROMPT = """你是 MathGraph AI 的决策模块。根据用户请�
 - 修改已有曲线时优先使用方程 ID；新方程由工具分配 ID。
 - remove_equation 必须提供 target.equationId；不得重复删除同一 ID。
 - 空图时若用户写出了 y=...，必须先 plot_equations；不要在没有方程时调用交点/零点/放大工具。
-- 求交点：plot（或已有 ≥2 条方程）后调用 calculate_intersections；若还需放大到附近，用 Observation.points 调用 fit_viewport_to_points（可带 markers），不要重复 plot。
-- 零点/极值：calculate_zeros / calculate_extrema 后可用 set_graph_markers 或 fit_viewport_to_points 写入标记。
+- 绘图后系统已自动标注：曲线间交点、曲线与 X/Y 轴交点、极值点（图上直接显示坐标）。
+- 求交点 / 零点 / 极值：calculate_intersections / calculate_zeros / calculate_extrema 用于获取精确数值（观察结果里有点坐标）或进一步放大视口；不要再用 set_graph_markers 重复写入（会覆盖自动标注）。若需放大到关键点附近，用 Observation.points 调 fit_viewport_to_points（可带 markers）。
 - 比较函数用 compare_functions；判断当前范围是否可绘用 check_sample。
 """
 

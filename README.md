@@ -95,7 +95,7 @@ python -m scripts.evaluate_react --provider deepseek --repeats 3
 - `/api/chat` 支持 `requestId` 幂等与 `expectedRevision` 乐观锁；`stream: true` 时以 SSE 推送 `meta` / `phase` / `step` / `done`（默认 JSON 不变）；DeepSeek 失败会明确标记 `fallbackUsed` 与错误码，不再静默降级。
 - 模型只负责决策；状态变更统一经 Command + 确定性 Executor，在 `WorkingGraphState` 上执行，失败不落库。UI 通过 `/api/sessions/{id}/commands` 复用同一执行边界。
 - 自然语言请求统一进入有界 ReAct `AgentRunner`；复合指令可多步执行，仅在 Final Gate 通过后一次性提交。
-- 支持交点 / 零点 / 极值 / 函数比较 / 采样检查与视口拟合；`shadow` 模式会对比本地基线且不提交。
+- 支持交点 / 零点 / 极值 / 函数比较 / 采样检查与视口拟合；绘图后自动标注极值点、曲线间交点、曲线与 X/Y 轴交点，前端设置面板可分别开关显示（默认开启）；`shadow` 模式会对比本地基线且不提交。
 - `agent_steps` 落库 `arguments_summary` / `observation_summary`，可用 `aggregate_metrics` 聚合近窗成功率、P95、fallback 与重复 Action。
 - 会话消息分页加载；Chat 返回增量消息与摘要；支持取消长请求；前端展示执行阶段与 DeepSeek/Local 降级状态。
 

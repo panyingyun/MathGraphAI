@@ -38,9 +38,112 @@ def test_plot_two_curves_auto_marks_intersections_with_xy_labels():
         },
         None,
     )
-    assert len(working.current.markers) == 2
-    labels = sorted(item.label for item in working.current.markers)
-    assert labels == ["(-1, 1)", "(3, 9)"]
+    assert len(working.current.markers) >= 2
+    labels = {item.label for item in working.current.markers if item.kind == "intersection"}
+    assert labels == {"(-1, 1)", "(3, 9)"}
+
+
+@pytest.mark.state
+def test_plot_auto_marks_extrema_zeros_and_axis_intersections():
+    """绘图后默认自动标注:极值点、曲线间交点、曲线与 X/Y 轴交点。"""
+    working = WorkingGraphState.from_graph(GraphState())
+    plot_equations(
+        working,
+        {
+            "equations": [
+                {"expression": "y = x^2"},
+                {"expression": "y = 2*x + 3"},
+            ]
+        },
+        None,
+    )
+    by_kind: dict = {"extremum": set(), "intersection": set(), "zero": set(), "axis_y": set()}
+    for marker in working.current.markers:
+        by_kind.setdefault(marker.kind, set()).add(marker.label)
+    # 极值:x^2 的顶点
+    assert "(0, 0)" in by_kind["extremum"]
+    # 曲线间交点
+    assert "(-1, 1)" in by_kind["intersection"]
+    assert "(3, 9)" in by_kind["intersection"]
+    # 曲线与 X 轴交点(零点)
+    assert "(-1.5, 0)" in by_kind["zero"]
+    # 曲线与 Y 轴交点
+    assert "(0, 3)" in by_kind["axis_y"]
+    # 同坐标去重:x^2 的极值/零点/Y 轴交点均为 (0,0),图上只保留一个
+    labels = [marker.label for marker in working.current.markers]
+    assert labels.count("(0, 0)") == 1
+
+
+@pytest.mark.state
+def test_graph_settings_defaults_show_extrema_and_intersections():
+    """GraphSettings 默认开启极值/交点显示,且 set_graph_settings 工具可更新。"""
+    from app.agent.tools.graph_tools import set_graph_settings
+
+    state = GraphState()
+    assert state.settings.show_extrema is True
+    assert state.settings.show_intersections is True
+
+    working = WorkingGraphState.from_graph(GraphState())
+    result = set_graph_settings(working, {"settings": {"showExtrema": False, "showIntersections": False}}, None)
+    assert result["settings"]["showExtrema"] is False
+    assert result["settings"]["showIntersections"] is False
+
+
+@pytest.mark.state
+def test_manual_markers_survive_auto_refresh():
+    """set_graph_markers 写入的手动标注在后续绘图操作后保留,自动标注被重算。"""
+    from app.agent.tools.graph_tools import add_equations
+    from app.agent.tools.viewport_tools import set_graph_markers
+
+    working = WorkingGraphState.from_graph(GraphState())
+    plot_equations(working, {"equations": [{"expression": "y = x^2"}]}, None)
+    set_graph_markers(
+        working,
+        {"markers": [{"kind": "extremum", "label": "自定义极值", "x": 0, "y": 0}]},
+        None,
+    )
+    add_equations(working, {"equations": [{"expression": "y = x + 1"}]}, None)
+    manual = [m for m in working.current.markers if not m.auto]
+    assert [m.label for m in manual] == ["自定义极值"]
+    assert all(m.auto for m in working.current.markers if m.label != "自定义极值")
+
+
+@pytest.mark.state
+def test_flat_zero_function_marks_single_origin():
+    """恒零函数不生成满屏零点标注,只保留原点一个。"""
+    working = WorkingGraphState.from_graph(GraphState())
+    plot_equations(working, {"equations": [{"expression": "y = 0"}]}, None)
+    zeros = [m for m in working.current.markers if m.kind == "zero"]
+    assert len(zeros) == 1
+    assert zeros[0].label == "(0, 0)"
+
+
+@pytest.mark.state
+def test_dense_discrete_zeros_not_compressed():
+    """sin(x) 在宽视口的离散零点(间距≈π)不得被连续零段压缩误伤。"""
+    from app.agent.tools.graph_tools import set_viewport
+
+    working = WorkingGraphState.from_graph(GraphState())
+    plot_equations(working, {"equations": [{"expression": "y = sin(x)"}]}, None)
+    set_viewport(working, {"viewport": {"xMin": -20, "xMax": 20}}, None)
+    zeros = [m for m in working.current.markers if m.kind == "zero"]
+    # [-20, 20] 内 sin 有 13 个零点(-6π..6π)
+    assert len(zeros) >= 12
+    assert any("0" in z.label for z in zeros)
+
+
+@pytest.mark.state
+def test_key_points_cleared_when_markers_empty():
+    """删除全部曲线后 markers 与 analysis.key_points 同步清空,不留幽灵标注。"""
+    from app.agent.tools.graph_tools import remove_equation
+
+    working = WorkingGraphState.from_graph(GraphState())
+    plot_equations(working, {"equations": [{"expression": "y = x^2"}]}, None)
+    assert working.current.analysis is not None
+    assert working.current.analysis.key_points
+    remove_equation(working, {}, {"equationId": working.current.equations[0].id})
+    assert not working.current.markers
+    assert working.current.analysis is None or working.current.analysis.key_points is None
 
 
 @pytest.mark.state

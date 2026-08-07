@@ -11,9 +11,15 @@ from pydantic import ValidationError
 from ...config import settings
 from ...schemas.graph import EquationItem, GraphAnalysis, GraphMarker, GraphSettings, KeyPoint, Viewport
 from ...services.local_parser import analyze_expression, display_label
-from ...utils.equation_validator import InvalidEquation, validate_expression
+from ...utils.equation_validator import InvalidEquation, compile_expression, validate_expression
 from ...utils.graph_limits import clamp_analysis
-from ...utils.numeric_analysis import find_intersections, format_point_label
+from ...utils.numeric_analysis import (
+    _safe_eval,
+    find_extrema,
+    find_intersections,
+    find_zeros,
+    format_point_label,
+)
 from ..working_state import WorkingGraphState
 
 
@@ -123,6 +129,7 @@ def _intersection_marker(
         x=x,
         y=y,
         equation_ids=[left.id, right.id],
+        auto=True,
     )
 
 
@@ -173,25 +180,164 @@ def _collect_intersection_markers(
     return markers
 
 
-def _refresh_intersection_markers(state) -> None:
-    """按当前方程与视口重算交点标记，保留零点/极值等非交点标记。"""
-    kept = [item for item in (state.markers or []) if item.kind != "intersection"]
-    try:
-        intersections = _collect_intersection_markers(
-            state.equations,
-            x_min=state.viewport.x_min,
-            x_max=state.viewport.x_max,
+def _zero_markers(
+    equations: List[EquationItem],
+    *,
+    x_min: float,
+    x_max: float,
+) -> List[GraphMarker]:
+    """每条可见曲线与 X 轴的交点（零点）。"""
+    markers: List[GraphMarker] = []
+    for item in equations:
+        if not item.visible:
+            continue
+        try:
+            found = find_zeros(item.normalized_expression, x_min, x_max)
+        except (InvalidEquation, ArithmeticError, ValueError, TypeError):
+            continue
+        points = list(found.get("points") or [])
+        # 连续零段判定:平坦函数(如 y=0)每个采样点都是根,相邻零点间距 ≈ 采样步长;
+        # 离散零点(如 sin 在宽视口)间距远大于步长,不可按数量阈值压缩,否则会误伤。
+        # 同方程零点过多且相邻间距接近步长时才视为连续零段,只保留一个标注。
+        if len(points) > 8:
+            step = (x_max - x_min) / max(1, settings.math_sample_count)
+            gaps = [b["x"] - a["x"] for a, b in zip(points, points[1:])]
+            is_flat = bool(gaps) and min(gaps) < step * 1.5
+            if is_flat:
+                if x_min <= 0 <= x_max:
+                    points = [{"x": 0.0, "y": 0.0}]
+                else:
+                    points = [min(points, key=lambda p: abs(float(p["x"])))]
+        for point in points:
+            if len(markers) >= settings.math_max_points:
+                return markers
+            markers.append(
+                GraphMarker(
+                    id=f"zero_{item.id}_{len(markers)}",
+                    kind="zero",
+                    label=format_point_label(float(point["x"]), 0.0),
+                    x=float(point["x"]),
+                    y=float(point["y"]),
+                    equation_ids=[item.id],
+                    auto=True,
+                )
+            )
+    return markers
+
+
+def _axis_y_markers(
+    equations: List[EquationItem],
+    *,
+    x_min: float,
+    x_max: float,
+) -> List[GraphMarker]:
+    """每条可见曲线与 Y 轴的交点（x=0 处的函数值，需 0 落在 x 范围内）。"""
+    if not (x_min <= 0 <= x_max):
+        return []
+    markers: List[GraphMarker] = []
+    for item in equations:
+        if not item.visible:
+            continue
+        try:
+            _, evaluate = compile_expression(item.normalized_expression)
+            y = _safe_eval(evaluate, 0.0)
+        except (InvalidEquation, ArithmeticError, ValueError, TypeError):
+            continue
+        if y is None:
+            continue
+        markers.append(
+            GraphMarker(
+                id=f"axis_y_{item.id}",
+                kind="axis_y",
+                label=format_point_label(0.0, y),
+                x=0.0,
+                y=y,
+                equation_ids=[item.id],
+                auto=True,
+            )
         )
+        if len(markers) >= settings.math_max_points:
+            return markers
+    return markers
+
+
+def _extremum_markers(
+    equations: List[EquationItem],
+    *,
+    x_min: float,
+    x_max: float,
+) -> List[GraphMarker]:
+    """每条可见曲线的极大值 / 极小值点。"""
+    markers: List[GraphMarker] = []
+    for item in equations:
+        if not item.visible:
+            continue
+        try:
+            found = find_extrema(item.normalized_expression, x_min, x_max)
+        except (InvalidEquation, ArithmeticError, ValueError, TypeError):
+            continue
+        for point in found.get("points") or []:
+            if len(markers) >= settings.math_max_points:
+                return markers
+            markers.append(
+                GraphMarker(
+                    id=f"extremum_{item.id}_{len(markers)}",
+                    kind="extremum",
+                    label=format_point_label(float(point["x"]), float(point["y"])),
+                    x=float(point["x"]),
+                    y=float(point["y"]),
+                    equation_ids=[item.id],
+                    auto=True,
+                )
+            )
+    return markers
+
+
+def _refresh_auto_markers(state) -> None:
+    """按当前方程与视口重算自动标注：曲线间交点、曲线与 X/Y 轴交点、极值点。
+
+    仅丢弃并重建自动标注(auto=True)；手动标注(set_graph_markers / fit_viewport_to_points
+    写入)全部保留。整体受 math_max_points 上限约束。
+    """
+    kept = [item for item in (state.markers or []) if not item.auto]
+    x_min, x_max = state.viewport.x_min, state.viewport.x_max
+    auto: List[GraphMarker] = []
+    try:
+        auto += _extremum_markers(state.equations, x_min=x_min, x_max=x_max)
     except (InvalidEquation, ArithmeticError, ValueError, TypeError):
-        intersections = []
-    state.markers = kept + intersections
-    # 同步到 analysis.keyPoints，便于前端特征面板与兜底渲染。
-    if intersections:
+        pass
+    try:
+        auto += _collect_intersection_markers(state.equations, x_min=x_min, x_max=x_max)
+    except (InvalidEquation, ArithmeticError, ValueError, TypeError):
+        pass
+    auto += _zero_markers(state.equations, x_min=x_min, x_max=x_max)
+    auto += _axis_y_markers(state.equations, x_min=x_min, x_max=x_max)
+    # 同坐标去重(按方程区分,避免不同曲线同坐标标注互相吞并):auto 顺序按
+    # 极值→交点→零点→轴交点优先级,保留首个(最高优先级),避免同一方程
+    # 极值/零点/轴交点重合时图上叠多个 (0,0) 标注。
+    deduped: List[GraphMarker] = []
+    seen: set = set()
+    for item in auto:
+        key = (
+            round(item.x, 6),
+            round(item.y, 6),
+            tuple(sorted(item.equation_ids)),
+        )
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(item)
+    state.markers = (kept + deduped)[: settings.math_max_points]
+    # 同步到 analysis.keyPoints(全量同步,markers 为空时显式清空,避免残留过期数据
+    # 被前端 keyPoints fallback 渲染成幽灵标注)。
+    if state.markers:
         if state.analysis is None:
             state.analysis = GraphAnalysis()
         state.analysis.key_points = [
-            KeyPoint(label=item.label, x=item.x, y=item.y) for item in intersections
+            KeyPoint(label=item.label, x=item.x, y=item.y) for item in state.markers
         ]
+    elif state.analysis is not None:
+        state.analysis.key_points = None
 
 
 def get_graph_state(working: WorkingGraphState, _arguments: Dict[str, Any], _target: Optional[Dict[str, Any]]) -> Dict[str, Any]:
@@ -223,9 +369,9 @@ def plot_equations(working: WorkingGraphState, arguments: Dict[str, Any], _targe
         equations[0].normalized_expression,
         keep_fallback=True,
     )
-    # 绘制两条及以上曲线时，自动标注所有曲线对的交点坐标 (x, y)。
+    # 默认自动标注：极值点、曲线间交点、曲线与坐标轴交点。
     if arguments.get("autoMarkIntersections", True):
-        _refresh_intersection_markers(next_state)
+        _refresh_auto_markers(next_state)
     working.replace_current(next_state)
     return {
         "equationIds": [item.id for item in equations],
@@ -256,7 +402,7 @@ def add_equations(working: WorkingGraphState, arguments: Dict[str, Any], _target
     if analysis is not None:
         next_state.analysis = analysis
     if arguments.get("autoMarkIntersections", True):
-        _refresh_intersection_markers(next_state)
+        _refresh_auto_markers(next_state)
     working.replace_current(next_state)
     return {
         "equationIds": [item.id for item in equations],
@@ -316,7 +462,7 @@ def update_equation(working: WorkingGraphState, arguments: Dict[str, Any], targe
     if found is None:
         raise ToolError("equation_not_found", f"找不到方程 {equation_id}")
     if refresh_intersections:
-        _refresh_intersection_markers(next_state)
+        _refresh_auto_markers(next_state)
     working.replace_current(next_state)
     return {"equation": found.model_dump(by_alias=True)}
 
@@ -325,7 +471,7 @@ def remove_equation(working: WorkingGraphState, _arguments: Dict[str, Any], targ
     equation_id = _resolve_target_id(working, target)
     next_state = working.current.model_copy(deep=True)
     next_state.equations = [item for item in next_state.equations if item.id != equation_id]
-    _refresh_intersection_markers(next_state)
+    _refresh_auto_markers(next_state)
     working.replace_current(next_state)
     return {
         "removedEquationId": equation_id,
@@ -347,8 +493,8 @@ def set_viewport(working: WorkingGraphState, arguments: Dict[str, Any], _target:
         raise ToolError("invalid_arguments", str(exc)) from exc
     next_state = working.current.model_copy(deep=True)
     next_state.viewport = validated
-    if len(next_state.equations) >= 2:
-        _refresh_intersection_markers(next_state)
+    if next_state.equations:
+        _refresh_auto_markers(next_state)
     working.replace_current(next_state)
     return {"viewport": validated.model_dump(by_alias=True)}
 

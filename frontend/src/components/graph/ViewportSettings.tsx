@@ -11,7 +11,7 @@ export function ViewportSettings() {
     if (!Number.isFinite(value)) return;
     void updateGraphState({ ...graphState, viewport: { ...graphState.viewport, [key]: value } });
   };
-  const toggle = (key: "showGrid" | "showAxis" | "showLegend") => {
+  const toggle = (key: "showGrid" | "showAxis" | "showLegend" | "showExtrema" | "showIntersections") => {
     void updateGraphState({ ...graphState, settings: { ...graphState.settings, [key]: !graphState.settings[key] } });
   };
 
@@ -23,6 +23,10 @@ export function ViewportSettings() {
         <button className={graphState.settings.showGrid ? "on" : ""} onClick={() => toggle("showGrid")}><i />网格</button>
         <button className={graphState.settings.showAxis ? "on" : ""} onClick={() => toggle("showAxis")}><i />坐标轴</button>
         <button className={graphState.settings.showLegend ? "on" : ""} onClick={() => toggle("showLegend")}><i />图例</button>
+      </div>
+      <div className="toggle-row">
+        <button className={graphState.settings.showExtrema ? "on" : ""} onClick={() => toggle("showExtrema")}><i />极值</button>
+        <button className={graphState.settings.showIntersections ? "on" : ""} onClick={() => toggle("showIntersections")}><i />交点</button>
       </div>
     </div>
   );
