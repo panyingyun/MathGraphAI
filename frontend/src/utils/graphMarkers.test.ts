@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildMarkerAnnotations,
   buildMarkerTrace,
+  filterMarkersBySettings,
   listGraphMarkers,
   markerLabel,
 } from "./graphMarkers";
@@ -44,5 +45,47 @@ describe("graphMarkers", () => {
     });
     expect(markers).toHaveLength(1);
     expect(markerLabel(markers[0])).toBe("(2, 2)");
+  });
+
+  it("filters auto markers by display toggles", () => {
+    const settings = {
+      showGrid: true,
+      showAxis: true,
+      showLegend: true,
+      showExtrema: false,
+      showIntersections: false,
+      sampleCount: 1000,
+    };
+    const markers = [
+      { id: "e1", kind: "extremum" as const, label: "(0, 0)", x: 0, y: 0, auto: true },
+      { id: "i1", kind: "intersection" as const, label: "(-1, 1)", x: -1, y: 1, auto: true },
+      { id: "z1", kind: "zero" as const, label: "(2, 0)", x: 2, y: 0, auto: true },
+      { id: "a1", kind: "axis_y" as const, label: "(0, 3)", x: 0, y: 3, auto: true },
+      // 手动标注:auto=false 或缺失,始终显示
+      { id: "m1", kind: "extremum" as const, label: "自定义", x: 5, y: 5, auto: false },
+      { id: "m2", kind: "point" as const, label: "(1, 1)", x: 1, y: 1 },
+    ];
+    const kept = filterMarkersBySettings(markers, settings);
+    expect(kept.map((m) => m.id)).toEqual(["m1", "m2"]);
+  });
+
+  it("keeps all markers when toggles on and respects per-kind toggle", () => {
+    const on = {
+      showGrid: true,
+      showAxis: true,
+      showLegend: true,
+      showExtrema: true,
+      showIntersections: true,
+      sampleCount: 1000,
+    };
+    const markers = [
+      { id: "e1", kind: "extremum" as const, label: "(0, 0)", x: 0, y: 0, auto: true },
+      { id: "i1", kind: "intersection" as const, label: "(-1, 1)", x: -1, y: 1, auto: true },
+    ];
+    expect(filterMarkersBySettings(markers, on).map((m) => m.id)).toEqual(["e1", "i1"]);
+
+    // 只关极值开关:交点保留,极值被过滤
+    const noExtrema = { ...on, showExtrema: false };
+    expect(filterMarkersBySettings(markers, noExtrema).map((m) => m.id)).toEqual(["i1"]);
   });
 });

@@ -1,4 +1,4 @@
-import type { GraphMarker, GraphState } from "../types/graph";
+import type { GraphMarker, GraphSettings, GraphState } from "../types/graph";
 
 export function formatMarkerCoord(value: number): string {
   if (!Number.isFinite(value)) return String(value);
@@ -30,9 +30,23 @@ export function listGraphMarkers(graphState: Pick<GraphState, "markers" | "analy
     }));
 }
 
+/**
+ * 按显示开关过滤标记:极值开关控制 extremum;交点开关覆盖曲线间交点(intersection)、
+ * 曲线与 X 轴零点(zero)、曲线与 Y 轴交点(axis_y)。手动标注(auto=false/undefined)
+ * 始终显示,不受开关影响;开关只作用于自动标注。
+ */
+export function filterMarkersBySettings(markers: GraphMarker[], settings: GraphSettings): GraphMarker[] {
+  return markers.filter(
+    (item) =>
+      item.auto === false ||
+      item.auto === undefined ||
+      ((settings.showExtrema || item.kind !== "extremum") &&
+        (settings.showIntersections || !["intersection", "zero", "axis_y"].includes(item.kind))),
+  );
+}
+
 /** Plotly scatter trace for intersection / key points. */
-export function buildMarkerTrace(markers: GraphMarker[]): Record<string, unknown> | null {
-  if (markers.length === 0) return null;
+export function buildMarkerTrace(markers: GraphMarker[]): Record<string, unknown> | null {  if (markers.length === 0) return null;
   return {
     x: markers.map((item) => item.x),
     y: markers.map((item) => item.y),

@@ -3,7 +3,7 @@ import { Expand, LocateFixed, Loader2, Minus, Plus } from "lucide-react";
 import { loadPlotly } from "../../lib/plotly";
 import { useAppStore } from "../../stores/appStore";
 import { sampleFunction } from "../../utils/graphSampler";
-import { buildMarkerAnnotations, buildMarkerTrace, listGraphMarkers } from "../../utils/graphMarkers";
+import { buildMarkerAnnotations, buildMarkerTrace, filterMarkersBySettings, listGraphMarkers } from "../../utils/graphMarkers";
 import {
   buildPiAxisTicks,
   expressionHasTan,
@@ -74,16 +74,7 @@ export function GraphViewer() {
         samplingError = error instanceof Error ? error.message : "图像渲染失败";
       }
     }
-    // 按显示开关过滤:极值开关控制 extremum;交点开关覆盖曲线间交点(intersection)、
-    // 曲线与 X 轴零点(zero)、曲线与 Y 轴交点(axis_y)。手动标注(auto=false/undefined)
-    // 始终显示,不受开关影响;开关只作用于自动标注。
-    const markers = listGraphMarkers(graphState).filter(
-      (item) =>
-        item.auto === false ||
-        item.auto === undefined ||
-        ((graphState.settings.showExtrema || item.kind !== "extremum") &&
-          (graphState.settings.showIntersections || !["intersection", "zero", "axis_y"].includes(item.kind))),
-    );
+    const markers = filterMarkersBySettings(listGraphMarkers(graphState), graphState.settings);
     const markerTrace = buildMarkerTrace(markers);
     if (markerTrace) built.push(markerTrace);
     const shapes = [...asymptoteXs].sort((a, b) => a - b).map((x) => ({
