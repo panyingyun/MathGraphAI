@@ -1,5 +1,5 @@
 {
-  "capturedAt": "2026-08-07T15:29:03.810879+00:00",
+  "capturedAt": "2026-08-07T16:07:13.660699+00:00",
   "stage": "plan02-stage-c",
   "provider": "local",
   "agentMode": "shadow",
@@ -99,7 +99,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 7.56,
+          "durationMs": 12.97,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -165,7 +165,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 3.84,
+          "durationMs": 7.81,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -231,7 +231,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 4.4,
+          "durationMs": 13.69,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -297,7 +297,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 6.71,
+          "durationMs": 12.59,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -363,7 +363,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 2.89,
+          "durationMs": 8.46,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -429,7 +429,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 3.38,
+          "durationMs": 7.93,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -495,7 +495,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 4.06,
+          "durationMs": 7.38,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -561,7 +561,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 5.25,
+          "durationMs": 8.35,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -627,7 +627,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 5.27,
+          "durationMs": 8.82,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -693,7 +693,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 4.14,
+          "durationMs": 7.3,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -759,7 +759,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 7.43,
+          "durationMs": 10.1,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -825,7 +825,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 4.43,
+          "durationMs": 7.22,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -891,7 +891,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 3.32,
+          "durationMs": 6.79,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -957,7 +957,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 6.29,
+          "durationMs": 9.92,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -1024,7 +1024,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 8.06,
+          "durationMs": 11.14,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -1091,11 +1091,11 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 10.85,
+          "durationMs": 9.68,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
-          "finalMessage": "Shadow 候选状态中有 1 条曲线：y=tan(x)。\n（Shadow 模式未提交；与本地基线存在差异：viewport,markers）",
+          "finalMessage": "Shadow 候选状态中有 1 条曲线：y=tan(x)。\n（Shadow 模式未提交；与本地基线一致）",
           "errorCode": null,
           "passed": true,
           "diffs": [],
@@ -1157,7 +1157,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 4.81,
+          "durationMs": 7.96,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -1223,7 +1223,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 3.84,
+          "durationMs": 6.1,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -1289,7 +1289,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 5.85,
+          "durationMs": 8.49,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -1355,7 +1355,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 9.64,
+          "durationMs": 16.68,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -1421,7 +1421,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 11.6,
+          "durationMs": 17.89,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -1487,7 +1487,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 4.43,
+          "durationMs": 6.68,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -1553,7 +1553,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 5.14,
+          "durationMs": 7.65,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -1620,7 +1620,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 10.81,
+          "durationMs": 15.21,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -1688,7 +1688,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 10.04,
+          "durationMs": 13.25,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -1756,7 +1756,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 6.26,
+          "durationMs": 11.51,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -1824,7 +1824,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 0.85,
+          "durationMs": 1.0,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -1960,7 +1960,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 0.69,
+          "durationMs": 0.75,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -2028,7 +2028,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 0.88,
+          "durationMs": 1.32,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -2096,7 +2096,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 8.96,
+          "durationMs": 11.2,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -2164,7 +2164,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1.03,
+          "durationMs": 1.11,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -2231,7 +2231,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 3.69,
+          "durationMs": 2.79,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -2297,7 +2297,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 3.45,
+          "durationMs": 2.75,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -2363,7 +2363,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 2.85,
+          "durationMs": 2.58,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -2427,7 +2427,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 0.73,
+          "durationMs": 0.65,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -2491,7 +2491,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1.9,
+          "durationMs": 3.78,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -2558,7 +2558,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 8.32,
+          "durationMs": 8.95,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -2625,7 +2625,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 3.73,
+          "durationMs": 3.19,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -2691,7 +2691,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 3.35,
+          "durationMs": 2.17,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -2757,7 +2757,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 2.58,
+          "durationMs": 2.56,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -2823,7 +2823,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 0.61,
+          "durationMs": 0.95,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -2889,7 +2889,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 2.47,
+          "durationMs": 1.94,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -2957,7 +2957,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 6.36,
+          "durationMs": 10.87,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -3026,7 +3026,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 7.29,
+          "durationMs": 10.49,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -3094,7 +3094,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 6.09,
+          "durationMs": 11.22,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -3163,7 +3163,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 5.26,
+          "durationMs": 7.75,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -3233,7 +3233,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 16.23,
+          "durationMs": 20.3,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -3304,7 +3304,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 9.74,
+          "durationMs": 15.14,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -3377,7 +3377,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 13.18,
+          "durationMs": 18.97,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -3448,7 +3448,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 8.64,
+          "durationMs": 11.18,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -3517,7 +3517,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 7.18,
+          "durationMs": 10.27,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -3587,7 +3587,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 15.59,
+          "durationMs": 18.22,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -3655,7 +3655,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 4.08,
+          "durationMs": 4.43,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -3723,7 +3723,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 4.02,
+          "durationMs": 8.36,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -3792,7 +3792,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 13.63,
+          "durationMs": 20.86,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -3860,7 +3860,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 4.91,
+          "durationMs": 8.43,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -3927,7 +3927,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 3.68,
+          "durationMs": 3.77,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -3994,7 +3994,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 3.94,
+          "durationMs": 5.04,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -4060,7 +4060,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 3.38,
+          "durationMs": 4.04,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -4127,7 +4127,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 8.77,
+          "durationMs": 8.42,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -4194,7 +4194,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1.2,
+          "durationMs": 1.18,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -4263,7 +4263,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 4.54,
+          "durationMs": 4.36,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -4511,7 +4511,7 @@
             "success": false,
             "errorCode": "expression_error"
           },
-          "durationMs": 0.17,
+          "durationMs": 0.16,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -4571,7 +4571,7 @@
             "success": false,
             "errorCode": "expression_error"
           },
-          "durationMs": 0.15,
+          "durationMs": 0.16,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -4631,7 +4631,7 @@
             "success": false,
             "errorCode": "unsupported_request"
           },
-          "durationMs": 0.15,
+          "durationMs": 0.17,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -4691,7 +4691,7 @@
             "success": false,
             "errorCode": "unsupported_request"
           },
-          "durationMs": 0.15,
+          "durationMs": 0.18,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -4751,7 +4751,7 @@
             "success": false,
             "errorCode": "unsupported_request"
           },
-          "durationMs": 0.15,
+          "durationMs": 0.19,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -4815,7 +4815,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 5.2,
+          "durationMs": 7.23,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -4881,7 +4881,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 2.62,
+          "durationMs": 3.61,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -4949,7 +4949,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 18.66,
+          "durationMs": 26.42,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -5018,7 +5018,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 9.14,
+          "durationMs": 8.78,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -5086,7 +5086,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 1.65,
+          "durationMs": 1.15,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -5153,7 +5153,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 3.23,
+          "durationMs": 6.8,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -5219,7 +5219,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 3.69,
+          "durationMs": 7.87,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -5285,7 +5285,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 2.18,
+          "durationMs": 2.66,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -5351,7 +5351,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 5.95,
+          "durationMs": 9.22,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -5417,7 +5417,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 0.75,
+          "durationMs": 0.94,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -5483,7 +5483,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 3.22,
+          "durationMs": 5.83,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -5549,7 +5549,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 2.72,
+          "durationMs": 7.31,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -5615,7 +5615,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 4.72,
+          "durationMs": 8.89,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -5681,7 +5681,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 3.98,
+          "durationMs": 3.49,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -5747,7 +5747,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 4.77,
+          "durationMs": 6.69,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -5813,7 +5813,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 4.27,
+          "durationMs": 6.82,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -5879,7 +5879,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 4.31,
+          "durationMs": 9.46,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -5946,7 +5946,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 12.81,
+          "durationMs": 10.56,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -6013,7 +6013,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 3.35,
+          "durationMs": 4.11,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,
@@ -6081,7 +6081,7 @@
             "success": true,
             "errorCode": null
           },
-          "durationMs": 11.36,
+          "durationMs": 16.04,
           "decisionProvider": "local",
           "fallbackUsed": false,
           "modelCalls": 0,

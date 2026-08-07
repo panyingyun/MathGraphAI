@@ -169,10 +169,9 @@ export function sampleFunction(
   const count = Math.min(8000, Math.max(200, sampleCount, adaptiveCount));
   const x: number[] = [];
   const y: Array<number | null> = [];
-  // 仅保留视口附近的点：离群极大值（如 2^10）会扭曲折线在可见区内的形状。
-  const yPad = ySpan * 0.25;
-  const yMinAllow = viewport.yMin - yPad;
-  const yMaxAllow = viewport.yMax + yPad;
+  // 不裁剪 y 方向的有限值:超出视口的点交 Plotly 固定 range 自然裁剪,
+  // 曲线会延伸到视口边缘而不是在视口内被切断。离群跳跃由 shouldBreakSegment 断线,
+  // 不会跨视口画斜线扭曲可见区形状。
   const hasTan = /\btan\b/i.test(normalizeExpression(expression));
   let validCount = 0;
 
@@ -181,7 +180,7 @@ export function sampleFunction(
     let currentY: number | null = null;
     try {
       const calculated = fn(currentX);
-      if (Number.isFinite(calculated) && calculated >= yMinAllow && calculated <= yMaxAllow) {
+      if (Number.isFinite(calculated)) {
         currentY = calculated;
         validCount += 1;
       }

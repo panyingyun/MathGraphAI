@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import re
 from typing import Callable, Dict, List, Optional, Sequence, Tuple
 
 from ..config import settings
@@ -499,3 +500,82 @@ def _bisection(fn: EvaluateFn, left: float, right: float, tol: float, max_iter: 
         else:
             left = mid
     return (left + right) / 2.0
+
+
+# 正切等无界函数使用教科书视口（y 无界,分位数不可靠）
+TAN_TEXTBOOK_VIEWPORT = {
+    "xMin": -3 * math.pi,
+    "xMax": 3 * math.pi,
+    "yMin": -5.0,
+    "yMax": 5.0,
+}
+
+
+def _percentile(values: Sequence[float], p: float) -> float:
+    """线性插值分位数,离群截断用。"""
+    if not values:
+        return 0.0
+    sorted_values = sorted(values)
+    position = (len(sorted_values) - 1) * p
+    low = int(position)
+    high = min(low + 1, len(sorted_values) - 1)
+    return sorted_values[low] + (sorted_values[high] - sorted_values[low]) * (position - low)
+
+
+def auto_fit_viewport_for_equations(
+    expressions: Sequence[str],
+    *,
+    x_min: float = -10.0,
+    x_max: float = 10.0,
+    sample_count: Optional[int] = None,
+) -> Dict[str, float]:
+    """按曲线特征自动适配视口,展示曲线主体完整形态(教科书视角)。
+
+    规则:
+    - 含 tan 时返回教科书视口(y 无界,分位数不可靠,与前端 tan 视口一致)
+    - 其余:优先用极值/零点特征点确定 y 范围(如 x^3-3x 的 ±2、sin 的 ±1);
+      特征点不足(如 x^2 只有顶点、单调函数无极点)时用采样 [5%, 95%] 分位数;
+    - y 幅度锚定 0 限制在 ±1.5×x_span,防止 2^x/x^3 等无界函数把形态压扁;
+    - x 域固定 [x_min, x_max](用户显式 set_viewport 可覆盖)。
+    """
+    if any(re.search(r"\btan\b", expression) for expression in expressions):
+        return dict(TAN_TEXTBOOK_VIEWPORT)
+
+    count = max(50, min(int(sample_count or settings.math_sample_count), 5000))
+    ys: List[float] = []
+    feature_ys: List[float] = []
+    for expression in expressions:
+        try:
+            _, evaluate = compile_expression(expression)
+        except InvalidEquation:
+            continue
+        for index in range(count + 1):
+            x = x_min + (index / count) * (x_max - x_min)
+            y = _safe_eval(evaluate, x)
+            if y is not None:
+                ys.append(y)
+        try:
+            for point in find_extrema(expression, x_min, x_max)["points"]:
+                feature_ys.append(float(point["y"]))
+            for point in find_zeros(expression, x_min, x_max)["points"]:
+                feature_ys.append(float(point["y"]))
+        except InvalidEquation:
+            continue
+
+    if not ys:
+        return {"xMin": x_min, "xMax": x_max, "yMin": -10.0, "yMax": 10.0}
+
+    x_span = x_max - x_min
+    # 特征点有实际跨度时优先(教科书视角);否则用采样分位数兜底
+    if feature_ys and (max(feature_ys) - min(feature_ys)) >= 1.0:
+        y_low, y_high = min(feature_ys), max(feature_ys)
+    else:
+        y_low, y_high = _percentile(ys, 0.05), _percentile(ys, 0.95)
+    # 锚定 0 的幅度限制:无界函数不把视口拉爆,形态不被压扁
+    limit = max(x_span * 1.5, 10.0)
+    y_low = max(y_low, -limit)
+    y_high = min(y_high, limit)
+    if y_high - y_low < 1.0:
+        y_low, y_high = -5.0, 5.0
+    pad = x_span * 0.05
+    return {"xMin": x_min, "xMax": x_max, "yMin": y_low - pad, "yMax": y_high + pad}

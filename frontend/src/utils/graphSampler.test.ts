@@ -45,7 +45,7 @@ describe("expression parity with shared samples", () => {
       const sampled = sampleFunction("tan(x)", { xMin: -10, xMax: 10, yMin: -10, yMax: 10 }, sampleCount);
       const finite = sampled.y.filter((value): value is number => value !== null);
       expect(finite.length, `count=${sampleCount}`).toBeGreaterThan(30);
-      expect(Math.max(...finite.map(Math.abs)), `count=${sampleCount}`).toBeLessThanOrEqual(15);
+      // 有限值不再按 y 方向裁剪(曲线延伸到视口外,Plotly 固定 range 裁剪)
 
       let brokenAcrossPole = false;
       for (let index = 1; index < sampled.y.length; index += 1) {
@@ -65,7 +65,7 @@ describe("expression parity with shared samples", () => {
     }
   });
 
-  it("keeps exponential 2^x shape inside the viewport without offscreen outliers", () => {
+  it("keeps exponential 2^x shape and extends beyond viewport without false poles", () => {
     const evaluate = compileExpression("y = 2^x");
     expect(evaluate(0)).toBeCloseTo(1, 9);
     expect(evaluate(1)).toBeCloseTo(2, 9);
@@ -75,9 +75,10 @@ describe("expression parity with shared samples", () => {
 
     const sampled = sampleFunction("2^x", { xMin: -10, xMax: 10, yMin: -10, yMax: 10 }, 1000);
     const finite = sampled.y.filter((value): value is number => value !== null);
-    // y 视口 [-10,10] + 25% pad => 允许到 15；超出的 2^x 点应被丢掉。
-    expect(Math.max(...finite)).toBeLessThanOrEqual(15);
-    expect(sampled.y[sampled.x.findIndex((value) => value >= 4)]).toBeNull();
+    // 视口外有限值保留(不裁剪),交 Plotly 固定 range 裁剪;曲线在视口内不再被切断
+    expect(Math.max(...finite)).toBeGreaterThan(15);
+    // x=4 处 y≈16 超出原视口,但仍是有限值
+    expect(sampled.y[sampled.x.findIndex((value) => value >= 4)]).not.toBeNull();
     // 关键可见点应接近教科书图像：过 (0,1)/(1,2)/(2,4)
     for (const target of [
       { x: 0, y: 1 },

@@ -1,4 +1,19 @@
-import type { GraphMarker, GraphSettings, GraphState } from "../types/graph";
+import type { GraphMarker, GraphSettings, GraphState, Viewport } from "../types/graph";
+
+/** 原点 (0, 0) 常驻标注:原点位于视口内时始终显示,不依赖曲线是否存在。 */
+export function originMarkerForViewport(viewport: Viewport): GraphMarker | null {
+  const visible = viewport.xMin <= 0 && 0 <= viewport.xMax && viewport.yMin <= 0 && 0 <= viewport.yMax;
+  if (!visible) return null;
+  return { id: "origin", kind: "point", label: "(0, 0)", x: 0, y: 0, auto: false };
+}
+
+/** 移除与原点坐标重合的自动标注,避免原点常驻标注与零点/轴交点叠字。 */
+export function filterOriginOverlap(markers: GraphMarker[], origin: GraphMarker | null): GraphMarker[] {
+  if (!origin) return markers;
+  return markers.filter(
+    (item) => item.id === "origin" || Math.abs(item.x) > 1e-6 || Math.abs(item.y) > 1e-6,
+  );
+}
 
 export function formatMarkerCoord(value: number): string {
   if (!Number.isFinite(value)) return String(value);

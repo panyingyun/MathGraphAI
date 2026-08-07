@@ -42,7 +42,7 @@ class ToolSpec:
 
 TOOL_REGISTRY: Dict[str, ToolSpec] = {
     "get_graph_state": ToolSpec("get_graph_state", "read", graph_tools.get_graph_state, "读取当前 WorkingGraphState 摘要", EmptyArgs),
-    "plot_equations": ToolSpec("plot_equations", "write", graph_tools.plot_equations, "用方程列表替换当前图像(绘制后自动标注极值点、曲线间交点、曲线与坐标轴交点)", PlotEquationsArgs),
+    "plot_equations": ToolSpec("plot_equations", "write", graph_tools.plot_equations, "用方程列表替换当前图像(绘制后自动标注极值点、曲线间交点、曲线与坐标轴交点,并自动适配视口)", PlotEquationsArgs),
     "add_equations": ToolSpec("add_equations", "write", graph_tools.add_equations, "追加方程", AddEquationsArgs),
     "update_equation": ToolSpec(
         "update_equation", "write", graph_tools.update_equation, "更新指定方程属性", UpdateEquationArgs, EquationTarget

@@ -3,7 +3,14 @@ import { Expand, LocateFixed, Loader2, Minus, Plus } from "lucide-react";
 import { loadPlotly } from "../../lib/plotly";
 import { useAppStore } from "../../stores/appStore";
 import { sampleFunction } from "../../utils/graphSampler";
-import { buildMarkerAnnotations, buildMarkerTrace, filterMarkersBySettings, listGraphMarkers } from "../../utils/graphMarkers";
+import {
+  buildMarkerAnnotations,
+  buildMarkerTrace,
+  filterMarkersBySettings,
+  filterOriginOverlap,
+  listGraphMarkers,
+  originMarkerForViewport,
+} from "../../utils/graphMarkers";
 import {
   buildPiAxisTicks,
   expressionHasTan,
@@ -74,7 +81,13 @@ export function GraphViewer() {
         samplingError = error instanceof Error ? error.message : "图像渲染失败";
       }
     }
-    const markers = filterMarkersBySettings(listGraphMarkers(graphState), graphState.settings);
+    // 按开关过滤自动标注,再移除与原点重合的标注(防叠字),最后叠加原点常驻标注
+    const origin = originMarkerForViewport(graphState.viewport);
+    const filtered = filterOriginOverlap(
+      filterMarkersBySettings(listGraphMarkers(graphState), graphState.settings),
+      origin,
+    );
+    const markers = origin ? [...filtered, origin] : filtered;
     const markerTrace = buildMarkerTrace(markers);
     if (markerTrace) built.push(markerTrace);
     const shapes = [...asymptoteXs].sort((a, b) => a - b).map((x) => ({

@@ -3,8 +3,10 @@ import {
   buildMarkerAnnotations,
   buildMarkerTrace,
   filterMarkersBySettings,
+  filterOriginOverlap,
   listGraphMarkers,
   markerLabel,
+  originMarkerForViewport,
 } from "./graphMarkers";
 
 describe("graphMarkers", () => {
@@ -87,5 +89,32 @@ describe("graphMarkers", () => {
     // 只关极值开关:交点保留,极值被过滤
     const noExtrema = { ...on, showExtrema: false };
     expect(filterMarkersBySettings(markers, noExtrema).map((m) => m.id)).toEqual(["i1"]);
+  });
+
+  it("shows origin marker only when origin is inside viewport", () => {
+    expect(originMarkerForViewport({ xMin: -10, xMax: 10, yMin: -10, yMax: 10 })).toEqual({
+      id: "origin",
+      kind: "point",
+      label: "(0, 0)",
+      x: 0,
+      y: 0,
+      auto: false,
+    });
+    // 原点不在视口内(视口整体在 y>0)时返回 null
+    expect(originMarkerForViewport({ xMin: -10, xMax: 10, yMin: 1, yMax: 10 })).toBeNull();
+  });
+
+  it("drops markers overlapping the origin to avoid stacked labels", () => {
+    const origin = originMarkerForViewport({ xMin: -10, xMax: 10, yMin: -10, yMax: 10 });
+    const markers = [
+      { id: "e1", kind: "extremum" as const, label: "(0, 0)", x: 0, y: 0, auto: true },
+      { id: "i1", kind: "intersection" as const, label: "(-1, 1)", x: -1, y: 1, auto: true },
+      { id: "m1", kind: "extremum" as const, label: "自定义", x: 0, y: 0, auto: false },
+    ];
+    // 与原点重合的标注(含手动)全部移除,原点常驻标注已显示 (0,0),防叠字
+    const kept = filterOriginOverlap(markers, origin);
+    expect(kept.map((m) => m.id)).toEqual(["i1"]);
+    // 无原点标注时不做任何过滤
+    expect(filterOriginOverlap(markers, null).map((m) => m.id)).toEqual(["e1", "i1", "m1"]);
   });
 });

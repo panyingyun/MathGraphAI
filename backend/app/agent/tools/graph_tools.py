@@ -15,6 +15,7 @@ from ...utils.equation_validator import InvalidEquation, compile_expression, val
 from ...utils.graph_limits import clamp_analysis
 from ...utils.numeric_analysis import (
     _safe_eval,
+    auto_fit_viewport_for_equations,
     find_extrema,
     find_intersections,
     find_zeros,
@@ -340,6 +341,21 @@ def _refresh_auto_markers(state) -> None:
         state.analysis.key_points = None
 
 
+def _apply_auto_viewport(state) -> None:
+    """每次绘图后按当前可见方程自动适配视口,展示曲线主体完整形态。
+
+    用户显式 set_viewport 在其后的 action 中执行并覆盖;解析失败/超界时静默保留原视口。
+    """
+    expressions = [item.normalized_expression for item in state.equations if item.visible]
+    if not expressions:
+        return
+    try:
+        fitted = auto_fit_viewport_for_equations(expressions)
+        state.viewport = Viewport.model_validate(fitted)
+    except (ValidationError, InvalidEquation, ArithmeticError, ValueError, TypeError):
+        pass
+
+
 def get_graph_state(working: WorkingGraphState, _arguments: Dict[str, Any], _target: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     state = working.current
     return {
@@ -363,6 +379,8 @@ def plot_equations(working: WorkingGraphState, arguments: Dict[str, Any], _targe
     equations = [_normalize_equation(item, state_len=0, index=index) for index, item in enumerate(raw_equations)]
     next_state = working.current.model_copy(deep=True)
     next_state.equations = equations
+    # 每次绘图自动适配视口,展示曲线主体完整形态(用户显式 set_viewport 会覆盖)
+    _apply_auto_viewport(next_state)
     next_state.markers = []
     next_state.analysis = _analysis_from_payload(
         arguments.get("analysis"),
@@ -394,6 +412,8 @@ def add_equations(working: WorkingGraphState, arguments: Dict[str, Any], _target
     ]
     next_state = working.current.model_copy(deep=True)
     next_state.equations.extend(equations)
+    # 追加后同样自动适配视口,容纳所有可见曲线
+    _apply_auto_viewport(next_state)
     analysis = _analysis_from_payload(
         arguments.get("analysis"),
         equations[0].normalized_expression,

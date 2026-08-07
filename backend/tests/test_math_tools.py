@@ -297,3 +297,48 @@ def test_fit_viewport_to_intersection_points():
     assert working.current.markers
     assert working.current.viewport.x_min < -1 < working.current.viewport.x_max
     assert working.current.viewport.x_min < 3 < working.current.viewport.x_max
+
+
+@pytest.mark.state
+def test_plot_auto_fits_viewport_to_curve():
+    """绘图后自动适配视口:y=x^2 的完整抛物线主体可见(而非默认 [-10,10] 只显示底部)。"""
+    working = WorkingGraphState.from_graph(GraphState())
+    plot_equations(working, {"equations": [{"expression": "y = x^2"}]}, None)
+    viewport = working.current.viewport
+    assert viewport.y_min <= 0 <= viewport.y_max  # 顶点可见
+    assert viewport.y_max >= 10  # 两侧展开,超出默认 10
+
+
+@pytest.mark.state
+def test_plot_tan_uses_textbook_viewport():
+    """tan 自动适配使用教科书视口(y 无界,不能按分位数适配)。"""
+    import math
+
+    working = WorkingGraphState.from_graph(GraphState())
+    plot_equations(working, {"equations": [{"expression": "y = tan(x)"}]}, None)
+    viewport = working.current.viewport
+    assert viewport.x_max - viewport.x_min == pytest.approx(6 * math.pi, rel=1e-6)
+    assert viewport.y_min == -5
+    assert viewport.y_max == 5
+
+
+@pytest.mark.state
+def test_auto_viewport_overridden_by_explicit_set_viewport():
+    """用户显式 set_viewport 覆盖自动适配的视口。"""
+    from app.agent.tools.graph_tools import set_viewport
+
+    working = WorkingGraphState.from_graph(GraphState())
+    plot_equations(working, {"equations": [{"expression": "y = x^2"}]}, None)
+    set_viewport(working, {"viewport": {"xMin": -5, "xMax": 5, "yMin": -10, "yMax": 10}}, None)
+    viewport = working.current.viewport
+    assert (viewport.x_min, viewport.x_max, viewport.y_min, viewport.y_max) == (-5, 5, -10, 10)
+
+
+@pytest.mark.state
+def test_auto_fit_respects_max_viewport_abs():
+    """自动适配结果受 max_viewport_abs 约束(极端表达式不产生非法视口)。"""
+    working = WorkingGraphState.from_graph(GraphState())
+    plot_equations(working, {"equations": [{"expression": "y = exp(x)"}]}, None)
+    viewport = working.current.viewport
+    assert abs(viewport.y_min) <= 1_000_000
+    assert abs(viewport.y_max) <= 1_000_000
