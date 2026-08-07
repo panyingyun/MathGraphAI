@@ -222,3 +222,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+reasonix.toml
+.reasonix/
+1.jpg

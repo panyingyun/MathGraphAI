@@ -120,6 +120,10 @@ code, pre, kbd, samp { font-family: var(--font-mono); }
 .prompt-suggestions.compact { gap: 7px; margin-top: 2px; grid-template-columns: 1fr; }
 .prompt-suggestions.compact button { min-height: 42px; padding: 7px 10px; font-size: 12px; background: #fff; }
 .prompt-suggestions.compact button > span { width: 26px; height: 26px; }
+.grade-tabs { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 2px; padding: 3px; border: 1px solid var(--outline); border-radius: 12px; background: rgba(255,255,255,.6); }
+.prompt-suggestions .grade-tabs button { min-height: 30px; padding: 4px 10px; display: grid; place-items: center; color: var(--muted); border: none; border-radius: 9px; background: transparent; cursor: pointer; font-size: 12px; font-weight: 650; transform: none; transition: .16s ease; }
+.grade-tabs button:hover { color: var(--ink); border-color: transparent; background: rgba(37,99,235,.08); }
+.grade-tabs button.active { color: #fff; background: var(--primary); box-shadow: 0 2px 6px rgba(37,99,235,.22); }
 .guide-suggestions { margin-top: 12px; width: min(100%, 420px); display: grid; gap: 10px; }
 @media (max-width: 420px) {
   .prompt-suggestions:not(.compact) { grid-template-columns: 1fr; }
