@@ -23,7 +23,9 @@ export function formatMarkerCoord(value: number): string {
 
 /** 图上标注一律用坐标；「交点」「vertex」等类别名对用户无信息量。 */
 export function markerLabel(item: GraphMarker): string {
-  return `(${formatMarkerCoord(item.x)}, ${formatMarkerCoord(item.y)})`;
+  // X 轴交点(零点)语义上 y=0:忽略数值求根的残差(如 6.16e-07),显示干净的 (x, 0)。
+  const y = item.kind === "zero" ? 0 : item.y;
+  return `(${formatMarkerCoord(item.x)}, ${formatMarkerCoord(y)})`;
 }
 
 export function listGraphMarkers(graphState: Pick<GraphState, "markers" | "analysis">): GraphMarker[] {

@@ -20,6 +20,14 @@ describe("graphMarkers", () => {
     expect(
       markerLabel({ id: "c", kind: "point", label: "顶点", x: 2, y: 4 }),
     ).toBe("(2, 4)");
+    // X 轴交点(零点)y 恒显示 0,忽略数值求根残差
+    expect(
+      markerLabel({ id: "d", kind: "zero", label: "(1.732, 0)", x: 1.732050705, y: 6.16e-7 }),
+    ).toBe("(1.732, 0)");
+    // 非零点类别保留真实 y(如 Y 轴交点)
+    expect(
+      markerLabel({ id: "e", kind: "axis_y", label: "(0, 3)", x: 0, y: 3 }),
+    ).toBe("(0, 3)");
   });
 
   it("builds scatter trace and annotations from markers", () => {

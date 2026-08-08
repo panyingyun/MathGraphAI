@@ -218,7 +218,9 @@ def _zero_markers(
                     kind="zero",
                     label=format_point_label(float(point["x"]), 0.0),
                     x=float(point["x"]),
-                    y=float(point["y"]),
+                    # X 轴交点语义上 y=0:数值求根的残差(如 6.16e-07)不作为标注坐标,
+                    # 否则图上会显示 (x, 6.16e-07) 而非 (x, 0)。
+                    y=0.0,
                     equation_ids=[item.id],
                     auto=True,
                 )
