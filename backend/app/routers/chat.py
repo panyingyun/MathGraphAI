@@ -8,6 +8,7 @@ from typing import Any, AsyncIterator, Dict, Optional, Tuple, Union
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session as DatabaseSession
 
@@ -200,7 +201,19 @@ def _finalize_chat_response(
     status_value = "cancelled" if result.cancelled else ("success" if result.success else "error")
     graph_state = result.graph_state
     if result.should_commit:
-        persist_graph_state(session_row, graph_state)
+        expected_revision = session_row.revision
+        if not persist_graph_state(database, session_row, graph_state):
+            database.rollback()
+            database.refresh(run)
+            if run.status == "running":
+                run.status = "error"
+                run.error_code = "revision_conflict"
+                run.finished_at = utc_now()
+                database.commit()
+            current = database.scalar(
+                select(SessionModel.revision).where(SessionModel.id == session_row.id)
+            ) or 0
+            raise _conflict(current, expected_revision)
         maybe_generate_title(session_row, graph_state)
 
     structured = StructuredResult(
@@ -367,14 +380,37 @@ async def chat(
     database.commit()
 
     if not payload.stream:
-        result = await run_agent(
-            user_message=payload.message,
-            graph_state=graph_state,
-            recent_messages=recent,
-            request_id=request_id,
-            session_id=session_row.id,
-            context_summary=context_summary,
-        )
+        try:
+            result = await run_agent(
+                user_message=payload.message,
+                graph_state=graph_state,
+                recent_messages=recent,
+                request_id=request_id,
+                session_id=session_row.id,
+                context_summary=context_summary,
+            )
+        except Exception as exc:  # noqa: BLE001 - 收口 run，避免永久 running 与幂等 409
+            log_event(
+                "chat_run_error",
+                requestId=request_id,
+                sessionId=session_row.id,
+                error=str(exc),
+            )
+            _close_unfinished_run(
+                database=database,
+                session_row=session_row,
+                run=run,
+                user_row=user_row,
+                payload=payload,
+                started=started,
+                status="error",
+                error_code="agent_error",
+                message="处理失败，请稍后重试",
+            )
+            raise HTTPException(
+                status_code=500,
+                detail={"code": "agent_error", "message": "处理失败，请稍后重试"},
+            ) from exc
         return _finalize_chat_response(
             database=database,
             session_row=session_row,
@@ -415,15 +451,20 @@ async def chat(
                     break
                 event_type, data = item
                 if event_type == "__result__":
-                    response = _finalize_chat_response(
-                        database=database,
-                        session_row=session_row,
-                        run=run,
-                        user_row=user_row,
-                        payload=payload,
-                        result=data,
-                        started=started,
-                    )
+                    try:
+                        response = _finalize_chat_response(
+                            database=database,
+                            session_row=session_row,
+                            run=run,
+                            user_row=user_row,
+                            payload=payload,
+                            result=data,
+                            started=started,
+                        )
+                    except HTTPException as exc:
+                        finalized = True
+                        yield _format_sse("error", exc.detail)
+                        break
                     finalized = True
                     yield _format_sse("done", response.model_dump(by_alias=True, mode="json"))
                     break

@@ -69,4 +69,4 @@ python -m scripts.aggregate_metrics --hours 24
 
 - `log(x)` 前后端统一为 **lg（以 10 为底）**。
 - 阶段 0 默认验证本地解析主路径；DeepSeek 成功/失败通过 mock 覆盖，不依赖真实 Key。
-- 当前链路仍会在 DeepSeek 异常时静默降级（无 `fallbackUsed` 字段）；阶段 1 再补可观测性。
+- DeepSeek 异常时已显式降级并标记 `fallbackUsed` 与错误码，不再静默降级（见 `docs/plan01.md` 阶段 1）。

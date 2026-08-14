@@ -45,6 +45,8 @@ export function ChatInput({ preset, onPresetUsed }: { preset?: string; onPresetU
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    // 中文输入法候选确认(Enter)不应触发发送；isComposing/keyCode 229 时跳过。
+    if (event.nativeEvent.isComposing || event.keyCode === 229) return;
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       submit();

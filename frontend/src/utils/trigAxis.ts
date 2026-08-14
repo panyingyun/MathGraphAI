@@ -68,19 +68,25 @@ export function formatPiTickLabel(steps: number, stepDenom: number): string {
 export function buildPiAxisTicks(xMin: number, xMax: number): { tickvals: number[]; ticktext: string[] } {
   const span = xMax - xMin;
   if (!(span > 0)) return { tickvals: [], ticktext: [] };
-  // 目标约 8–16 个刻度
+  // 目标约 8–16 个刻度；同时硬性上限 60，避免宽视口(如 ±1e6)生成几十万个刻度拖垮渲染。
+  const MAX_TICKS = 60;
   let stepDenom = 3; // π/3
   if (span > 14 * Math.PI) stepDenom = 1;
   else if (span > 7 * Math.PI) stepDenom = 2;
 
-  const step = Math.PI / stepDenom;
+  const base = Math.PI / stepDenom;
+  // 宽视口时把步长放大为 π 的整数倍，刻度数始终 ≤ MAX_TICKS。
+  let multiplier = 1;
+  while (span / (multiplier * base) > MAX_TICKS) multiplier += 1;
+  const step = multiplier * base;
+
   const start = Math.ceil(xMin / step - 1e-9);
   const end = Math.floor(xMax / step + 1e-9);
   const tickvals: number[] = [];
   const ticktext: string[] = [];
   for (let i = start; i <= end; i += 1) {
     tickvals.push(i * step);
-    ticktext.push(formatPiTickLabel(i, stepDenom));
+    ticktext.push(formatPiTickLabel(i * multiplier, stepDenom));
   }
   return { tickvals, ticktext };
 }

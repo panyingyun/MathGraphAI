@@ -1,3 +1,4 @@
+import math
 from typing import Dict, List, Literal, Optional
 
 from pydantic import Field, model_validator
@@ -14,6 +15,14 @@ class Viewport(APIModel):
 
     @model_validator(mode="after")
     def valid_ranges(self):
+        for name, value in (
+            ("xMin", self.x_min),
+            ("xMax", self.x_max),
+            ("yMin", self.y_min),
+            ("yMax", self.y_max),
+        ):
+            if not math.isfinite(value):
+                raise ValueError(f"{name} 必须是有限数值")
         if self.x_min >= self.x_max or self.y_min >= self.y_max:
             raise ValueError("坐标最小值必须小于最大值")
         limit = settings.max_viewport_abs

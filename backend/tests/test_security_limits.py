@@ -45,6 +45,19 @@ def test_rejects_oversized_viewport(monkeypatch):
         Viewport(x_min=-1000, x_max=1000, y_min=-10, y_max=10)
 
 
+def test_rejects_nan_viewport():
+    with pytest.raises(ValueError, match="有限"):
+        Viewport(x_min=float("nan"), x_max=5, y_min=-10, y_max=10)
+    with pytest.raises(ValueError, match="有限"):
+        Viewport(x_min=-10, x_max=10, y_min=-10, y_max=float("inf"))
+
+
+def test_accepts_domain_shifted_function():
+    """定义域平移出 [-10,10] 的合法函数不得在校验阶段被误拒。"""
+    assert validate_expression("sqrt(x-12)") == "sqrt(x-12)"
+    assert validate_expression("log(x-20)") == "log(x-20)"
+
+
 def test_rejects_too_many_equations(monkeypatch):
     limited = replace(settings, max_equations=1)
     monkeypatch.setattr("app.agent.tools.graph_tools.settings", limited)

@@ -12,6 +12,9 @@ from .equation_validator import InvalidEquation, compile_expression
 
 EvaluateFn = Callable[[float], float]
 BISECTION_ITERATIONS = 48
+# 渐近线/极点产生的伪根、伪交点判定：真实根/交点的残差远小于 tol，
+# 而跨垂直渐近线时函数值发散，残差可达 1e6 量级，用该倍数干净区分。
+_RESIDUAL_FACTOR = 1000
 
 
 def format_point_label(x: float, y: float) -> str:
@@ -197,6 +200,9 @@ def find_zeros(
         y = _safe_eval(evaluate, root)
         if y is None:
             continue
+        if abs(y) > tol * _RESIDUAL_FACTOR:
+            # 跨过垂直渐近线时符号变号让二分收敛到极点而非零点，残差巨大，丢弃。
+            continue
         if zeros and abs(zeros[-1]["x"] - root) <= tol * 10:
             continue
         zeros.append({"x": round(root, 9), "y": round(y, 9), "errorBound": tol})
@@ -359,6 +365,10 @@ def _append_intersection_point(
     yb = _safe_eval(evaluate_b, root)
     if ya is None or yb is None:
         return
+    residual = abs(ya - yb)
+    if residual > tol * _RESIDUAL_FACTOR:
+        # diff 跨渐近线变号时二分收敛到极点，两函数值残差巨大，并非真实交点。
+        return
     if points and abs(points[-1]["x"] - root) <= tol * 10:
         return
 
@@ -368,7 +378,7 @@ def _append_intersection_point(
             "x": round(root, 9),
             "y": round(y, 9),
             "errorBound": tol,
-            "residual": round(abs(ya - yb), 9),
+            "residual": round(residual, 9),
         }
     )
 
@@ -492,10 +502,15 @@ def fit_viewport(
 def _bisection(fn: EvaluateFn, left: float, right: float, tol: float, max_iter: int = 48) -> Optional[float]:
     for _ in range(max_iter):
         mid = (left + right) / 2.0
-        value = fn(mid)
+        value = _safe_eval(fn, mid)
+        if value is None:
+            return None
         if abs(value) <= tol or abs(right - left) <= tol:
             return mid
-        if fn(left) * value <= 0:
+        left_value = _safe_eval(fn, left)
+        if left_value is None:
+            return None
+        if left_value * value <= 0:
             right = mid
         else:
             left = mid

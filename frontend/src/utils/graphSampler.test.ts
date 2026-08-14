@@ -40,6 +40,23 @@ describe("expression parity with shared samples", () => {
     expect(crossesHalfPiAsymptote(-1.6, -1.5)).toBe(true);
   });
 
+  it("detects asymptote crossings at custom period (tan(2x))", () => {
+    // tan(2x) 周期 π/2：π/4 是极点，π/2 是零点（不应断线）。
+    expect(crossesHalfPiAsymptote(0.7, 0.8, Math.PI / 2)).toBe(true);
+    expect(crossesHalfPiAsymptote(1.5, 1.6, Math.PI / 2)).toBe(false);
+  });
+
+  it("breaks tan(2*x) at real poles instead of zeros", () => {
+    const sampled = sampleFunction("tan(2*x)", { xMin: -2, xMax: 2, yMin: -5, yMax: 5 }, 800);
+    // x=0 是零点，连续且值≈0，不应被错误断线。
+    const zeroIndex = sampled.x.findIndex((x) => x >= 0);
+    expect(sampled.y[zeroIndex]).not.toBeNull();
+    expect(Math.abs(sampled.y[zeroIndex] as number)).toBeLessThan(1e-6);
+    // x=π/4≈0.785 是极点，附近应有断线(null)。
+    const nearPole = sampled.y.some((v, i) => v === null && sampled.x[i] > 0.6 && sampled.x[i] < 0.95);
+    expect(nearPole).toBe(true);
+  });
+
   it("breaks tan(x) across vertical asymptotes instead of drawing poles", () => {
     for (const sampleCount of [80, 1000]) {
       const sampled = sampleFunction("tan(x)", { xMin: -10, xMax: 10, yMin: -10, yMax: 10 }, sampleCount);

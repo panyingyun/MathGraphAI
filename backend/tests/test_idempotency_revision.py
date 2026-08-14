@@ -77,6 +77,31 @@ def test_session_patch_revision_conflict(client):
     assert fetched["graphState"]["equations"][0]["normalizedExpression"] == "x"
 
 
+def test_nonstream_agent_exception_closes_run_and_retry_hits_cache(client, db_session, monkeypatch):
+    """非流式 run_agent 异常时收口 run，且同 request_id 重试命中缓存而非永久 409。"""
+    from sqlalchemy import select
+
+    from app.models.agent import AgentRunModel
+
+    session = _create(client)
+
+    async def boom(*_args, **_kwargs):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr("app.routers.chat.run_agent", boom)
+    resp = _chat(client, session["id"], "画 y = x", request_id="req_stage1_badrun_1", expected_revision=0)
+    assert resp.status_code == 500
+
+    run = db_session.scalar(select(AgentRunModel).where(AgentRunModel.request_id == "req_stage1_badrun_1"))
+    assert run is not None
+    assert run.status == "error"
+    assert run.finished_at is not None
+
+    retry = _chat(client, session["id"], "画 y = x", request_id="req_stage1_badrun_1", expected_revision=0)
+    assert retry.status_code == 200
+    assert retry.json()["errorCode"] == "agent_error"
+
+
 @pytest.mark.fallback
 def test_fallback_metadata_exposed(client_with_deepseek, monkeypatch):
     session = _create(client_with_deepseek)

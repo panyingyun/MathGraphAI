@@ -31,6 +31,14 @@ from .adapter import structured_result_to_action
 DecisionItem = Union[AgentAction, AgentFinal]
 
 
+def _safe_numeric(call, default):
+    """调用数值分析并吞掉数值/解析异常，避免本地规划器异常上抛成 500。"""
+    try:
+        return call()
+    except (ArithmeticError, ValueError, TypeError, InvalidEquation):
+        return default
+
+
 def _viewport_from_text(text: str) -> Optional[dict]:
     ranges = re.findall(r"-?\d+(?:\.\d+)?", text)
     if "范围" not in text or len(ranges) < 2:
@@ -134,11 +142,14 @@ def _plan_intersection_focus(text: str, expressions: List[str], color: Optional[
     ]
     # 本地规划器预先计算交点，避免依赖 Observation 回灌。
     viewport = graph_state.viewport
-    result = find_intersections(
-        items[0].normalized_expression,
-        items[1].normalized_expression,
-        viewport.x_min,
-        viewport.x_max,
+    result = _safe_numeric(
+        lambda: find_intersections(
+            items[0].normalized_expression,
+            items[1].normalized_expression,
+            viewport.x_min,
+            viewport.x_max,
+        ),
+        {"points": [], "count": 0},
     )
     points = list(result["points"])
     markers = [
@@ -300,7 +311,10 @@ def plan_local_decisions(message: str, graph_state: GraphState) -> Tuple[List[Ag
 
         # 绘制后可接零点/极值/比较。
         if len(items) >= 1 and _wants_zeros(text):
-            zeros = find_zeros(items[0].normalized_expression, graph_state.viewport.x_min, graph_state.viewport.x_max)
+            zeros = _safe_numeric(
+                lambda: find_zeros(items[0].normalized_expression, graph_state.viewport.x_min, graph_state.viewport.x_max),
+                {"points": [], "count": 0},
+            )
             actions.append(AgentAction(tool="calculate_zeros", arguments={}))
             if zeros["points"]:
                 actions.append(
@@ -322,7 +336,10 @@ def plan_local_decisions(message: str, graph_state: GraphState) -> Tuple[List[Ag
                 )
                 notes.append(f"标记 {len(zeros['points'])} 个零点")
         if len(items) >= 1 and _wants_extrema(text):
-            extrema = find_extrema(items[0].normalized_expression, graph_state.viewport.x_min, graph_state.viewport.x_max)
+            extrema = _safe_numeric(
+                lambda: find_extrema(items[0].normalized_expression, graph_state.viewport.x_min, graph_state.viewport.x_max),
+                {"points": [], "count": 0},
+            )
             actions.append(AgentAction(tool="calculate_extrema", arguments={}))
             if extrema["points"]:
                 actions.append(
@@ -344,11 +361,14 @@ def plan_local_decisions(message: str, graph_state: GraphState) -> Tuple[List[Ag
                 )
                 notes.append(f"标记 {len(extrema['points'])} 个极值")
         if len(items) >= 2 and _wants_compare(text):
-            compared = compare_functions(
-                items[0].normalized_expression,
-                items[1].normalized_expression,
-                graph_state.viewport.x_min,
-                graph_state.viewport.x_max,
+            compared = _safe_numeric(
+                lambda: compare_functions(
+                    items[0].normalized_expression,
+                    items[1].normalized_expression,
+                    graph_state.viewport.x_min,
+                    graph_state.viewport.x_max,
+                ),
+                {"summary": ""},
             )
             actions.append(AgentAction(tool="compare_functions", arguments={}))
             notes.append(compared["summary"])
@@ -361,11 +381,14 @@ def plan_local_decisions(message: str, graph_state: GraphState) -> Tuple[List[Ag
     # 已有方程上的交点/放大（无新方程文本）。
     if _wants_intersections(text) and len(graph_state.equations) >= 2:
         left, right = graph_state.equations[0], graph_state.equations[1]
-        result = find_intersections(
-            left.normalized_expression,
-            right.normalized_expression,
-            graph_state.viewport.x_min,
-            graph_state.viewport.x_max,
+        result = _safe_numeric(
+            lambda: find_intersections(
+                left.normalized_expression,
+                right.normalized_expression,
+                graph_state.viewport.x_min,
+                graph_state.viewport.x_max,
+            ),
+            {"points": [], "count": 0},
         )
         actions = [AgentAction(tool="calculate_intersections", arguments={})]
         _append_requested_analysis_actions(actions, text)
@@ -398,11 +421,14 @@ def plan_local_decisions(message: str, graph_state: GraphState) -> Tuple[List[Ag
 
     if _wants_compare(text) and len(graph_state.equations) >= 2:
         left, right = graph_state.equations[0], graph_state.equations[1]
-        compared = compare_functions(
-            left.normalized_expression,
-            right.normalized_expression,
-            graph_state.viewport.x_min,
-            graph_state.viewport.x_max,
+        compared = _safe_numeric(
+            lambda: compare_functions(
+                left.normalized_expression,
+                right.normalized_expression,
+                graph_state.viewport.x_min,
+                graph_state.viewport.x_max,
+            ),
+            {"summary": ""},
         )
         actions = [
             AgentAction(
@@ -426,10 +452,13 @@ def plan_local_decisions(message: str, graph_state: GraphState) -> Tuple[List[Ag
             )
         _append_requested_analysis_actions(actions, text)
         if _wants_zeros(text):
-            calculated = find_zeros(
-                target.normalized_expression,
-                graph_state.viewport.x_min,
-                graph_state.viewport.x_max,
+            calculated = _safe_numeric(
+                lambda: find_zeros(
+                    target.normalized_expression,
+                    graph_state.viewport.x_min,
+                    graph_state.viewport.x_max,
+                ),
+                {"points": [], "count": 0},
             )
             actions.append(
                 AgentAction(
@@ -452,10 +481,13 @@ def plan_local_decisions(message: str, graph_state: GraphState) -> Tuple[List[Ag
                 actions.append(AgentAction(tool="set_graph_markers", arguments={"markers": markers}))
             return actions, f"已计算 {target.label} 的零点。", None
 
-        calculated = find_extrema(
-            target.normalized_expression,
-            graph_state.viewport.x_min,
-            graph_state.viewport.x_max,
+        calculated = _safe_numeric(
+            lambda: find_extrema(
+                target.normalized_expression,
+                graph_state.viewport.x_min,
+                graph_state.viewport.x_max,
+            ),
+            {"points": [], "count": 0},
         )
         actions.append(
             AgentAction(

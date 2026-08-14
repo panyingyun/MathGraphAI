@@ -293,10 +293,17 @@ export const useAppStore = create<AppState>((set, get) => ({
           requestId,
           signal: controller.signal,
           stream: true,
-          onPhase: (phase) => set({ agentPhase: phase }),
-          onStep: (step) => set((state) => ({ agentSteps: [...state.agentSteps, step] })),
+          onPhase: (phase) => {
+            if (get().currentSession?.id === current.id) set({ agentPhase: phase });
+          },
+          onStep: (step) => {
+            if (get().currentSession?.id === current.id)
+              set((state) => ({ agentSteps: [...state.agentSteps, step] }));
+          },
         },
       );
+      // 会话已被切换/删除：丢弃迟到结果，避免串台或复活已删会话。
+      if (get().currentSession?.id !== current.id) return;
       const withoutPending = (get().currentSession?.messages ?? []).filter((item) => item.id !== optimistic.id);
       const merged = mergeMessages(withoutPending, result.newMessages?.length ? result.newMessages : [result.message]);
       const nextSession: Session = {
@@ -335,17 +342,22 @@ export const useAppStore = create<AppState>((set, get) => ({
           isLLMLoading: false,
           agentPhase: null,
           activeRequestId: null,
-          currentSession: state.currentSession
-            ? {
-                ...state.currentSession,
-                messages: state.currentSession.messages.filter((item) => item.id !== optimistic.id),
-              }
-            : null,
-          error: "已取消请求",
+          currentSession:
+            state.currentSession && state.currentSession.id === current.id
+              ? {
+                  ...state.currentSession,
+                  messages: state.currentSession.messages.filter((item) => item.id !== optimistic.id),
+                }
+              : state.currentSession,
+          error: state.currentSession?.id === current.id ? "已取消请求" : state.error,
         }));
         return;
       }
       if (error instanceof ApiError && error.code === "revision_conflict") {
+        if (get().currentSession?.id !== current.id) {
+          set({ isLLMLoading: false, activeRequestId: null, agentPhase: null });
+          return;
+        }
         try {
           const refreshed = await api.getSession(current.id);
           set({
@@ -367,14 +379,15 @@ export const useAppStore = create<AppState>((set, get) => ({
         activeRequestId: null,
         agentPhase: null,
         error: error instanceof Error ? error.message : "当前网络异常，请稍后再试",
-        currentSession: state.currentSession
-          ? {
-              ...state.currentSession,
-              messages: state.currentSession.messages.map((m) =>
-                m.id === optimistic.id ? { ...m, status: "error" } : m,
-              ),
-            }
-          : null,
+        currentSession:
+          state.currentSession && state.currentSession.id === current.id
+            ? {
+                ...state.currentSession,
+                messages: state.currentSession.messages.map((m) =>
+                  m.id === optimistic.id ? { ...m, status: "error" } : m,
+                ),
+              }
+            : state.currentSession,
       }));
     } finally {
       if (activeAbort === controller) activeAbort = null;

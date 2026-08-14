@@ -185,7 +185,10 @@ def run_session_command(
         )
 
     graph_state = working.commit()
-    persist_graph_state(row, graph_state)
+    if not persist_graph_state(database, row, graph_state):
+        database.rollback()
+        current = database.scalar(select(SessionModel.revision).where(SessionModel.id == session_id)) or 0
+        raise _conflict(current, current_state.revision)
     row.updated_at = utc_now()
     database.commit()
     return SessionCommandResponse(
@@ -213,7 +216,10 @@ def update_session(session_id: str, payload: SessionUpdate, database: DatabaseSe
         working = WorkingGraphState.from_graph(current_state)
         _apply_graph_state_commands(working, payload.graph_state)
         next_state = working.commit()
-        persist_graph_state(row, next_state)
+        if not persist_graph_state(database, row, next_state):
+            database.rollback()
+            current = database.scalar(select(SessionModel.revision).where(SessionModel.id == session_id)) or 0
+            raise _conflict(current, current_state.revision)
     if payload.is_favorite is not None:
         row.is_favorite = payload.is_favorite
     row.updated_at = utc_now()

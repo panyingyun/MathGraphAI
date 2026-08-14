@@ -1,5 +1,6 @@
 import { parse, type MathNode } from "mathjs";
 import type { Viewport } from "../types/graph";
+import { tanAsymptotePeriod } from "./trigAxis";
 
 const ALLOWED_SYMBOLS = new Set(["x", "e", "pi", "sin", "cos", "tan", "log", "sqrt", "abs", "exp", "pow"]);
 const ALLOWED_FUNCTIONS = new Set(["sin", "cos", "tan", "log", "sqrt", "abs", "exp", "pow"]);
@@ -126,13 +127,13 @@ export function compileExpression(source: string): (x: number) => number {
   };
 }
 
-/** tan 的竖直渐近线在 (n + 1/2)π；区间内若跨过则必须断线。 */
-export function crossesHalfPiAsymptote(x0: number, x1: number): boolean {
+/** tan 的竖直渐近线在 (n + 1/2)·period；区间内若跨过则必须断线。 */
+export function crossesHalfPiAsymptote(x0: number, x1: number, period = Math.PI): boolean {
   const lo = Math.min(x0, x1);
   const hi = Math.max(x0, x1);
-  if (!(hi > lo)) return false;
-  const n0 = Math.floor((lo + Math.PI / 2) / Math.PI);
-  const n1 = Math.floor((hi + Math.PI / 2) / Math.PI);
+  if (!(hi > lo) || !(period > 0)) return false;
+  const n0 = Math.floor((lo + period / 2) / period);
+  const n1 = Math.floor((hi + period / 2) / period);
   return n1 > n0;
 }
 
@@ -143,9 +144,9 @@ function shouldBreakSegment(
   y1: number,
   xSpan: number,
   ySpan: number,
-  hasTan: boolean,
+  tanPeriod: number | null,
 ): boolean {
-  if (hasTan && crossesHalfPiAsymptote(x0, x1)) return true;
+  if (tanPeriod !== null && crossesHalfPiAsymptote(x0, x1, tanPeriod)) return true;
   const dx = Math.abs(x1 - x0) || Number.EPSILON;
   const dy = Math.abs(y1 - y0);
   // 跨极点常见：+5 → -3（幅度不大但异号），仅靠大跳跃阈值会漏断
@@ -172,7 +173,11 @@ export function sampleFunction(
   // 不裁剪 y 方向的有限值:超出视口的点交 Plotly 固定 range 自然裁剪,
   // 曲线会延伸到视口边缘而不是在视口内被切断。离群跳跃由 shouldBreakSegment 断线,
   // 不会跨视口画斜线扭曲可见区形状。
-  const hasTan = /\btan\b/i.test(normalizeExpression(expression));
+  const normalizedExpr = normalizeExpression(expression);
+  const hasTan = /\btan\b/i.test(normalizedExpr);
+  // 断线与虚线渐近线共用同一周期：tan(k*x) 在真实极点 (n+1/2)·(π/k) 处断开，
+  // 而非硬编码 (n+1/2)π（那会在 tan(2x)=0 处错误断线）。
+  const tanPeriod = hasTan ? tanAsymptotePeriod(normalizedExpr) : null;
   let validCount = 0;
 
   for (let index = 0; index <= count; index += 1) {
@@ -197,7 +202,7 @@ export function sampleFunction(
     const previous = y[index - 1];
     const current = y[index];
     if (previous === null || current === null) continue;
-    if (shouldBreakSegment(x[index - 1], previous, x[index], current, xSpan, ySpan, hasTan)) {
+    if (shouldBreakSegment(x[index - 1], previous, x[index], current, xSpan, ySpan, tanPeriod)) {
       y[index] = null;
     }
   }

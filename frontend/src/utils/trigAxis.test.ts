@@ -34,4 +34,11 @@ describe("trigAxis", () => {
     expect(ticktext).toContain("-3π");
     expect(tickvals[0]).toBeCloseTo(-3 * Math.PI, 9);
   });
+
+  it("caps tick count for very wide viewports", () => {
+    const { tickvals, ticktext } = buildPiAxisTicks(-1_000_000, 1_000_000);
+    expect(tickvals.length).toBeGreaterThan(0);
+    expect(tickvals.length).toBeLessThanOrEqual(60);
+    expect(ticktext).toHaveLength(tickvals.length);
+  });
 });

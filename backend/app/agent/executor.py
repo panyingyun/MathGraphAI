@@ -238,11 +238,13 @@ def _execution_error_failure(
     exc: Exception,
 ) -> ExecutionResult:
     _restore(working, snapshot, dirty_before)
+    # 内部异常细节只进 observation.data，不进用户可见 message，避免泄漏实现细节。
     return _failure(
         command,
         code="execution_error",
-        message=str(exc),
+        message="工具执行失败，请稍后重试。",
         graph_state=working.current.model_copy(deep=True),
+        data={"detail": str(exc)[:200]},
     )
 
 

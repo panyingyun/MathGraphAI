@@ -161,5 +161,13 @@ def validate_expression(source: str) -> str:
         except (ArithmeticError, ValueError, OverflowError):
             continue
     if valid == 0:
+        # 近窗无有限值：再探测更宽定义域，避免误拒 sqrt(x-12)/log(x-20) 这类平移函数。
+        for value in (-1_000_000.0, -1000.0, -100.0, 100.0, 1000.0, 1_000_000.0):
+            try:
+                result = evaluate(value)
+                if math.isfinite(result):
+                    return normalized
+            except (ArithmeticError, ValueError, OverflowError):
+                continue
         raise InvalidEquation("该方程在当前范围内没有可绘制的有限值")
     return normalized

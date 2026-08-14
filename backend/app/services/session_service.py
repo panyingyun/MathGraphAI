@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import List, Optional, Sequence, Tuple
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session as DatabaseSession
 
 from ..agent.context_budget import refresh_context_summary, select_recent_messages
@@ -195,18 +195,6 @@ def add_message(
     return row
 
 
-def delete_messages_by_request_id(database: DatabaseSession, session_id: str, request_id: str) -> int:
-    rows = database.scalars(
-        select(MessageModel).where(
-            MessageModel.session_id == session_id,
-            MessageModel.request_id == request_id,
-        )
-    ).all()
-    for row in rows:
-        database.delete(row)
-    return len(rows)
-
-
 def maybe_generate_title(session_row: SessionModel, graph_state: GraphState) -> None:
     if session_row.title in {"新会话", "新建绘图"} and graph_state.equations:
         labels = " 与 ".join(item.label for item in graph_state.equations[:2])
@@ -303,12 +291,80 @@ def finish_agent_run(
         persist_agent_steps(database, row.id, steps)
 
 
+def close_stale_runs(database: DatabaseSession) -> int:
+    """启动时把遗留 running 状态的 agent_runs 收口，避免幂等命中永久 409。"""
+    rows = database.scalars(
+        select(AgentRunModel).where(AgentRunModel.status == "running")
+    ).all()
+    closed = 0
+    for run in rows:
+        session_row = database.get(SessionModel, run.session_id)
+        if session_row is None:
+            run.status = "error"
+            run.error_code = "interrupted"
+            run.finished_at = utc_now()
+            closed += 1
+            continue
+        graph_state = load_graph_state(session_row)
+        message = Message(
+            id=f"msg_{uuid.uuid4().hex[:12]}",
+            role="assistant",
+            content="上次处理中断，请重新发送请求。",
+            created_at=datetime.fromisoformat(utc_now()),
+            status="error",
+        )
+        response = ChatResponse(
+            message=message,
+            graph_state=graph_state,
+            request_id=run.request_id,
+            execution_mode=run.agent_mode or "react",
+            decision_provider="local",
+            fallback_used=False,
+            error_code="interrupted",
+            graph_revision=graph_state.revision,
+            step_count=0,
+            steps=[],
+            cancelled=False,
+        )
+        finish_agent_run(
+            database,
+            run,
+            status="error",
+            decision_provider="local",
+            model=None,
+            fallback_used=False,
+            error_code="interrupted",
+            response=response,
+            step_count=0,
+            steps=[],
+        )
+        closed += 1
+    if closed:
+        database.commit()
+    return closed
+
+
 def cached_chat_response(row: AgentRunModel) -> Optional[ChatResponse]:
     if not row.response_json:
         return None
     return ChatResponse.model_validate_json(row.response_json)
 
 
-def persist_graph_state(session_row: SessionModel, graph_state: GraphState) -> None:
-    session_row.graph_state = graph_to_json(graph_state)
-    session_row.revision = graph_state.revision
+def persist_graph_state(
+    database: DatabaseSession,
+    session_row: SessionModel,
+    graph_state: GraphState,
+) -> bool:
+    """原子条件写回 GraphState：仅当 DB 中 revision 仍等于加载值时才更新。
+
+    返回 True 表示写入成功；False 表示发生并发冲突（调用方应回滚并返回 409）。
+    """
+    result = database.execute(
+        update(SessionModel)
+        .where(SessionModel.id == session_row.id, SessionModel.revision == session_row.revision)
+        .values(graph_state=graph_to_json(graph_state), revision=graph_state.revision)
+    )
+    if result.rowcount == 1:
+        database.expire(session_row, ["graph_state", "revision"])
+        return True
+    return False

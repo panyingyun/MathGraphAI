@@ -8,9 +8,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from . import models  # noqa: F401
-from .database import Base, engine
+from .database import Base, SessionLocal, engine
 from .migrations import run_migrations
 from .routers import chat, sessions
+from .services.session_service import close_stale_runs
 from .utils.logging_utils import configure_logging, install_request_timing
 
 
@@ -29,6 +30,11 @@ async def lifespan(_: FastAPI):
     configure_logging()
     Base.metadata.create_all(bind=engine)
     run_migrations(engine)
+    database = SessionLocal()
+    try:
+        close_stale_runs(database)
+    finally:
+        database.close()
     yield
 
 

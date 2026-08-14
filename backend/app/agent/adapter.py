@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from typing import Any, Dict, List, Optional
 
-from ..schemas.agent import AgentAction, AgentFinal, Command
+from ..schemas.agent import AgentAction, Command
 from ..schemas.chat import StructuredResult
 from ..schemas.graph import EquationItem
 
@@ -105,7 +105,3 @@ def structured_result_to_command(
     if action is None:
         return None
     return action_to_command(action, command_id=command_id, source=source)
-
-
-def final_from_text(message: str) -> AgentFinal:
-    return AgentFinal(message=message)

@@ -219,6 +219,41 @@ def test_extrema_snap_to_exact_integers_on_all_viewports():
 
 
 @pytest.mark.expression
+def test_find_zeros_rejects_asymptote_pseudo_zeros():
+    """含垂直渐近线的函数不得把极点当零点返回。"""
+    import math
+
+    # 1/(x-0.025) 无零点；跨过 x=0.025 的极点不得被当作零点
+    zeros = find_zeros("1/(x-0.025)", -10, 10)
+    assert zeros["count"] == 0
+
+    # tan 在 [-10,10] 的真实零点为 -3π..3π；±π/2、±3π/2、±5π/2 等极点不得混入
+    tan_zeros = find_zeros("tan(x)", -10, 10)
+    assert tan_zeros["count"] == 7
+    xs = sorted(point["x"] for point in tan_zeros["points"])
+    expected = [-3 * math.pi, -2 * math.pi, -math.pi, 0, math.pi, 2 * math.pi, 3 * math.pi]
+    for actual, want in zip(xs, expected):
+        assert actual == pytest.approx(want, abs=1e-4)
+    for point in tan_zeros["points"]:
+        assert abs(point["y"]) < 1e-3
+
+
+@pytest.mark.expression
+def test_find_intersections_rejects_asymptote_pseudo_intersections():
+    """tan 与常值 0 的交点只保留真实零点，极点残差巨大应被丢弃。"""
+    import math
+
+    result = find_intersections("tan(x)", "0", -10, 10)
+    assert result["count"] == 7
+    xs = sorted(point["x"] for point in result["points"])
+    expected = [-3 * math.pi, -2 * math.pi, -math.pi, 0, math.pi, 2 * math.pi, 3 * math.pi]
+    for actual, want in zip(xs, expected):
+        assert actual == pytest.approx(want, abs=1e-4)
+    for point in result["points"]:
+        assert point["residual"] < 1e-3
+
+
+@pytest.mark.expression
 def test_extrema_non_integer_never_snapped():
     """非整数极值（如 sin 的 π/2）不得被误吸附成整数。"""
     import math

@@ -105,6 +105,4 @@ def check_postconditions(command: Command, before: GraphState, after: GraphState
         "set_graph_markers",
     }:
         return None
-    if len(after.equations) < 0:  # pragma: no cover
-        return PolicyViolation("postcondition_failed", "方程列表非法")
     return None
