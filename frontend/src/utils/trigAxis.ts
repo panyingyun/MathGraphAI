@@ -70,9 +70,10 @@ export function buildPiAxisTicks(xMin: number, xMax: number): { tickvals: number
   if (!(span > 0)) return { tickvals: [], ticktext: [] };
   // 目标约 8–16 个刻度；同时硬性上限 60，避免宽视口(如 ±1e6)生成几十万个刻度拖垮渲染。
   const MAX_TICKS = 60;
-  let stepDenom = 3; // π/3
-  if (span > 14 * Math.PI) stepDenom = 1;
-  else if (span > 7 * Math.PI) stepDenom = 2;
+  // 教科书密度：常规区间用 π/2（覆盖 sin/cos 的 0、±1 关键点）；超宽区间退化为 π。
+  // 不用 π/3：会在常规视口里把「整数倍 π」与「分数倍 π」混在一起，视觉上像两套坐标。
+  let stepDenom = 2; // π/2
+  if (span > 14 * Math.PI) stepDenom = 1; // π
 
   const base = Math.PI / stepDenom;
   // 宽视口时把步长放大为 π 的整数倍，刻度数始终 ≤ MAX_TICKS。

@@ -27,7 +27,7 @@ describe("trigAxis", () => {
     expect(formatPiTickLabel(1, 2)).toBe("π/2");
   });
 
-  it("builds pi/3 ticks for textbook span", () => {
+  it("builds pi/2 ticks for textbook span", () => {
     const { tickvals, ticktext } = buildPiAxisTicks(-3 * Math.PI, 3 * Math.PI);
     expect(ticktext).toContain("0");
     expect(ticktext).toContain("π");
